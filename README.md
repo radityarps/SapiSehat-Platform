@@ -16,14 +16,19 @@ sapisehat/
 │   ├── backend/          # FastAPI inference server (Python)
 │   └── mobile/           # Android app (Kotlin)
 ├── docs/
-│   ├── architecture/     # System architecture documentation
-│   ├── backend/          # Backend API & migration docs
-│   ├── mobile/           # Mobile app documentation
-│   ├── changelog.md      # Version history
-│   └── PRD.md            # Product Requirements Document
+│   ├── README.md              # Documentation routing and ownership
+│   ├── system-integration/    # Shared platform contracts
+│   ├── team-1-image/          # Image subsystem docs
+│   ├── team-2-nlp/            # NLP subsystem docs
+│   ├── adr/                   # Architecture decision records
+│   └── changelog.md           # Version history
 ├── package.json          # pnpm scripts (build, deploy, test)
 └── .gitignore
 ```
+
+## Documentation
+
+Start at [docs/README.md](docs/README.md). Shared platform contracts live in [docs/system-integration](docs/system-integration/README.md). Team-specific model docs live in [docs/team-1-image](docs/team-1-image/README.md) and [docs/team-2-nlp](docs/team-2-nlp/README.md).
 
 ---
 
