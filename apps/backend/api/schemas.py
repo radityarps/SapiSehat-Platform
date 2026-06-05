@@ -118,3 +118,28 @@ class CattleProfileResponse(BaseModel):
 class CattleProfileListResponse(BaseModel):
     """Selectable cattle list for detection."""
     cattle: List[CattleProfileResponse]
+
+
+class CattleTimelineEventRequest(BaseModel):
+    """Create operational cattle timeline event."""
+    event_type: str = "vaccination"
+    event_date: str = Field(min_length=10, max_length=10)
+    title: str = Field(min_length=1, max_length=160)
+    description: str = Field(default="", max_length=1000)
+    payload: Dict[str, object] = Field(default_factory=dict)
+    creator_id: str = Field(min_length=1, max_length=120)
+
+class CattleTimelineEventResponse(BaseModel):
+    """Cattle timeline event response."""
+    id: str
+    cattle_id: str
+    event_type: str
+    event_date: str
+    title: str
+    description: str
+    payload: Dict[str, object]
+    creator_id: str
+
+class CattleProfileDetailResponse(CattleProfileResponse):
+    """Cattle detail with timeline."""
+    timeline: List[CattleTimelineEventResponse]

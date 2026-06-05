@@ -4,10 +4,29 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 from api.authorization import AgencyUser, AdministrativeJurisdiction, FarmerRecord, can_agency_access_farmer
-from api.farmer_accounts import FarmerAccount, FarmerConsentState
+from api.farmer_accounts import FarmerAccount
 
+
+
+class CattleEventType(str, Enum):
+    VACCINATION = "vaccination"
+
+
+@dataclass(frozen=True)
+class CattleTimelineEvent:
+    """Operational cattle timeline event."""
+
+    id: str
+    cattle_id: str
+    event_type: CattleEventType
+    event_date: str
+    title: str
+    description: str
+    payload: dict[str, Any]
+    creator_id: str
 
 class CattleSex(str, Enum):
     MALE = "male"
@@ -43,6 +62,8 @@ class CattleProfileStore:
     def __init__(self) -> None:
         self._profiles_by_id: dict[str, CattleProfile] = {}
         self._next_id = 1
+        self._events_by_cattle_id: dict[str, list[CattleTimelineEvent]] = {}
+        self._next_event_id = 1
 
     def create(
         self,
@@ -83,6 +104,40 @@ class CattleProfileStore:
             return None
         return profile
 
+
+    def add_timeline_event(
+        self,
+        *,
+        farmer_id: str,
+        cattle_id: str,
+        event_type: CattleEventType,
+        event_date: str,
+        title: str,
+        description: str,
+        payload: dict[str, Any],
+        creator_id: str,
+    ) -> CattleTimelineEvent | None:
+        profile = self.get_owned(farmer_id=farmer_id, cattle_id=cattle_id)
+        if profile is None:
+            return None
+        event = CattleTimelineEvent(
+            id=f"event-{self._next_event_id}",
+            cattle_id=cattle_id,
+            event_type=event_type,
+            event_date=event_date,
+            title=title,
+            description=description,
+            payload=payload,
+            creator_id=creator_id,
+        )
+        self._next_event_id += 1
+        self._events_by_cattle_id.setdefault(cattle_id, []).append(event)
+        self._events_by_cattle_id[cattle_id].sort(key=lambda item: (item.event_date, item.id), reverse=True)
+        return event
+
+    def list_timeline_events(self, cattle_id: str) -> list[CattleTimelineEvent]:
+        return list(self._events_by_cattle_id.get(cattle_id, []))
+
     def list_visible_to_agency(
         self,
         *,
@@ -107,7 +162,9 @@ class CattleProfileStore:
 
     def clear(self) -> None:
         self._profiles_by_id.clear()
+        self._events_by_cattle_id.clear()
         self._next_id = 1
+        self._next_event_id = 1
 
 
 cattle_profile_store = CattleProfileStore()

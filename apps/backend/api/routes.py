@@ -15,11 +15,14 @@ from api.schemas import (
     CattleProfileRequest,
     CattleProfileResponse,
     CattleProfileListResponse,
+    CattleTimelineEventRequest,
+    CattleTimelineEventResponse,
+    CattleProfileDetailResponse,
 )
 from config import settings
 from utils.logger import get_logger
 from api.farmer_accounts import farmer_account_store
-from api.cattle_profiles import CattleSex, CattleStatus, cattle_profile_store
+from api.cattle_profiles import CattleEventType, CattleSex, CattleStatus, cattle_profile_store
 from api.authorization import DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, filter_visible_farmers
 
 logger = get_logger(__name__)
@@ -39,6 +42,24 @@ def _serialize_cattle(profile):
         "jurisdiction_id": profile.jurisdiction_id,
     }
 
+
+
+def _serialize_cattle_event(event):
+    return {
+        "id": event.id,
+        "cattle_id": event.cattle_id,
+        "event_type": event.event_type.value,
+        "event_date": event.event_date,
+        "title": event.title,
+        "description": event.description,
+        "payload": event.payload,
+        "creator_id": event.creator_id,
+    }
+
+def _serialize_cattle_detail(profile):
+    detail = _serialize_cattle(profile)
+    detail["timeline"] = [_serialize_cattle_event(event) for event in cattle_profile_store.list_timeline_events(profile.id)]
+    return detail
 
 @router.post("/predict", response_model=PredictResponse)
 async def predict(
@@ -167,13 +188,13 @@ async def list_farmer_cattle_for_detection(farmer_id: str = Path(...)):
     return {"cattle": [_serialize_cattle(profile) for profile in cattle_profile_store.list_by_farmer(farmer_id)]}
 
 
-@router.get("/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileResponse)
+@router.get("/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileDetailResponse)
 async def select_farmer_cattle_for_detection(farmer_id: str = Path(...), cattle_id: str = Path(...)):
     """Select one farmer-owned cattle profile before detection starts."""
     profile = cattle_profile_store.get_owned(farmer_id=farmer_id, cattle_id=cattle_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
-    return _serialize_cattle(profile)
+    return _serialize_cattle_detail(profile)
 
 
 @router.get("/agency/cattle", response_model=CattleProfileListResponse)
@@ -188,3 +209,46 @@ async def list_agency_visible_cattle(agency_user_id: str = Header(..., alias="X-
         jurisdictions=DEMO_JURISDICTIONS,
     )
     return {"cattle": [_serialize_cattle(profile) for profile in visible]}
+
+@router.post("/farmers/{farmer_id}/cattle/{cattle_id}/timeline", response_model=CattleTimelineEventResponse)
+async def add_farmer_cattle_timeline_event(
+    request: CattleTimelineEventRequest,
+    farmer_id: str = Path(...),
+    cattle_id: str = Path(...),
+):
+    """Add operational cattle event to owned cattle timeline."""
+    try:
+        event = cattle_profile_store.add_timeline_event(
+            farmer_id=farmer_id,
+            cattle_id=cattle_id,
+            event_type=CattleEventType(request.event_type),
+            event_date=request.event_date,
+            title=request.title,
+            description=request.description,
+            payload=request.payload,
+            creator_id=request.creator_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    if event is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    return _serialize_cattle_event(event)
+
+@router.get("/agency/cattle/{cattle_id}", response_model=CattleProfileDetailResponse)
+async def get_agency_visible_cattle_detail(
+    cattle_id: str = Path(...),
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    """Read cattle detail with timeline when agency is authorized."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    visible = cattle_profile_store.list_visible_to_agency(
+        agency=agency,
+        farmers_by_id=farmer_account_store.all_by_id(),
+        jurisdictions=DEMO_JURISDICTIONS,
+    )
+    for profile in visible:
+        if profile.id == cattle_id:
+            return _serialize_cattle_detail(profile)
+    raise HTTPException(status_code=404, detail="Cattle not visible to agency")
