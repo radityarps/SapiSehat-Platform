@@ -8,7 +8,7 @@ SapiSehat documentation is split by ownership so Team 1 image, Team 2 NLP, and s
 - [Team 1 Image](team-1-image/README.md) — image-based early detection subsystem.
 - [Team 2 NLP](team-2-nlp/README.md) — NLP-based symptom screening subsystem.
 - [ADRs](adr/) — hard-to-reverse architecture decisions.
-- [Docs Restructure Plan](system-integration/DOCS_RESTRUCTURE_PLAN.md) — approved migration map and routing record.
+- [Docs Cleanup Report](system-integration/DOCS_CLEANUP_REPORT.md) — removed legacy/duplicate docs and records current routing.
 
 ## Routing Rules
 
@@ -41,6 +41,6 @@ Do not duplicate shared schemas in team folders. Team folders may reference shar
 
 ## Legacy Docs
 
-Legacy docs have been migrated into owned folders per [Docs Restructure Plan](system-integration/DOCS_RESTRUCTURE_PLAN.md). Old image/model docs now live under `docs/team-1-image/model`; shared backend/mobile/architecture/validation docs live under `docs/system-integration/**`.
+Legacy and duplicate docs have been cleaned up per [Docs Cleanup Report](system-integration/DOCS_CLEANUP_REPORT.md). Current docs live under owned team/system folders.
 
 When editing migrated legacy docs, keep pointers to the new entrypoints instead of creating another shared contract location.

@@ -9,7 +9,6 @@ Model-specific validation remains in Team 1 or Team 2 docs.
 
 ## Migrated Validation Docs
 
-- [Legacy validation README](legacy-validation-readme.md)
 - [Consent form](CONSENT_FORM.md)
 - [Validation protocol](VALIDATION_PROTOCOL.md)
 - [Facilitator script](FACILITATOR_SCRIPT.md)

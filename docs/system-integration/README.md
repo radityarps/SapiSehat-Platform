@@ -46,7 +46,7 @@ Shared backend, mobile, dashboard, API, data model, or fusion-flow changes must 
 
 ## Key Docs
 
-- [Docs Restructure Plan](DOCS_RESTRUCTURE_PLAN.md)
+- [Docs Cleanup Report](DOCS_CLEANUP_REPORT.md)
 - [Platform Scope](product/PLATFORM_SCOPE.md)
 - [Platform Rebuild PRD](product/PRD-platform-rebuild.md)
 - [Fusion Contract](api-contracts/FUSION_CONTRACT.md)

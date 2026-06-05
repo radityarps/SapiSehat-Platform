@@ -9,4 +9,4 @@ Hard-to-reverse decisions should also have ADRs under `docs/adr`.
 
 ## Migrated Architecture Docs
 
-- [Legacy architecture overview](legacy-architecture-overview.md)
+- Current platform architecture decision: [ADR 0002](../../adr/0002-go-gateway-python-inference.md)

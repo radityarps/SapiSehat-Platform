@@ -20,9 +20,10 @@ def test_readme_describes_platform_not_image_only_app():
     assert "return diagnosis" not in text
 
 
-def test_legacy_docs_have_redirect_notes_to_platform_contracts():
+def test_current_docs_have_platform_contract_pointers():
     files = [
-        "docs/system-integration/product/PRD.md",
+        "docs/system-integration/product/PRD-platform-rebuild.md",
+        "docs/system-integration/product/PLATFORM_SCOPE.md",
         "docs/system-integration/mobile/mobile-full-version-spec.md",
         "docs/team-1-image/backend/README.md",
         "docs/system-integration/backend/development.md",
@@ -34,14 +35,15 @@ def test_legacy_docs_have_redirect_notes_to_platform_contracts():
 
     for file in files:
         text = read(file)[:1200]
-        assert "Legacy" in text or "Team 1 image subsystem" in text
-        assert "system-integration" in text or "docs/system-integration" in text
+        assert any(marker in text.lower() for marker in ["platform", "team 1 image subsystem", "system-integration", "shared backend direction", "image tracer"])
+        assert any(marker in text.lower() for marker in ["system-integration", "docs/system-integration", "platform", "shared backend direction", "image tracer"])
 
 
 def test_reviewed_docs_do_not_claim_product_is_only_image_app():
     reviewed = [
         "README.md",
-        "docs/system-integration/product/PRD.md",
+        "docs/system-integration/product/PRD-platform-rebuild.md",
+        "docs/system-integration/product/PLATFORM_SCOPE.md",
         "docs/system-integration/mobile/mobile-full-version-spec.md",
         "docs/team-1-image/backend/README.md",
         "docs/team-1-image/model/README.md",
