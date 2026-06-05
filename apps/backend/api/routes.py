@@ -29,6 +29,8 @@ from api.schemas import (
     FusionRequest,
     FusionResultResponse,
     FusionResultListResponse,
+    OfflineDetectionSyncRequest,
+    OfflineDetectionSyncResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -36,6 +38,7 @@ from api.farmer_accounts import farmer_account_store
 from api.cattle_profiles import CattleEventType, CattleSex, CattleStatus, cattle_profile_store
 from api.detection_events import detection_event_store
 from api.fusion_results import fusion_result_store
+from api.offline_sync import offline_detection_sync_store
 from api.authorization import DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, filter_visible_farmers
 
 logger = get_logger(__name__)
@@ -384,3 +387,30 @@ async def create_backend_primary_fusion_result(request: FusionRequest):
 async def list_fusion_results():
     """List stored backend-primary fusion tracer results."""
     return {"results": [_serialize_fusion_result(result) for result in fusion_result_store.list_all()]}
+
+
+@router.post("/offline/detections/sync", response_model=OfflineDetectionSyncResponse)
+async def sync_offline_detection(request: OfflineDetectionSyncRequest):
+    """Sync mobile-created offline fused detection while preserving local id and evidence versions."""
+    if farmer_account_store.get_by_id(request.farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    try:
+        synced = offline_detection_sync_store.sync(
+            local_detection_id=request.local_detection_id,
+            farmer_id=request.farmer_id,
+            cattle_id=request.cattle_id,
+            local_created_at=request.local_created_at,
+            image_evidence=request.image_evidence,
+            nlp_evidence=request.nlp_evidence,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {
+        "local_detection_id": synced.local_detection_id,
+        "sync_status": synced.sync_status,
+        "local_created_at": synced.local_created_at,
+        "synced_at": synced.synced_at,
+        "fusion_result": _serialize_fusion_result(synced.fusion_result),
+    }

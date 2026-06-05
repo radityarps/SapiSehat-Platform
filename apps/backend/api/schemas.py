@@ -279,3 +279,21 @@ class FusionResultResponse(BaseModel):
 class FusionResultListResponse(BaseModel):
     """Fusion result list response."""
     results: List[FusionResultResponse]
+
+class OfflineDetectionSyncRequest(BaseModel):
+    """Offline fused detection sync request from mobile."""
+    local_detection_id: str = Field(min_length=1, max_length=160)
+    farmer_id: str = Field(min_length=1, max_length=120)
+    cattle_id: Optional[str] = None
+    local_created_at: str = Field(min_length=10, max_length=40)
+    image_evidence: Optional[ImageEvidenceRequest] = None
+    nlp_evidence: Optional[NlpEvidenceRequest] = None
+    offline_fused_result: Dict[str, object] = Field(default_factory=dict)
+
+class OfflineDetectionSyncResponse(BaseModel):
+    """Synced offline detection response."""
+    local_detection_id: str
+    sync_status: str
+    local_created_at: str
+    synced_at: str
+    fusion_result: FusionResultResponse

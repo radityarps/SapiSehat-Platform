@@ -148,3 +148,14 @@ Executable tracer: `POST /api/fusion/results`. Backend accepts Team 1 image evid
 - low confidence returns `insufficient_evidence`.
 - stored result includes `evidence_breakdown`, `confidence`, `confidence_level`, `reliability`, `conflict_status`, and `model_versions`.
 - handling advice keys must avoid diagnosis or confirmed outbreak wording.
+
+
+## Offline Detection Sync Tracer
+
+Executable tracer: `POST /api/offline/detections/sync`. Mobile may create an offline fused result and sync when connectivity returns. Backend rules:
+
+- request includes stable `local_detection_id` and `local_created_at`.
+- image/NLP evidence keeps offline `model_version` and `inference_mode`.
+- backend stores result as `inference_mode: synced_offline`.
+- duplicate `local_detection_id` returns same synced result for idempotency.
+- malformed image/NLP evidence is rejected by same evidence contracts used online.
