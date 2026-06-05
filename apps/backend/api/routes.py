@@ -31,15 +31,19 @@ from api.schemas import (
     FusionResultListResponse,
     OfflineDetectionSyncRequest,
     OfflineDetectionSyncResponse,
+    StoredMediaRequest,
+    StoredMediaResponse,
+    StoredMediaListResponse,
 )
 from config import settings
 from utils.logger import get_logger
-from api.farmer_accounts import farmer_account_store
+from api.farmer_accounts import FarmerConsentState, farmer_account_store
 from api.cattle_profiles import CattleEventType, CattleSex, CattleStatus, cattle_profile_store
 from api.detection_events import detection_event_store
 from api.fusion_results import fusion_result_store
 from api.offline_sync import offline_detection_sync_store
-from api.authorization import DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, filter_visible_farmers
+from api.media_governance import media_store
+from api.authorization import ConsentTier, FarmerRecord, DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, can_agency_access_farmer, filter_visible_farmers
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api", tags=["prediction"])
@@ -78,6 +82,18 @@ def _serialize_cattle_detail(profile):
     return detail
 
 
+
+
+def _serialize_media(media):
+    return {
+        "id": media.id,
+        "farmer_id": media.farmer_id,
+        "cattle_id": media.cattle_id,
+        "detection_id": media.detection_id,
+        "checksum": media.checksum,
+        "consent_scope": media.consent_scope,
+        "storage_reference": media.storage_reference,
+    }
 
 def _serialize_fusion_result(result):
     return {
@@ -192,6 +208,7 @@ async def register_or_sign_in_farmer_account(request: FarmerAccountRequest):
             phone_number=request.phone_number,
             name=request.name,
             jurisdiction_id=request.jurisdiction_id,
+            consent_state=FarmerConsentState(request.consent_state),
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -220,7 +237,7 @@ async def create_cattle_profile(request: CattleProfileRequest, farmer_id: str = 
             age_months=request.age_months,
             birth_year_estimate=request.birth_year_estimate,
             status=CattleStatus(request.status),
-            jurisdiction_id=request.jurisdiction_id,
+            jurisdiction_id=request.jurisdiction_id
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -414,3 +431,43 @@ async def sync_offline_detection(request: OfflineDetectionSyncRequest):
         "synced_at": synced.synced_at,
         "fusion_result": _serialize_fusion_result(synced.fusion_result),
     }
+
+
+@router.post("/media", response_model=StoredMediaResponse)
+async def create_stored_media_metadata(request: StoredMediaRequest):
+    """Store media metadata only when farmer consent permits research/monitoring."""
+    farmer = farmer_account_store.get_by_id(request.farmer_id)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if farmer.consent_state != FarmerConsentState.RESEARCH_AND_MONITORING:
+        raise HTTPException(status_code=403, detail="Media storage requires research_and_monitoring consent")
+    if request.consent_scope != "research_and_monitoring":
+        raise HTTPException(status_code=422, detail="consent_scope must be research_and_monitoring")
+    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    media = media_store.create(
+        farmer_id=request.farmer_id,
+        cattle_id=request.cattle_id,
+        detection_id=request.detection_id,
+        checksum=request.checksum,
+        consent_scope=request.consent_scope,
+        storage_reference=request.storage_reference,
+    )
+    return _serialize_media(media)
+
+@router.get("/agency/media/{media_id}", response_model=StoredMediaResponse)
+async def get_agency_visible_media(media_id: str = Path(...), agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Read media metadata only when agency passes role-jurisdiction-consent gates."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    media = media_store.get(media_id)
+    if media is None:
+        raise HTTPException(status_code=404, detail="Media not found")
+    farmer = farmer_account_store.get_by_id(media.farmer_id)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    record = FarmerRecord(farmer.id, farmer.name, farmer.jurisdiction_id, ConsentTier(farmer.consent_state.value))
+    if not can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
+        raise HTTPException(status_code=403, detail="Media not visible to agency")
+    return _serialize_media(media)

@@ -82,6 +82,7 @@ class FarmerAccountRequest(BaseModel):
     phone_number: str = Field(min_length=8, max_length=32)
     name: str = Field(min_length=1, max_length=120)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
+    consent_state: str = "private"
 
 class FarmerAccountResponse(BaseModel):
     """Phone-number farmer account response."""
@@ -297,3 +298,27 @@ class OfflineDetectionSyncResponse(BaseModel):
     local_created_at: str
     synced_at: str
     fusion_result: FusionResultResponse
+
+
+class StoredMediaRequest(BaseModel):
+    """Stored media metadata request governed by consent."""
+    farmer_id: str = Field(min_length=1, max_length=120)
+    cattle_id: Optional[str] = None
+    detection_id: Optional[str] = None
+    checksum: str = Field(min_length=8, max_length=128)
+    consent_scope: str = Field(min_length=1, max_length=80)
+    storage_reference: str = Field(min_length=1, max_length=240)
+
+class StoredMediaResponse(BaseModel):
+    """Stored media metadata response."""
+    id: str
+    farmer_id: str
+    cattle_id: Optional[str]
+    detection_id: Optional[str]
+    checksum: str
+    consent_scope: str
+    storage_reference: str
+
+class StoredMediaListResponse(BaseModel):
+    """Stored media list response."""
+    media: List[StoredMediaResponse]

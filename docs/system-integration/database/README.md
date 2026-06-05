@@ -44,3 +44,18 @@ Issue #5 adds the first livestock profile timeline path. Timeline behavior:
 5. Agency cattle detail includes timeline only when role-jurisdiction-consent authorization allows the cattle read.
 
 The current FastAPI in-memory event store is a tracer for the future Go gateway and PostgreSQL implementation.
+
+
+## Stored Media Metadata Tracer
+
+Media metadata table shape for tracer:
+
+- `id`.
+- `farmer_id`.
+- `cattle_id` nullable.
+- `detection_id` nullable.
+- `checksum`.
+- `consent_scope`.
+- `storage_reference`.
+
+First retention policy stores media only under `research_and_monitoring` consent.
