@@ -1,0 +1,5 @@
+image_id,box_id,symptom_region_type,detector_confidence,score_FMD,score_LSD,score_healthy
+eval-001,box-1,fmd_mouth_lesion,0.91,0.96,0.02,0.02
+eval-001,box-2,fmd_hoof_lesion,0.82,0.94,0.03,0.03
+eval-002,box-1,lsd_skin_nodule,0.88,0.04,0.93,0.03
+eval-003,box-1,confusing_region,0.77,0.10,0.09,0.81

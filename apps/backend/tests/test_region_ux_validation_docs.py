@@ -1,0 +1,29 @@
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[3]
+
+
+def _read(path: str) -> str:
+    return (ROOT / path).read_text(encoding="utf-8")
+
+
+def test_region_ux_validation_protocol_keeps_farmer_boxes_gated():
+    protocol = _read("docs/validation/VALIDATION_PROTOCOL.md")
+
+    assert "model attention area" in protocol
+    assert "area to review" in protocol
+    assert "developer/debug-only" in protocol
+    assert "remain disabled" in protocol
+    assert "not a confirmed lesion" in protocol or "not confirmed lesion" in protocol
+
+
+def test_region_ux_capture_sheets_record_misleading_risk():
+    metrics = _read("docs/validation/METRICS_SHEET.md")
+    report = _read("docs/validation/REPORT_TEMPLATE.md")
+
+    assert "detected lesion" in metrics
+    assert "misleading" in metrics
+    assert "overconfidence" in report
+    assert "Gated farmer-facing trial" in report
+    assert "This does not create clinical diagnosis claims" in report

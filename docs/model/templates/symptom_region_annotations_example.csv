@@ -1,0 +1,6 @@
+image_id,disease_class,is_hard_negative,annotation_id,symptom_category,x_min,y_min,x_max,y_max,annotator_id,review_status,review_notes
+field-0001,FMD,false,ann-0001,fmd_mouth_lesion,0.22,0.31,0.46,0.58,annotator-01,accepted,Visible mouth lesion box
+field-0001,FMD,false,ann-0002,fmd_hoof_lesion,0.62,0.66,0.80,0.89,annotator-01,accepted,Visible hoof lesion box
+field-0002,LSD,false,ann-0003,lsd_skin_nodule,0.35,0.25,0.72,0.70,annotator-02,accepted,Nodule cluster
+field-0003,healthy,false,,,,,,annotator-02,accepted,Healthy image-level label; no fake boxes
+field-0004,,true,ann-0004,confusing_region,0.10,0.10,0.40,0.45,annotator-03,accepted,Blurry region for threshold analysis

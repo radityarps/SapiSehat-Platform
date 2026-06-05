@@ -1,0 +1,74 @@
+{
+  "data_source_mode": "prepared_split_manifest",
+  "manifest": "/kaggle/working/dataset_artifacts/split_manifest.csv",
+  "data": null,
+  "epochs": 50,
+  "fine_tune_epochs": 10,
+  "seed": 42,
+  "models": [
+    "densenet121"
+  ],
+  "classes": [
+    "FMD",
+    "LSD",
+    "healthy"
+  ],
+  "class_indices": {
+    "FMD": 0,
+    "LSD": 1,
+    "healthy": 2
+  },
+  "optimizer": "Adam",
+  "phase1_learning_rate": 0.001,
+  "fine_tune_learning_rate": 1e-05,
+  "fine_tune_unfreeze_layers": 30,
+  "loss": "categorical_crossentropy",
+  "early_stopping_patience": 8,
+  "reduce_lr_patience": 4,
+  "reduce_lr_factor": 0.2,
+  "augmentation": {
+    "rotation_max_deg": 15,
+    "zoom_max": 0.1,
+    "brightness_max_delta": 0.1,
+    "contrast_range": [
+      0.9,
+      1.1
+    ],
+    "horizontal_flip": true,
+    "vertical_flip": false,
+    "excluded": [
+      "vertical_flip",
+      "heavy_blur",
+      "aggressive_crop",
+      "extreme_color_shift"
+    ],
+    "applies_to": "train split only"
+  },
+  "class_weighting": true,
+  "two_phase_transfer_learning": true,
+  "batch_sizes": {
+    "densenet121": 16
+  },
+  "split_counts": {
+    "train": {
+      "FMD": 234,
+      "LSD": 611,
+      "healthy": 501
+    },
+    "valid": {
+      "FMD": 44,
+      "LSD": 132,
+      "healthy": 116
+    },
+    "test": {
+      "FMD": 49,
+      "LSD": 137,
+      "healthy": 111
+    }
+  },
+  "class_weights_by_index": {
+    "0": 1.9173789173789173,
+    "1": 0.7343153300600109,
+    "2": 0.895542248835662
+  }
+}

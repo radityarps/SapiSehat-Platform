@@ -1,0 +1,301 @@
+<resources>
+    <string name="app_name">SapiSehat</string>
+
+    <!-- Shared -->
+    <string name="btn_cancel">Cancel</string>
+    <string name="btn_delete">Delete</string>
+    <string name="btn_ok">OK</string>
+    <string name="nav_back">Back</string>
+
+    <!-- Tab Bar -->
+    <string name="tab_periksa">Check</string>
+    <string name="tab_riwayat">History</string>
+    <string name="tab_panduan">Guide</string>
+    <string name="tab_lainnya">More</string>
+
+    <!-- Splash -->
+    <string name="splash_loading">Loading model…</string>
+    <string name="splash_subtitle">Cattle Disease Detection</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Skip</string>
+    <string name="onboarding_next">Next</string>
+    <string name="onboarding_start">Get Started</string>
+    <string name="onboarding_title_1">AI-Powered Cattle Disease Detection</string>
+    <string name="onboarding_body_1">Use your camera to instantly detect FMD and LSD in cattle.</string>
+    <string name="onboarding_title_2">Offline Mode Available</string>
+    <string name="onboarding_body_2">Detection works without internet using on-device AI model.</string>
+    <string name="onboarding_title_3">History &amp; Complete Guide</string>
+    <string name="onboarding_body_3">Save examination results and learn about disease management.</string>
+
+    <!-- Camera -->
+    <string name="camera_guidance">Point camera at the cattle</string>
+    <string name="camera_capture">Capture</string>
+    <string name="camera_gallery">Gallery</string>
+    <string name="camera_flash_auto">Auto Flash</string>
+    <string name="camera_flash_on">Flash On</string>
+    <string name="camera_flash_off">Flash Off</string>
+    <string name="camera_grid_on">Grid On</string>
+    <string name="camera_grid_off">Grid Off</string>
+    <string name="camera_flash_toggle">Toggle Flash</string>
+    <string name="camera_grid_toggle">Toggle Grid</string>
+    <string name="camera_permission_title">Camera Permission Required</string>
+    <string name="camera_permission_desc">SapiSehat needs camera access to detect cattle diseases.</string>
+    <string name="camera_permission_grant">Grant</string>
+    <string name="camera_permission_denied">Camera permission denied. Open settings to enable.</string>
+    <string name="camera_processing">Processing image…</string>
+    <string name="camera_error_capture_failed">Failed to capture image</string>
+    <string name="camera_error_not_ready">Camera is not ready</string>
+    <string name="camera_error_access">Failed to access camera: %1$s</string>
+
+    <!-- Result -->
+    <string name="result_loading_1">Uploading image…</string>
+    <string name="result_loading_2">Analyzing with AI…</string>
+    <string name="result_loading_3">Preparing results…</string>
+    <string name="result_diagnosis">Early Detection Result</string>
+    <string name="result_confidence">Confidence</string>
+    <string name="result_mode_online">Online</string>
+    <string name="result_mode_offline">Offline</string>
+    <string name="result_btn_save">Save</string>
+    <string name="result_btn_edit">Edit</string>
+    <string name="result_save_dialog_title">Save Result</string>
+    <string name="result_edit_dialog_title">Edit Result</string>
+    <string name="result_save_hint_title">Title (optional)</string>
+    <string name="result_save_hint_desc">Description (optional)</string>
+    <string name="result_btn_share">Share</string>
+    <string name="result_btn_export_pdf">Export PDF</string>
+    <string name="result_pdf_exported">PDF report generated successfully</string>
+    <string name="result_pdf_failed">Failed to generate PDF report</string>
+    <string name="result_btn_retake">Retake</string>
+    <string name="result_disease_sehat">Healthy</string>
+    <string name="result_disease_fmd">FMD</string>
+    <string name="result_disease_lsd">LSD</string>
+    <string name="result_unknown">Unknown</string>
+    <string name="result_insufficient_visual_evidence">Insufficient Visual Evidence</string>
+    <string name="result_scan_image">Scan image</string>
+    <string name="result_scanned_at">Scan time: %1$s</string>
+    <string name="result_share_title">SapiSehat Early Detection Result</string>
+    <string name="result_share_diagnosis">Early indication: %1$s</string>
+    <string name="result_share_confidence">Confidence: %1$d%% (%2$s)</string>
+    <string name="result_share_mode">Inference mode: %1$s</string>
+    <string name="result_share_class_scores">Class scores:</string>
+    <string name="result_share_score_item">- %1$s: %2$d%%</string>
+    <string name="result_share_footer">Shared from the SapiSehat app — This is an early indication, not a final diagnosis.</string>
+    <string name="result_share_chooser">Share via</string>
+    <string name="result_advice_sehat">Cattle is healthy. Continue routine monitoring.</string>
+    <string name="result_advice_fmd">Isolate cattle immediately\nContact veterinarian\nReport to Livestock Office</string>
+    <string name="result_advice_lsd">Separate from other livestock\nContact veterinarian\nCheck other livestock</string>
+    <string name="result_advice_insufficient_visual_evidence">Retake the photo with good lighting and clear focus\nMake sure visible symptoms fill the photo area\nContact an animal health officer if unsure</string>
+    <string name="result_confidence_high">High</string>
+    <string name="result_confidence_medium">Medium</string>
+    <string name="result_confidence_low">Low</string>
+    <string name="result_warning_medium">Medium confidence result. Consider re-examination for more accurate results.</string>
+    <string name="result_warning_low">Result is unreliable. Please retake the scan with better photo conditions.</string>
+    <string name="result_unreliable_title">⚠️ Insufficient Visual Evidence</string>
+    <string name="result_unreliable_body">The visual evidence is not enough to provide a meaningful disease indication. Please retake the photo with good lighting, clear focus, and visible symptoms in frame.</string>
+    <string name="result_btn_retake_low">Retake (Recommended)</string>
+    <string name="result_saved">Result saved</string>
+    <string name="result_saved_note_title">Saved Note</string>
+    <string name="result_all_scores">All Scores</string>
+    <string name="result_advice_title">⚠️ Handling Advice</string>
+    <string name="result_learn_more">Learn More</string>
+    <string name="result_disclaimer">This is an early indication from an AI model, not a final diagnosis. Consult a veterinarian for confirmation.</string>
+    <string name="result_metadata_title">Technical Information</string>
+    <string name="result_metadata_app_version">App Version: %1$s</string>
+    <string name="result_metadata_model_version">Model Version: %1$s</string>
+    <string name="result_metadata_preprocessing">Preprocessing: %1$s</string>
+    <string name="result_metadata_source">Image Source: %1$s</string>
+    <string name="result_source_camera">Camera</string>
+    <string name="result_source_gallery">Gallery</string>
+    <string name="result_metadata_location">Location: %1$s</string>
+    <string name="result_location_source_gps">GPS</string>
+    <string name="result_location_source_manual">Manual</string>
+    <string name="result_metadata_consent">Upload Consent: %1$s</string>
+    <string name="result_consent_allowed">Allowed</string>
+    <string name="result_consent_denied">Denied</string>
+    <string name="result_consent_undecided">Undecided</string>
+    <string name="result_accessibility_summary">Early indication: %1$s, confidence %2$d percent, level %3$s, mode %4$s</string>
+
+    <!-- History -->
+    <string name="history_title">Detection History</string>
+    <string name="history_empty">No examinations yet</string>
+    <string name="history_empty_filter">No results matching this filter</string>
+    <string name="history_clear_filter">Clear Filter</string>
+    <string name="history_filter_all">All</string>
+    <string name="history_filter_sehat">Healthy</string>
+    <string name="history_filter_fmd">FMD</string>
+    <string name="history_filter_lsd">LSD</string>
+    <string name="history_filter_online">Online</string>
+    <string name="history_filter_offline">Offline</string>
+    <string name="history_delete_title">Delete Record</string>
+    <string name="history_delete_message">Delete this examination result?</string>
+    <string name="history_delete_all_title">Delete All</string>
+    <string name="history_delete_all_message">Delete all examination history?</string>
+    <string name="history_deleted">Record deleted</string>
+    <string name="history_undo">Undo</string>
+    <string name="history_all_deleted">All history deleted</string>
+    <string name="history_detail_tap">Tap to view details</string>
+    <string name="history_confidence_percent">%1$d%% confident</string>
+
+    <!-- Guide -->
+    <string name="guide_title">Guide</string>
+    <string name="guide_search_placeholder">Search guides…</string>
+    <string name="guide_empty_not_found">No guides found</string>
+    <string name="guide_read_more">Read →</string>
+    <string name="guide_article_not_found">Article not found.</string>
+    <string name="guide_action_search">Search</string>
+    <string name="guide_action_filter">Filter</string>
+    <string name="guide_action_clear">Clear</string>
+    <string name="guide_tab_app">App Usage</string>
+    <string name="guide_tab_fmd">FMD</string>
+    <string name="guide_tab_lsd">LSD</string>
+    <string name="guide_tab_healthy">Healthy Cattle</string>
+
+    <!-- Guide: App Usage -->
+    <string name="guide_app_title_1">Your First Scan</string>
+    <string name="guide_app_summary_1">A complete guide to using the scan feature to detect diseases in your cattle.</string>
+    <string name="guide_app_body_1">How to Scan\n\nOpen SapiSehat and make sure you are on the Scan tab. Point the camera at the cattle you want to examine.\n\nTips for Taking Good Photos\n\n• Take the photo from 1–2 meters away so the entire body is clearly visible\n• Ensure adequate lighting and avoid shadows on the body\n• Position the camera parallel to the cattle\'s body, not from above\n• Avoid blurry, too distant, or obstructed images\n• Focus on areas showing symptoms (mouth, hooves, or skin)\n\nAfter Taking a Photo\n\nThe app will process the image and display the early detection result within seconds. Results include the early indication of detected disease, confidence score, and initial treatment recommendations.\n\nYou can also select an image from your gallery by tapping the gallery icon at the bottom of the camera screen.</string>
+
+    <string name="guide_app_title_2">Online vs Offline Mode</string>
+    <string name="guide_app_summary_2">Differences between online and offline inference modes, and when to use each.</string>
+    <string name="guide_app_body_2">Online Mode\n\nIn online mode, the image is sent to the server for analysis using the full MobileNetV2 model. This mode requires a stable internet connection.\n\nOnline mode advantages:\n• Higher accuracy using the full server-side model\n• Automatic model updates without needing to update the app\n\nOffline Mode\n\nIn offline mode, analysis is performed directly on your device using TensorFlow Lite. This mode works without an internet connection.\n\nOffline mode advantages:\n• Works in locations without internet signal\n• Faster processing since no data is sent to the server\n• Image data stays on your device (more private)\n\nWhen to Use Each?\n\nUse online mode when you have a stable internet connection and need the highest accuracy results. Use offline mode when in the field without signal or when you need instant results.\n\nThe app will automatically switch to offline mode if the server cannot be reached.</string>
+
+    <string name="guide_app_title_3">Understanding Early Detection Results</string>
+    <string name="guide_app_summary_3">How to read confidence scores and understand the reliability of detection results.</string>
+    <string name="guide_app_body_3">Confidence Score\n\nEvery early detection result includes a confidence score as a percentage. This score indicates how certain the model is about the detection result.\n\nConfidence Levels\n\n• High (≥80%): The model is very confident in the result. Results can be relied upon for initial action.\n• Medium (60–79%): The model is fairly confident, but it is recommended to rescan with a clearer photo or from a different angle.\n• Low (&lt;60%): The model is uncertain. Rescan with better photo conditions. If results remain low, consult a veterinarian immediately.\n\nPer-Class Scores\n\nBesides the main result, the app displays scores for each class (Healthy, FMD, LSD). This helps you see the distribution of possible indications.\n\nWhen to Rescan?\n\n• Confidence score below 60%\n• Photo taken was blurry or poorly lit\n• Result does not match visually observed symptoms\n\nImportant: Results from this app are an early detection aid, not a replacement for professional veterinary diagnosis.</string>
+
+    <!-- Guide: FMD -->
+    <string name="guide_fmd_title_1">Understanding FMD</string>
+    <string name="guide_fmd_summary_1">Basic information about Foot and Mouth Disease, its causes, and impact on livestock.</string>
+    <string name="guide_fmd_body_1">What Is FMD?\n\nFoot and Mouth Disease (FMD), known as PMK (Penyakit Mulut dan Kuku) in Indonesia, is a highly contagious acute viral disease caused by a virus from the genus Aphthovirus, family Picornaviridae. It affects all cloven-hoofed animals including cattle, buffalo, sheep, goats, and pigs.\n\nEconomic Impact\n\nFMD causes enormous economic losses due to:\n• Permanent weight loss in livestock\n• Milk production decrease of 50–80%\n• Reduced fertility and reproductive disorders\n• High mortality in young animals\n• Barriers to national and international livestock trade\n\nVirus Characteristics\n\n• Incubation period: 2–14 days\n• Morbidity: can reach 100% in susceptible populations\n• Mortality: generally low in adult animals (&lt;5%), but high in calves (up to 50%)\n• Virus can survive in the environment, bones, and dairy products\n\nSource: Indonesian Ministry of Agriculture, WOAH (World Organisation for Animal Health)</string>
+
+    <string name="guide_fmd_title_2">Clinical Signs of FMD</string>
+    <string name="guide_fmd_summary_2">Clinical signs of FMD in cattle from early to advanced stages.</string>
+    <string name="guide_fmd_body_2">Early Stage (Days 1–3)\n\n• High fever (40–41°C)\n• Drastically reduced appetite\n• Sudden drop in milk production\n• Cattle appear lethargic and reluctant to move\n\nVesicle Formation Stage (Days 3–7)\n\n• Fluid-filled blisters/vesicles appear on:\n  - Tongue, gums, and palate\n  - Lips and nostrils\n  - Skin between and above the hooves\n  - Teats\n• Excessive salivation (hypersalivation) with foaming\n• Characteristic chewing sounds\n• Lameness due to hoof lesions\n\nErosion Stage (Days 7–14)\n\n• Vesicles rupture forming open erosions/wounds\n• Oral lesions cause difficulty eating\n• Hoof lesions cause severe lameness\n• Risk of secondary bacterial infection\n\nSigns in Calves\n\n• Sudden death without blister symptoms (myocarditis)\n• Higher mortality rate compared to adult cattle\n\nSource: Indonesian Agricultural Extension, Agropustaka APVI</string>
+
+    <string name="guide_fmd_title_3">FMD Transmission and Prevention</string>
+    <string name="guide_fmd_summary_3">How FMD virus spreads and biosecurity measures to prevent outbreaks.</string>
+    <string name="guide_fmd_body_3">Transmission Routes\n\nFMD virus spreads through:\n• Direct contact with infected animals\n• Air (aerosol) — virus can spread up to 60 km by wind\n• Contaminated farm equipment\n• Livestock transport vehicles\n• Animal products (meat, milk, hides)\n• Humans (clothing, footwear) who contacted sick animals\n\nThe virus enters through the mouth or nose, multiplies in the nasopharynx, then spreads through the bloodstream throughout the body.\n\nPrevention Measures\n\n1. Vaccination\n• Conduct routine vaccination per government program\n• Revaccinate every 6 months\n• Ensure all livestock in the population are vaccinated\n\n2. Farm Biosecurity\n• Restrict access of people and vehicles to farm areas\n• Provide disinfectant footbaths at farm entrances\n• Use dedicated clothing and footwear for the farm\n• Clean and disinfect equipment regularly\n\n3. Quarantine\n• Quarantine new livestock for at least 14 days\n• Monitor for clinical signs during quarantine\n• Do not mix new livestock with existing population until quarantine is complete\n\n4. Movement Control\n• Avoid purchasing livestock from outbreak areas\n• Check animal health certificates when buying livestock\n• Report suspicious livestock at markets to veterinary services\n\nSource: Medion, Indonesian Ministry of Agriculture</string>
+
+    <string name="guide_fmd_title_4">FMD First Response</string>
+    <string name="guide_fmd_summary_4">Immediate steps to take when cattle show FMD symptoms.</string>
+    <string name="guide_fmd_body_4">Immediate Steps\n\n1. Isolate\n• Immediately separate cattle showing symptoms from healthy livestock\n• Place in a separate quarantine pen\n• Use separate equipment for sick animals\n\n2. Report\n• Immediately report to local livestock and animal health services\n• Contact the nearest veterinarian\n• Record the number of cattle showing symptoms\n\n3. Wound Care\n• Clean oral lesions with mild antiseptic solution\n• Apply wound medication to hoof lesions\n• Provide soft feed that is easy to eat (fine grass, wet concentrate)\n\n4. Supportive Therapy\n• Provide multivitamins and minerals to maintain immunity\n• Ensure adequate clean drinking water\n• Administer antibiotics if secondary infection occurs (by veterinary prescription)\n\nFarm Disinfection\n\n• Clean pens of manure and feed residue\n• Spray with disinfectant (4% sodium carbonate or 0.2% citric acid)\n• Disinfect equipment, vehicles, and footwear\n• Repeat disinfection daily during outbreak\n\nWhen to Call a Veterinarian?\n\n• Immediately when first symptoms appear\n• If there is sudden death in calves\n• If lesions do not improve after 7 days of care\n• If cattle refuse to eat for more than 3 days\n\nSource: Medion, Kendal District Agricultural Service</string>
+
+    <!-- Guide: LSD -->
+    <string name="guide_lsd_title_1">Understanding LSD</string>
+    <string name="guide_lsd_summary_1">Basic information about Lumpy Skin Disease, its causes, and spread in Indonesia.</string>
+    <string name="guide_lsd_body_1">What Is LSD?\n\nLumpy Skin Disease (LSD) is a viral disease affecting cattle and buffalo, caused by the Lumpy Skin Disease Virus (LSDV) from the family Poxviridae, genus Capripoxvirus.\n\nSpread in Indonesia\n\nLSD is an exotic disease originally endemic to Africa. Since 2012, it has spread to the Middle East, Southeast Europe, and Asia. In Indonesia, LSD cases have been reported and are a serious concern for farmers.\n\nImpact on Livestock\n\n• Significant decrease in milk production\n• Reproductive disorders (infertility) in both male and female cattle\n• Permanent skin damage reducing market value\n• Weight loss\n• Death from secondary infections (5–10% in severe cases)\n\nVirus Characteristics\n\n• Incubation period: 4–28 days\n• Morbidity: 5–45% depending on population and vectors\n• Virus can survive in skin scabs for up to 35 days\n• All ages and breeds are susceptible, especially Bos taurus (Friesian, Jersey)\n\nSource: Indonesian Agricultural Repository, WOAH, BBPKH Cinagara</string>
+
+    <string name="guide_lsd_title_2">Clinical Signs of LSD</string>
+    <string name="guide_lsd_summary_2">Clinical signs of LSD in cattle, from early symptoms to complications.</string>
+    <string name="guide_lsd_body_2">Early Symptoms\n\n• High fever (40–41°C) lasting several days\n• Swollen lymph nodes (especially in neck and thigh)\n• Watery eyes and nose\n• Decreased appetite\n• Sudden drop in milk production\n\nMain Symptom — Skin Nodules\n\n• Hard nodules appear on the skin, 2–5 cm in diameter\n• Nodules spread across the body: head, neck, back, legs, udder, and scrotum\n• Nodules are round, firm, and involve all skin layers\n• Number varies from a few to hundreds\n• Nodules may develop into open wounds (ulcers)\n\nComplications\n\n• Secondary bacterial infection of open wounds\n• Leg swelling (edema)\n• Pneumonia\n• Reproductive disorders: abortion, temporary or permanent infertility\n• Mastitis in dairy cattle\n\nDifferences from Other Skin Conditions\n\n• LSD nodules involve all skin layers (not just the surface)\n• Nodules are evenly distributed across the body\n• Accompanied by fever and swollen lymph nodes\n• Different from ordinary insect bites which are only superficial\n\nSource: BBPKH Cinagara, Bogor District Livestock Service</string>
+
+    <string name="guide_lsd_title_3">LSD Transmission and Prevention</string>
+    <string name="guide_lsd_summary_3">How LSD spreads through insect vectors and effective prevention measures.</string>
+    <string name="guide_lsd_body_3">Transmission Routes\n\nPrimary LSD transmission is through blood-sucking insect vectors:\n• Mosquitoes (Aedes, Culex)\n• Blood-sucking flies (Stomoxys, Tabanus)\n• Ticks (Rhipicephalus, Amblyomma)\n\nOther transmission:\n• Direct contact with skin lesions of infected animals\n• Excretion through saliva, nasal discharge, blood, semen, and milk\n• Contaminated equipment (needles, cutting tools)\n• Contaminated feed and water\n\nPrevention\n\n1. Vector Control\n• Install fly traps around the farm\n• Use insecticides safe for livestock\n• Remove standing water around the farm (mosquito breeding sites)\n• Use nets or curtains on pens if possible\n• Spray pens with insecticide regularly\n\n2. Vaccination\n• Vaccination is the most effective way to prevent LSD\n• Use homologous (LSDV) or heterologous (Sheeppox/Goatpox) vaccines\n• Vaccinate the entire cattle population in at-risk areas\n\n3. Biosecurity\n• Quarantine new livestock for at least 28 days\n• Avoid sharing needles between animals\n• Separate sick from healthy livestock\n• Restrict livestock movement from infected areas\n\nSource: Indonesian Agricultural Repository, BPPSDMP Library</string>
+
+    <string name="guide_lsd_title_4">LSD First Response</string>
+    <string name="guide_lsd_summary_4">Actions to take when cattle show LSD symptoms.</string>
+    <string name="guide_lsd_body_4">Immediate Steps\n\n1. Isolate\n• Immediately separate cattle showing skin nodules from healthy livestock\n• Place in a separate pen protected from insects\n• Use separate equipment (buckets, brushes, ropes)\n\n2. Report\n• Report to local livestock and animal health services\n• Contact a veterinarian for examination and diagnosis confirmation\n• Record the number of affected cattle and date of onset\n\n3. Skin Lesion Care\n• Clean ruptured nodules with antiseptic solution (povidone iodine)\n• Apply antibiotic ointment to prevent secondary infection\n• Keep the pen clean to prevent wound infection\n• Protect wounds from flies with repellent\n\n4. Supportive Therapy\n• Provide anti-inflammatory medication to reduce fever and pain (by veterinary prescription)\n• Administer systemic antibiotics if secondary infection occurs\n• Ensure adequate nutrition with quality feed\n• Provide additional vitamins and minerals\n\n5. Vector Control in Isolation Pen\n• Spray isolation pen with insecticide\n• Install fly traps\n• Clean manure regularly\n\nWhen to Call a Veterinarian?\n\n• Immediately when first skin nodules appear\n• If cattle experience breathing difficulty\n• If severe leg swelling occurs\n• If pregnant cattle show signs of abortion\n• If nodules spread rapidly to many animals\n\nSource: Bogor District Livestock Service, Indonesian Agricultural Repository</string>
+
+    <!-- Guide: Healthy Cattle -->
+    <string name="guide_healthy_title_1">Signs of Healthy Cattle</string>
+    <string name="guide_healthy_summary_1">Visual signs of healthy cattle as a baseline for early disease detection.</string>
+    <string name="guide_healthy_body_1">General Appearance\n\n• Proportional body with good body condition (not too thin or fat)\n• Shiny, clean, and even coat\n• Elastic, clean skin without lesions, lumps, or scabs\n• Bright, clear, and responsive eyes\n• Moist nose without excessive discharge\n\nBehavior\n\n• Active and responsive to environment\n• Good appetite and regular rumination\n• Stands upright with all four feet flat\n• Moves normally without lameness\n• Normal interaction with other livestock\n\nNormal Vital Signs\n\n• Body temperature: 38–39.5°C\n• Respiratory rate: 15–30 breaths per minute\n• Heart rate: 40–80 beats per minute\n• Rumination: 40–70 chews per minute\n\nProduction\n\n• Stable milk production according to lactation period\n• Weight gain meeting targets\n• Regular reproductive cycle\n\nWhen to Be Alert?\n\nCheck immediately if you notice:\n• Sudden loss of appetite\n• Fever (temperature above 39.5°C)\n• Skin changes (lumps, lesions, hair loss)\n• Lameness or reluctance to stand\n• Excessive salivation\n• Sudden drop in milk production\n\nUse SapiSehat\'s scan feature regularly for early detection.</string>
+
+    <string name="guide_healthy_title_2">General Prevention and Biosecurity</string>
+    <string name="guide_healthy_summary_2">Daily routines and biosecurity measures to maintain livestock health.</string>
+    <string name="guide_healthy_body_2">Pen Management\n\n• Clean pens of manure at least twice daily\n• Ensure good pen ventilation for air circulation\n• Provide clean feeding and drinking facilities\n• Avoid overcrowding in pens\n• Ensure pen floors are non-slip and easy to clean\n\nNutrition\n\n• Provide quality forage (fresh grass, legumes)\n• Add concentrate according to production needs\n• Provide mineral blocks or mineral mix\n• Ensure clean drinking water is available at all times\n• Adjust feed portions to condition (pregnant, lactating, growing)\n\nVaccination Program\n\n• Follow vaccination programs from local livestock services\n• FMD vaccine: every 6 months\n• LSD vaccine: per regional recommendations\n• Anthrax, SE, Brucellosis vaccines: per schedule\n• Record all vaccinations in livestock health cards\n\nVector Control\n\n• Remove standing water around the farm\n• Install fly traps\n• Use safe insecticides regularly\n• Cut wild grass around the farm\n• Manage farm waste properly\n\nDaily Biosecurity\n\n• Restrict visitor access to farm areas\n• Provide dedicated footwear and disinfectant footbaths\n• Wash hands before and after handling livestock\n• Use separate equipment for sick animals\n• Quarantine new livestock for at least 14 days\n\nRoutine Checks\n\n• Check livestock condition every morning and evening\n• Measure body temperature if livestock appears lethargic\n• Use SapiSehat for regular scans\n• Schedule veterinary checkups at least twice yearly\n• Record all health events in a recording book\n\nSource: Indonesian Ministry of Agriculture, Livestock Services</string>
+
+    <!-- About -->
+    <string name="about_title">About</string>
+    <string name="about_logo_placeholder">🐄</string>
+    <string name="about_desc">SapiSehat is an AI-powered cattle disease detection app that helps farmers quickly and accurately identify Foot and Mouth Disease (FMD) and Lumpy Skin Disease (LSD) in cattle.</string>
+    <string name="about_team_title">Development Team</string>
+    <string name="about_team_member_1">Raditya Rafif Pratama Sasmita</string>
+    <string name="about_team_member_2">Noval Putra Ramadhan</string>
+    <string name="about_institution_title">Institution</string>
+    <string name="about_institution">Informatics Engineering, Politeknik Negeri Semarang</string>
+    <string name="about_supervisor_title">Supervisor</string>
+    <string name="about_supervisor">[Supervisor — TBD]</string>
+    <string name="about_tech_title">Technology</string>
+    <string name="about_tech_1">MobileNetV2 (CNN)</string>
+    <string name="about_tech_2">TensorFlow Lite</string>
+    <string name="about_tech_3">FastAPI + Python</string>
+    <string name="about_tech_4">Jetpack Compose + Kotlin</string>
+    <string name="about_tech_5">CameraX + Room + Hilt</string>
+    <string name="about_source_title">Dataset Sources</string>
+    <string name="about_source_1">Kaggle</string>
+    <string name="about_source_2">Roboflow Universe</string>
+    <string name="about_source_3">Field data</string>
+    <string name="about_version">Version</string>
+    <string name="about_copyright">© 2026 SapiSehat Team | Politeknik Negeri Semarang</string>
+
+    <!-- Settings -->
+    <string name="settings_title">Settings</string>
+    <string name="settings_language">Language</string>
+    <string name="settings_language_system">System Default</string>
+    <string name="settings_language_id">Indonesian</string>
+    <string name="settings_language_en">English</string>
+    <string name="settings_text_size">Text Size</string>
+    <string name="settings_text_size_system">System Default</string>
+    <string name="settings_text_size_small">Small</string>
+    <string name="settings_text_size_medium">Medium</string>
+    <string name="settings_text_size_large">Large</string>
+    <string name="settings_server_url">Server URL</string>
+    <string name="settings_server_url_title">Set Server URL</string>
+    <string name="settings_server_url_label">URL</string>
+    <string name="settings_clear_history">Clear All History</string>
+    <string name="settings_clear_history_message">Permanently delete all examination history? This is an immediate permanent purge of all records and associated files. This cannot be undone.</string>
+    <string name="settings_reset_onboarding">Reset Onboarding</string>
+    <string name="settings_reset_onboarding_message">Show the introduction guide again?</string>
+    <string name="settings_history_cleared">All history cleared</string>
+    <string name="settings_onboarding_reset">Onboarding reset</string>
+    <string name="settings_upload_consent">Upload Images to Server</string>
+    <string name="settings_upload_consent_description">If disabled, only offline detection will be used. Images will not be sent to the server.</string>
+    <string name="settings_crash_reporting">Crash Reporting</string>
+    <string name="settings_crash_reporting_description">Allow sending anonymous crash reports to help improve app quality.</string>
+    <string name="settings_purge_deleted">Purge Expired Deleted Records</string>
+    <string name="settings_purge_deleted_description">Permanently remove soft-deleted records older than 30 days</string>
+    <string name="settings_purge_deleted_message">Permanently remove all soft-deleted records older than 30 days? This cannot be undone.</string>
+    <string name="settings_purge_done">Deleted records purged successfully</string>
+    <string name="settings_location_title">GPS Auto-Location</string>
+    <string name="settings_location_description">Use GPS to automatically save coarse location when scanning. Requires location permission.</string>
+    <string name="settings_location_status_granted">Permission granted</string>
+    <string name="settings_location_status_denied">Permission not granted</string>
+    <string name="settings_location_status_disabled">Disabled</string>
+    <string name="settings_location_manual_title">Manual Location</string>
+    <string name="settings_location_manual_desc">Enter location coordinates manually (optional)</string>
+    <string name="settings_location_lat_hint">Latitude (e.g. -6.20)</string>
+    <string name="settings_location_lng_hint">Longitude (e.g. 106.85)</string>
+    <string name="settings_location_manual_saved">Manual location saved</string>
+    <string name="settings_location_manual_cleared">Manual location cleared</string>
+
+    <!-- Consent Panel -->
+    <string name="consent_title">Image Upload Consent</string>
+    <string name="consent_info_optional">Image upload to the server is optional</string>
+    <string name="consent_info_exif">EXIF metadata is removed before upload</string>
+    <string name="consent_info_no_retention">Server does not retain images after analysis</string>
+    <string name="consent_info_offline">Offline detection is available if upload is declined</string>
+    <string name="consent_btn_allow">Allow</string>
+    <string name="consent_btn_offline">Use Offline</string>
+    <string name="settings_app_version">App Version</string>
+    <string name="settings_model_version">Model Version</string>
+    <string name="settings_privacy_title">Privacy &amp; Data</string>
+    <string name="settings_privacy_exif">EXIF metadata is removed before upload</string>
+    <string name="settings_privacy_no_retention">Server does not retain images after analysis</string>
+    <string name="settings_privacy_local_history">Scan history is stored locally on device</string>
+    <string name="settings_privacy_offline">Offline detection available without sending data</string>
+    <string name="settings_privacy_location">Location data is stored locally only, never uploaded</string>
+
+    <!-- Quality Gate -->
+    <string name="quality_warning_title">Image Quality Issue</string>
+    <string name="quality_too_blurry">Image is too blurry. Hold steady and ensure good focus.</string>
+    <string name="quality_too_dark">Image is too dark. Move to a brighter area.</string>
+    <string name="quality_too_small">Image resolution is too low. Move closer to the subject.</string>
+    <string name="quality_retake">Retake</string>
+    <string name="quality_choose_another">Choose Another</string>
+    <string name="quality_unreadable">Image is unreadable. Ensure adequate lighting and hold the camera steady.</string>
+    <string name="quality_error_load">Failed to load image</string>
+    <string name="quality_error_check">Quality check failed</string>
+</resources>

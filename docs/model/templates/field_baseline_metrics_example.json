@@ -1,0 +1,7 @@
+{
+  "macro_f1": 0.2222,
+  "fmd_recall": 1.0,
+  "lsd_recall": 0.0,
+  "insufficient_visual_evidence_rate": 0.3333,
+  "false_confident_result_rate": 0.3333
+}

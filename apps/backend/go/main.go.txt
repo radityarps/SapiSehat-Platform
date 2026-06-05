@@ -1,0 +1,20 @@
+"""Go gateway implementation - Phase 3 (Future scaling to 1000+ concurrent users)."""
+
+# Placeholder for Phase 3 Go implementation
+# This will be implemented when concurrent traffic exceeds 200 req/min
+
+# Phase 3 will replace FastAPI HTTP server while keeping Python inference service
+# Architecture:
+#   Go HTTP Server (port 8000) 
+#     ↓
+#   Python Inference Service (port 9000)
+#     ↓
+#   PyTorch Model
+
+# Benefits of Go gateway:
+# - Better concurrency handling (goroutines)
+# - Lower memory per connection
+# - Easier horizontal scaling
+# - Native HTTP/2 support
+
+# For now, FastAPI handles all traffic with Gunicorn workers

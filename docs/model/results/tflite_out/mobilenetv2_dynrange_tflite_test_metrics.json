@@ -1,0 +1,28 @@
+{
+  "model": "mobilenetv2",
+  "variant": "dynrange_tflite",
+  "accuracy": 0.9595959595959596,
+  "macro_f1": 0.9618403034333284,
+  "per_class_f1": {
+    "FMD": 0.9702970297029703,
+    "LSD": 0.9552238805970149,
+    "healthy": 0.96
+  },
+  "confusion_matrix": [
+    [
+      49,
+      0,
+      0
+    ],
+    [
+      3,
+      128,
+      6
+    ],
+    [
+      0,
+      3,
+      108
+    ]
+  ]
+}

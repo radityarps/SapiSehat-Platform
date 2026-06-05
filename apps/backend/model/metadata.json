@@ -1,0 +1,45 @@
+{
+  "model_version": "cattle-disease-mobilenetv2-v20260601-s42",
+  "architecture": "mobilenetv2",
+  "selected_in_issue": 21,
+  "exported_in_issue": 22,
+  "integrated_in_issue": 23,
+  "framework": "TensorFlow/Keras",
+  "tensorflow_version": "2.18.0",
+  "keras_artifact": "mobilenetv2_best.keras",
+  "keras_sha256": "33d69c371cb1e55e06859d4b618d9b6ea3e26a2b2946c4e1d00f20375f0eb935",
+  "class_order": ["FMD", "LSD", "healthy"],
+  "class_indices": {
+    "0": "FMD",
+    "1": "LSD",
+    "2": "healthy"
+  },
+  "display_label_keys": {
+    "FMD": "disease.fmd",
+    "LSD": "disease.lsd",
+    "healthy": "disease.healthy"
+  },
+  "supported_disease_classes": ["FMD", "LSD", "healthy"],
+  "preprocessing": {
+    "input_size": [224, 224],
+    "channels": 3,
+    "color_mode": "RGB",
+    "rescale": "1/255",
+    "exif_orientation_correction": "before resize where available",
+    "resize_method": "bilinear"
+  },
+  "test_split_metrics": {
+    "accuracy": 0.9696969696969697,
+    "macro_f1": 0.9717998444558437,
+    "evaluated_on_split": "test"
+  },
+  "tflite_dynamic_range": {
+    "android_asset": "cattle_disease.tflite",
+    "sha256": "ac02f87c496f5268f0fc689c4959c8e001a6ac520a4429fa27a8ed580e16d4ac",
+    "size_mb": 2.5447998046875,
+    "accuracy_drop": 0.010101010101010166,
+    "macro_f1_drop": 0.009959541022515284,
+    "overall_pass": true
+  },
+  "warning": "Early detection / image classification model only; not a final clinical diagnosis or veterinarian replacement."
+}

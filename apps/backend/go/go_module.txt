@@ -1,0 +1,11 @@
+"""
+Go module definition for Phase 3 implementation.
+
+This is a placeholder for the future Go gateway that will
+replace the FastAPI HTTP server for improved concurrency handling.
+
+To use in Phase 3:
+1. Rename go_module.mod to go.mod
+2. Run: go mod tidy
+3. Update main.go with actual Go code
+"""

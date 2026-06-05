@@ -1,0 +1,12 @@
+{
+  "input_size": [
+    224,
+    224
+  ],
+  "channels": 3,
+  "color_mode": "RGB",
+  "rescale": "1/255",
+  "exif_orientation_correction": "before resize where available",
+  "resize_method": "bilinear",
+  "note": "Deterministic inference preprocessing. Same for Keras and TFLite."
+}

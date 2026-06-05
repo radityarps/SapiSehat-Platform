@@ -1,0 +1,5 @@
+image_id,image_path,source_session_id,field_source,disease_class,is_hard_negative,label_tier,reviewer_role,reviewer_id,review_date,review_notes,train_eligible,validation_eligible,test_eligible,scan_history_record_id
+field-0001,field_images/session-a/fmd-mouth-001.jpg,session-a,farm-a,FMD,false,expert_reviewed,veterinarian,vet-01,2026-06-03,Visible mouth lesion; usable close-up,include,include,exclude,
+field-0002,field_images/session-a/lsd-skin-001.jpg,session-a,farm-a,LSD,false,researcher_reviewed,researcher,researcher-01,2026-06-03,Usable image but no expert confirmation yet,include,exclude,exclude,
+field-0003,field_images/session-b/farmer-weak-healthy-001.jpg,session-b,farm-b,healthy,false,farmer_weak,farmer,farmer-01,2026-06-03,Farmer says healthy; weak label only,include,exclude,exclude,local-history-123
+field-0004,field_images/session-b/hard-negative-blurry-001.jpg,session-b,farm-b,,true,expert_reviewed,animal_health_officer,aho-01,2026-06-03,Too blurry for disease-class evidence,include,exclude,exclude,

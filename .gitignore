@@ -1,0 +1,188 @@
+# =============================================================================
+# SapiSehat Monorepo — .gitignore
+# =============================================================================
+
+# ─── OS files ─────────────────────────────────────────────────────────────────
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+desktop.ini
+
+# ─── IDEs ─────────────────────────────────────────────────────────────────────
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.vscode-server/
+*.sublime-workspace
+*.sublime-project
+.kiro*/
+.specs/
+
+# ─── Temporary files ──────────────────────────────────────────────────────────
+*.tmp
+tmp*
+*.bak
+*.swp
+*.swo
+*~
+.~*
+
+# ─── Environment / secrets ────────────────────────────────────────────────────
+.env
+.env.local
+.env.*.local
+secrets.json
+local.properties
+
+# =============================================================================
+# apps/backend (Python / FastAPI)
+# =============================================================================
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+env.bak/
+venv.bak/
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+.eggs/
+*.egg
+MANIFEST
+develop-eggs/
+downloads/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+.installed.cfg
+
+# Test & coverage
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+coverage.xml
+*.cover
+
+# Logs
+*.log
+apps/backend/logs/
+
+# Model weights — large files, share out-of-band
+apps/backend/model/*.pth
+apps/backend/model/*.pt
+apps/backend/model/*.onnx
+
+# Dataset images & generated dataset-prep artifacts — never commit real data
+apps/backend/dataset_artifacts/
+dataset_artifacts/
+roboflow.zip
+
+# Model training run outputs & versioned artifact bundles (copy back deliberately)
+run_out/
+model_training_artifacts_*.zip
+
+# Docker local overrides
+Dockerfile.local
+
+# =============================================================================
+# apps/mobile (Android / Kotlin)
+# =============================================================================
+
+# Gradle build outputs
+apps/mobile/.gradle/
+apps/mobile/build/
+apps/mobile/**/build/
+
+# APK / AAB / keystore artifacts
+*.apk
+*.aab
+*.ap_
+*.dex
+*.class
+
+# Keystore — NEVER commit
+*.jks
+*.keystore
+keystore.properties
+
+# Android generated
+apps/mobile/gen/
+apps/mobile/bin/
+apps/mobile/captures/
+apps/mobile/lint.xml
+
+# TFLite model inside assets — share out-of-band (optional, uncomment if large)
+# apps/mobile/app/src/main/assets/*.tflite
+
+# =============================================================================
+# Go (apps/backend/go)
+# =============================================================================
+
+# Go build output
+apps/backend/go/sapisehat-gateway
+apps/backend/go/*.exe
+
+# =============================================================================
+# Node / frontend tooling (if added later)
+# =============================================================================
+node_modules/
+package-lock.json
+yarn.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# =============================================================================
+# LEANN vector database indexes (generated, large binary files)
+# =============================================================================
+.leann/
+
+# =============================================================================
+# Pi Coding Agent
+# =============================================================================
+.pi*
+
+# =============================================================================
+# Thesis/proposal/private documents live in separate repo
+# =============================================================================
+*.docx
+*.pdf
+*.pptx
+*.xlsx
+*.xls
+*.bib
+laporan/
+proposal/
+references/
+referensi/
+docs/Laporan/
+docs/Laporan-TA/
+docs/Proposal/
+docs/Pedoman/
+docs/laporan/
+docs/proposal/
+docs/references/
+docs/referensi/

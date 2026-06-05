@@ -1,0 +1,61 @@
+{
+  "model": "mobilenetv2",
+  "evaluated_on_split": "test",
+  "accuracy": 0.9696969696969697,
+  "macro_avg": {
+    "precision": 0.9675606561032374,
+    "recall": 0.9763924508450056,
+    "f1-score": 0.9717998444558437,
+    "support": 297.0
+  },
+  "weighted_avg": {
+    "precision": 0.9698551564954843,
+    "recall": 0.9696969696969697,
+    "f1-score": 0.9696494261586183,
+    "support": 297.0
+  },
+  "per_class": {
+    "FMD": {
+      "precision": 0.9607843137254902,
+      "recall": 1.0,
+      "f1-score": 0.98,
+      "support": 49.0
+    },
+    "LSD": {
+      "precision": 0.9776119402985075,
+      "recall": 0.9562043795620438,
+      "f1-score": 0.966789667896679,
+      "support": 137.0
+    },
+    "healthy": {
+      "precision": 0.9642857142857143,
+      "recall": 0.972972972972973,
+      "f1-score": 0.968609865470852,
+      "support": 111.0
+    }
+  },
+  "confusion_matrix": [
+    [
+      49,
+      0,
+      0
+    ],
+    [
+      2,
+      131,
+      4
+    ],
+    [
+      0,
+      3,
+      108
+    ]
+  ],
+  "class_order": [
+    "FMD",
+    "LSD",
+    "healthy"
+  ],
+  "params": 2422339,
+  "keras_size_mb": 22.72
+}

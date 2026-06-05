@@ -1,0 +1,11 @@
+{
+  "input_size": [
+    224,
+    224
+  ],
+  "channels": 3,
+  "color_mode": "RGB",
+  "rescale": "1/255",
+  "exif_orientation_correction": "before resize where available",
+  "note": "Inference preprocessing only; training augmentation is separate."
+}

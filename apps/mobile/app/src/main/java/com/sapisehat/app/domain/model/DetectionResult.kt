@@ -1,0 +1,27 @@
+package com.sapisehat.app.domain.model
+
+data class DetectionResult(
+    val id: Long = 0,
+    val imagePath: String? = null,
+    val label: String,
+    val displayLabel: String,
+    val confidence: Float,
+    val isReliable: Boolean,
+    val allScores: Map<String, Float>,
+    val inferenceMode: InferenceMode,
+    val consentStatus: ConsentStatus = ConsentStatus.UNDECIDED,
+    val timestamp: Long = 0L,
+    val processingMs: Int? = null,
+    val title: String? = null,
+    val description: String? = null,
+    val appVersion: String? = null,
+    val modelVersion: String? = null,
+    val imageSource: ImageSource? = null,
+    val preprocessingSummary: String? = null,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val locationSource: LocationSource? = null,
+    val deletedAt: Long? = null,
+    val pdfCachePath: String? = null,
+    val outcome: EarlyDetectionOutcome = EarlyDetectionOutcome.DISEASE_CLASS,
+)

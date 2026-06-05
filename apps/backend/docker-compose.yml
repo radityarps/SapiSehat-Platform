@@ -1,0 +1,46 @@
+services:
+  # FastAPI inference server
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sapisehat-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - FASTAPI_ENV=development
+      - DEBUG=true
+      - DEVICE=cpu
+      - LOG_LEVEL=info
+      - PYTHONUNBUFFERED=1
+      - MODEL_PATH=./model/mobilenetv2_best.keras
+    volumes:
+      - .:/app
+      - /app/__pycache__
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+    networks:
+      - sapisehat-network
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  sapisehat-network:
+    driver: bridge
+
+volumes:
+  logs:
+    driver: local

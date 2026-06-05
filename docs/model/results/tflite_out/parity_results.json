@@ -1,0 +1,24 @@
+{
+  "float32": {
+    "accuracy_drop": 0.0,
+    "macro_f1_drop": 0.0,
+    "per_class_f1_drops": {
+      "FMD": 0.0,
+      "LSD": 0.0,
+      "healthy": 0.0
+    },
+    "size_mb": 9.075607299804688,
+    "overall_pass": true
+  },
+  "dynamic_range": {
+    "accuracy_drop": 0.010101010101010166,
+    "macro_f1_drop": 0.009959541022515284,
+    "per_class_f1_drops": {
+      "FMD": 0.009702970297029712,
+      "LSD": 0.011565787299664065,
+      "healthy": 0.008609865470852074
+    },
+    "size_mb": 2.5447998046875,
+    "overall_pass": true
+  }
+}

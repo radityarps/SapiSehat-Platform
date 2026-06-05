@@ -1,0 +1,38 @@
+{
+  "model_version": "cattle-disease-mobilenetv2-v20260601-s42",
+  "metadata": {
+    "model_version": "cattle-disease-mobilenetv2-v20260601-s42",
+    "architecture": "mobilenetv2",
+    "seed": 42,
+    "epochs": 50,
+    "training_date": "2026-06-01T07:44:23.433447+00:00",
+    "platform": "kaggle",
+    "python_version": "3.12.13",
+    "tensorflow_version": "2.18.0",
+    "data_source_mode": "prepared_split_manifest",
+    "split_manifest": "/kaggle/working/dataset_artifacts/split_manifest.csv",
+    "dataset": {
+      "source": null,
+      "exists": false,
+      "note": "dry-run: no dataset"
+    },
+    "source_of_truth_script": "docs/model/evaluate_candidates.py",
+    "dry_run": false
+  },
+  "artifacts": [
+    "runtime_metadata.json",
+    "mobilenetv2_metrics.json",
+    "mobilenetv2.keras",
+    "mobilenetv2_confusion_matrix.png",
+    "comparison_summary.json",
+    "preprocessing.json",
+    "run_config.json",
+    "split_manifest.csv",
+    "DATASET_SPLIT_REPORT.md",
+    "LABEL_VALIDATION.md",
+    "class_indices.json",
+    "class_weights.json"
+  ],
+  "artifact_count": 12,
+  "generated": "2026-06-01T07:46:55.055369+00:00"
+}

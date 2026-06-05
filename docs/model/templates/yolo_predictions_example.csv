@@ -1,0 +1,5 @@
+image_id,symptom_category,x_min,y_min,x_max,y_max,confidence
+field-0001,fmd_mouth_lesion,0.21,0.30,0.47,0.59,0.82
+field-0001,fmd_hoof_lesion,0.61,0.65,0.81,0.90,0.76
+field-0002,lsd_skin_nodule,0.34,0.24,0.73,0.71,0.88
+field-0004,confusing_region,0.11,0.11,0.39,0.44,0.71
