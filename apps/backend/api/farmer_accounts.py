@@ -10,6 +10,7 @@ import re
 class FarmerConsentState(str, Enum):
     PRIVATE = "private"
     AGENCY_MONITORING = "agency_monitoring"
+    RESEARCH_AND_MONITORING = "research_and_monitoring"
 
 
 @dataclass(frozen=True)
@@ -59,6 +60,9 @@ class FarmerAccountStore:
             if account.id == farmer_id:
                 return account
         return None
+
+    def all_by_id(self) -> dict[str, FarmerAccount]:
+        return {account.id: account for account in self._accounts_by_phone.values()}
 
     def clear(self) -> None:
         self._accounts_by_phone.clear()

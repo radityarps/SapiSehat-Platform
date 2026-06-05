@@ -18,3 +18,16 @@ Issue #3 adds the first farmer identity tracer. Farmer account behavior:
 5. Stable farmer id is available for downstream cattle and detection records.
 
 The current FastAPI in-memory store is a tracer for the future Go gateway and PostgreSQL implementation.
+
+
+## Cattle-First Profile Tracer
+
+Issue #4 adds the first cattle-first profile path. Cattle profile behavior:
+
+1. Cattle profile must link to an existing farmer account.
+2. Profile stores tag/identity, sex, breed or `unknown`, age in months or birth year estimate, status, and location jurisdiction.
+3. Farmer-owned cattle can be listed and selected before starting early detection.
+4. Farmer cannot select another farmer's cattle.
+5. Agency cattle reads must use the same role-jurisdiction-consent access rule as farmer reads.
+
+The current FastAPI in-memory store is a tracer for the future Go gateway and PostgreSQL implementation.

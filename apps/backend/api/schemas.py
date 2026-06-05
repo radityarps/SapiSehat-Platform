@@ -91,3 +91,30 @@ class FarmerAccountResponse(BaseModel):
     jurisdiction_id: str
     consent_state: str
     created: bool
+
+
+class CattleProfileRequest(BaseModel):
+    """Create cattle profile linked to farmer account."""
+    tag: str = Field(min_length=1, max_length=80)
+    sex: str
+    breed: str = Field(default="unknown", max_length=120)
+    age_months: Optional[int] = Field(default=None, ge=0)
+    birth_year_estimate: Optional[int] = Field(default=None, ge=1900, le=2100)
+    status: str = "active"
+    jurisdiction_id: str = Field(min_length=1, max_length=120)
+
+class CattleProfileResponse(BaseModel):
+    """Cattle profile response."""
+    id: str
+    farmer_id: str
+    tag: str
+    sex: str
+    breed: str
+    age_months: Optional[int]
+    birth_year_estimate: Optional[int]
+    status: str
+    jurisdiction_id: str
+
+class CattleProfileListResponse(BaseModel):
+    """Selectable cattle list for detection."""
+    cattle: List[CattleProfileResponse]
