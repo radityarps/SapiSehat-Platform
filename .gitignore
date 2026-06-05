@@ -89,6 +89,7 @@ coverage.xml
 # Logs
 *.log
 apps/backend/logs/
+logs/
 
 # Model weights — large files, share out-of-band
 apps/backend/model/*.pth
@@ -106,6 +107,24 @@ model_training_artifacts_*.zip
 
 # Docker local overrides
 Dockerfile.local
+docker-compose.override.yml
+
+# Runtime uploads / retained media storage — never commit farmer/cattle data
+uploads/
+media/
+storage/
+apps/backend/uploads/
+apps/backend/media/
+apps/backend/storage/
+
+# Local database files / mounted PostgreSQL data
+*.db
+*.sqlite
+*.sqlite3
+postgres-data/
+pgdata/
+apps/backend/postgres-data/
+apps/backend/pgdata/
 
 # =============================================================================
 # apps/mobile (Android / Kotlin)
@@ -138,15 +157,26 @@ apps/mobile/lint.xml
 # apps/mobile/app/src/main/assets/*.tflite
 
 # =============================================================================
-# Go (apps/backend/go)
+# Go gateway
 # =============================================================================
 
 # Go build output
 apps/backend/go/sapisehat-gateway
 apps/backend/go/*.exe
+apps/backend/go/bin/
+apps/backend/go/tmp/
+apps/backend/go/coverage.out
+apps/backend/go/*.test
+apps/backend/go/.air.toml
+apps/gateway/bin/
+apps/gateway/tmp/
+apps/gateway/coverage.out
+apps/gateway/*.exe
+apps/gateway/*.test
+apps/gateway/.air.toml
 
 # =============================================================================
-# Node / frontend tooling (if added later)
+# Node / dashboard tooling
 # =============================================================================
 node_modules/
 package-lock.json
@@ -154,6 +184,25 @@ yarn.lock
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+
+# Next.js / TanStack dashboard outputs
+apps/dashboard/.next/
+apps/dashboard/out/
+apps/dashboard/dist/
+apps/dashboard/build/
+apps/dashboard/coverage/
+apps/dashboard/.turbo/
+apps/dashboard/.vercel/
+apps/dashboard/.env
+apps/dashboard/.env.local
+apps/dashboard/.env.*.local
+
+# Generic frontend build/cache outputs
+.next/
+.turbo/
+.vercel/
+coverage/
 
 # =============================================================================
 # LEANN vector database indexes (generated, large binary files)
@@ -164,6 +213,10 @@ yarn-error.log*
 # Pi Coding Agent
 # =============================================================================
 .pi*
+
+# Local agent/context indexes
+.context-mode/
+.ctx/
 
 # =============================================================================
 # Thesis/proposal/private documents live in separate repo

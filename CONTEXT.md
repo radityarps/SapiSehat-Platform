@@ -1,8 +1,44 @@
 # SapiSehat Context
 
-SapiSehat is an Android-based cattle disease image classification system for early detection of PMK/FMD and LSD/Lato-Lato in cattle.
+SapiSehat is a cattle disease early detection platform for farmers and local agencies in Indonesia, combining mobile farmer reporting, image-based detection, NLP-based symptom screening, backend data collection, and agency monitoring.
 
 ## Language
+
+**Disease Early Detection Platform**:
+Canonical product identity for SapiSehat: a platform that supports early indication of cattle disease through farmer-facing mobile workflows and agency-facing monitoring, without claiming veterinary diagnosis.
+_Avoid_: Image-only Android app, farmer management app only, clinical diagnosis system
+
+**Full Cattle Management**:
+Farmer-facing and agency-facing livestock management scope that includes cattle identity, ownership, health events, disease early detection history, and operational cattle records such as vaccination, reproduction, transfer, or sale when needed by local agencies.
+_Avoid_: Detection-only registry, farmer profile only, scan attribution only
+
+**Complete Livestock Profile**:
+Full cattle record maintained by the farmer and monitored by the agency, including cattle identity, ownership, age or birth estimate, sex, breed, location, photos, health events, early detection history, vaccination, reproduction, weight, feed, pregnancy, productivity, sale, and transfer when relevant.
+_Avoid_: Detection-only cattle profile, health timeline only, owner-only cattle record
+
+**Target System with MVP Phases**:
+Planning approach where SapiSehat documentation describes the complete intended platform while separating first-deliverable MVP scope from later expansion phases and team-specific modules.
+_Avoid_: Full-scope-only planning, MVP-only documentation, unphased thesis scope
+
+**Team Documentation Split**:
+Documentation organization where `docs/team-1-image` owns image-based early detection, `docs/team-2-nlp` owns NLP-based symptom screening, and `docs/system-integration` owns shared platform, backend, database, mobile flow, web dashboard, and cross-team contracts.
+_Avoid_: Single image-only docs folder, team-agnostic module docs, duplicated integration docs
+
+**Flexible Cross-Team Platform Contribution**:
+Team ownership model where Team 1 focuses on image classification implementation across mobile and backend, Team 2 focuses on NLP model integration across mobile and backend, and both teams may contribute to shared backend, mobile, or dashboard features as long as model-specific features remain owned by the responsible model team.
+_Avoid_: Rigid layer-only teams, Team 1-owned NLP features, Team 2-owned image features, isolated backend/mobile/dashboard ownership
+
+**Central Integration Contracts**:
+Documentation rule where shared data models, API contracts, mobile flow, web dashboard behavior, privacy rules, deployment, and cross-team interfaces live in `docs/system-integration`, while team folders document only team-specific model methods, experiments, validation, and implementation details.
+_Avoid_: Duplicated API contracts, team-local shared schemas, integration details scattered across team folders
+
+**Shared Contract Approval**:
+Cross-team change rule where shared backend, mobile, dashboard, API, data model, or fusion-flow changes must update the relevant `docs/system-integration` contract before implementation or release so Team 1 and Team 2 remain aligned.
+_Avoid_: Uncoordinated shared changes, implementation-first contract drift, model-team-only shared decisions
+
+**Docs Migration Plan First**:
+Documentation migration approach where the repository first gains an approved restructuring plan before files are moved into team-specific and system-integration folders.
+_Avoid_: Immediate bulk file move, unmanaged path breakage, empty folder-only restructuring
 
 **Online-first Detection**:
 A detection flow where Android sends cattle image to server as primary path to reduce computation on low-spec phones, then uses on-device inference when server, connection, consent, or timeout prevents online result.
@@ -20,6 +56,22 @@ _Avoid_: Cloud diagnosis, online AI
 Backend response containing status, disease class, display-label key, confidence, all class scores, reliability flag, model version, processing time, and optional developer-only symptom-region data when server inference uses a validated two-stage model.
 _Avoid_: Localized server text, label-only response
 
+**Parallel Evidence Fusion**:
+Early detection approach where image evidence and NLP symptom evidence are evaluated as separate model inputs, then combined into one early detection result with evidence breakdown, conflict handling, confidence, and reliability status.
+_Avoid_: Image-only result, NLP-only result, unmerged separate recommendations
+
+**Backend-Primary Fusion with Offline Sync**:
+Fusion execution policy where the backend is the source of truth for online image-plus-NLP fusion, while the mobile app may perform offline local fusion using bundled models or rules and later sync the offline result to the backend when connectivity returns.
+_Avoid_: Mobile-only fusion, online-only detection, unsynced offline results
+
+**Symptom Questionnaire with Notes**:
+NLP input flow where the farmer answers guided symptom questions and may add optional free-text notes, producing structured and textual evidence for early detection.
+_Avoid_: Free-text-only chat, officer-only notes, unguided symptom input
+
+**Offline NLP Model**:
+Team 2 responsibility for a bundled mobile NLP model that can evaluate symptom questionnaire and note evidence offline, participate in offline fusion, and sync its result to the backend when connectivity returns.
+_Avoid_: Online-only NLP, image-only offline mode, Team 1-owned NLP implementation
+
 **Prediction Error Code**:
 Stable backend error identifier for client handling and localization, including `INVALID_IMAGE`, `MODEL_NOT_READY`, `INFERENCE_FAILED`, `TIMEOUT`, and `RATE_LIMITED`.
 _Avoid_: Free-text-only error, silent failure
@@ -28,13 +80,29 @@ _Avoid_: Free-text-only error, silent failure
 Canonical classification category stored as `healthy`, `FMD`, or `LSD` independent of display language.
 _Avoid_: Indonesian-only labels, numeric-only labels
 
+**Extensible Disease Catalog**:
+Platform disease taxonomy that starts with `healthy`, `FMD`, and `LSD` for MVP early detection while allowing later addition of other cattle diseases without changing core farmer, cattle, or agency-monitoring concepts.
+_Avoid_: Fixed forever three-class taxonomy, unbounded first-release disease scope
+
 **Localized Display Label**:
 User-facing disease class name rendered from Android system language when supported, with Indonesian fallback.
 _Avoid_: Canonical label, database label
 
 **Farmer User**:
-Primary non-technical app user who needs simple early detection support for cattle in farm conditions.
-_Avoid_: Researcher user, admin user
+Primary non-technical mobile user who registers cattle, maintains cattle records, submits early detection inputs, and needs simple guidance in farm conditions.
+_Avoid_: Researcher user, agency operator, admin user
+
+**Phone-Number Farmer Account**:
+Farmer identity model where a farmer registers and signs in using a phone number, with verification or password mechanism defined by implementation phase.
+_Avoid_: Device-only identity, anonymous farmer data, agency-only account creation
+
+**Agency User**:
+Secondary web-dashboard user from a local agency who monitors farmer and cattle records, reviews early detection trends, and supports follow-up actions without replacing veterinary diagnosis.
+_Avoid_: Farmer user, veterinarian-only user, system administrator
+
+**Role-Jurisdiction Agency Account**:
+Agency identity model where each dashboard user has a platform role and assigned administrative jurisdiction that together determine which farmer, cattle, detection, media, and report data the user can access.
+_Avoid_: Single global agency account, role-only account, jurisdiction-only account
 
 **Animal Health Advisor**:
 Secondary user such as animal health officer or veterinarian who reviews early detection results and advises farmer without requiring separate app role.
@@ -55,6 +123,10 @@ _Avoid_: Unknown source
 **Coarse Location**:
 Optional non-precise farm area such as village or district entered manually or filled with GPS assistance after permission, then stored locally.
 _Avoid_: GPS coordinate, precise location, silent location capture
+
+**Administrative Jurisdiction**:
+Indonesia administrative area hierarchy used for agency access and reporting, starting from province, regency or city, district or subdistrict, and optionally village for farmer and cattle location.
+_Avoid_: Precise GPS-only scope, national-only scope, arbitrary unsourced area labels
 
 **Local Field Image**:
 Cattle image collected directly from local farms for project validation and dataset grounding.
@@ -120,9 +192,41 @@ _Avoid_: Always-on analytics, image upload in logs
 Server inference policy where uploaded images are processed in memory and discarded after response.
 _Avoid_: Dataset collection by default, stored upload
 
+**Full Platform Data Retention**:
+Platform storage policy where farmer data, cattle records, detection results, symptom questionnaire answers, NLP notes, and uploaded detection images may be stored in the backend for agency monitoring, audit, and follow-up according to consent, access-control, and data-governance rules.
+_Avoid_: No server storage, local-only scan history, undocumented media retention
+
+**Role-Jurisdiction-Consent Access**:
+Data access policy where agency visibility depends on user role, assigned geographic jurisdiction, and farmer consent tier, so stored farmer, cattle, detection, NLP, and media data is not globally visible by default.
+_Avoid_: All-agency global access, role-only access, consent-only access
+
 **Backend Deployment Phase**:
 Planned server availability stage, starting from LAN backend for TA/demo and scaling to institutional or VPS server for production pilot.
 _Avoid_: Undefined deployment, cloud-scale assumption
+
+**Shared Platform Backend**:
+Rebuilt backend architecture where one platform API owns authentication, farmer data, cattle records, agency dashboard data, shared API contracts, and persistence, while image and NLP inference run as integrated modules or backing services.
+_Avoid_: Image-only inference backend, separate team-owned backend silos, microservices-first platform
+
+**Go Gateway with Python Inference**:
+Backend rebuild architecture where a Go gateway owns platform API routing, authentication, shared data access, and dashboard-facing endpoints, while Python services handle image and NLP inference workloads.
+_Avoid_: FastAPI-only platform backend, Node-only backend, independent team backend silos
+
+**Platform PostgreSQL Database**:
+Primary backend database for farmer accounts, cattle records, complete livestock profiles, administrative jurisdictions, consent tiers, detection events, media metadata, agency users, roles, and dashboard reporting data.
+_Avoid_: SQLite production database, inference-only storage, team-specific separate databases
+
+**Next.js TanStack Dashboard**:
+Agency-facing web dashboard built with Next.js and TanStack libraries for data fetching and data-heavy interfaces, consuming the Go gateway platform API.
+_Avoid_: Mobile-only monitoring, Go-template dashboard, team-specific dashboard clients
+
+**Outbreak Surveillance Dashboard**:
+Agency dashboard scope focused on monitoring disease-risk signals across farmer reports and cattle records, including jurisdiction-level trends, alerts, maps or area summaries, case clustering, and follow-up prioritization.
+_Avoid_: Analytics-only dashboard, farmer registry only, cattle inventory only
+
+**Disease Risk Signal**:
+Dashboard alert language for possible increased cattle disease risk based on early detection submissions and livestock records, used to prioritize follow-up without declaring a confirmed outbreak.
+_Avoid_: Confirmed outbreak, official epidemiological finding, veterinary diagnosis
 
 **Limited Field Validation**:
 Real-device field test with farmers or animal health officers measuring task success, completion time, and qualitative feedback without claiming clinical validation.
@@ -139,6 +243,10 @@ _Avoid_: Diagnosis, verdict
 **Core Screen Set**:
 Production navigation set containing Splash, Onboarding, Home, Camera, Result, History, Guide, About, and Settings screens.
 _Avoid_: Role-based navigation, scan-only app
+
+**Cattle-First Detection Flow**:
+Mobile workflow where the farmer normally registers or selects a cattle profile before early detection, while an emergency quick-scan path may create an unattached detection result that can later be linked to a cattle record.
+_Avoid_: Scan-only app flow, mandatory profile before emergency scan, unattached results forever
 
 **Guide Content**:
 In-app educational content covering PMK symptoms and actions, LSD symptoms and actions, healthy cattle care, photo capture tips, and app usage.
@@ -171,8 +279,9 @@ _Avoid_: Prototype, demo app
 - Failed **Server Inference** returns **Prediction Error Code** for app localization and fallback decisions.
 - Backend applies basic per-device or per-IP rate limiting and returns `RATE_LIMITED` when exceeded.
 - **On-device Inference** acts as fallback when **Server Inference** fails or network unavailable.
-- **Farmer User** is primary user for UX wording, navigation, and capture flow.
-- **Animal Health Advisor** is secondary user who may review shared **Early Detection Result** without separate role-based interface.
+- **Farmer User** is primary user for mobile UX wording, navigation, cattle registration, cattle record maintenance, and early detection flow.
+- **Agency User** is secondary user for web-dashboard monitoring of farmer data, cattle records, and early detection trends.
+- **Animal Health Advisor** may review shared **Early Detection Result** and support farmer follow-up without owning the primary app workflow.
 - **Detection Report PDF** is exportable from **Early Detection Result** for review by **Animal Health Advisor**.
 - **Detection Report PDF** device info excludes IMEI, serial number, account identifier, and precise location.
 - **Coarse Location** may appear in **Scan History** and **Detection Report PDF** only after explicit location permission, and is not uploaded by default.

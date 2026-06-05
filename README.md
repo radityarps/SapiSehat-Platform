@@ -1,4 +1,4 @@
-# SapiSehat
+# SapiSehat Platform
 
 Aplikasi Android untuk deteksi penyakit sapi (PMK dan Lato-Lato) menggunakan foto, berbasis model CNN MobileNetV2.
 

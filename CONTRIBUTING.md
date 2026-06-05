@@ -1,4 +1,4 @@
-# Contributing to SapiSehat
+# Contributing to SapiSehat Platform
 
 Thank you for your interest in contributing to SapiSehat! This document outlines the process for contributing to the project.
 
