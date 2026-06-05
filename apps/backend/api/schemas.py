@@ -212,3 +212,42 @@ class ImageEvidenceRequest(BaseModel):
 class ImageEvidenceResponse(ImageEvidenceRequest):
     """Validated Team 1 image evidence response."""
     accepted_for_fusion: bool
+
+class NlpEvidenceInferenceMode(str, Enum):
+    ONLINE = "online"
+    OFFLINE = "offline"
+
+class NlpEvidenceRequest(BaseModel):
+    """Team 2 NLP evidence contract payload."""
+    source: str = "nlp"
+    model_version: str = Field(min_length=1, max_length=80)
+    inference_mode: NlpEvidenceInferenceMode
+    questionnaire_answers: Dict[str, object] = Field(default_factory=dict)
+    notes_present: bool
+    disease_scores: Dict[str, float]
+    top_class: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    evidence_terms: List[str] = Field(default_factory=list)
+    debug: Dict[str, object] = Field(default_factory=dict)
+
+    @classmethod
+    def _required_score_keys(cls) -> set[str]:
+        return {"healthy", "FMD", "LSD"}
+
+    def model_post_init(self, __context):
+        if self.source != "nlp":
+            raise ValueError("source must be nlp")
+        if not self.questionnaire_answers and not self.notes_present:
+            raise ValueError("questionnaire_answers or notes_present is required")
+        if set(self.disease_scores.keys()) != self._required_score_keys():
+            raise ValueError("disease_scores must contain exactly healthy, FMD, and LSD")
+        if any(score < 0.0 or score > 1.0 for score in self.disease_scores.values()):
+            raise ValueError("disease_scores values must be between 0 and 1")
+        if self.top_class not in self._required_score_keys():
+            raise ValueError("top_class must be healthy, FMD, or LSD")
+        if self.top_class != max(self.disease_scores, key=self.disease_scores.get):
+            raise ValueError("top_class must match highest disease score")
+
+class NlpEvidenceResponse(NlpEvidenceRequest):
+    """Validated Team 2 NLP evidence response."""
+    accepted_for_fusion: bool

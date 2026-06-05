@@ -24,6 +24,8 @@ from api.schemas import (
     DetectionEventListResponse,
     ImageEvidenceRequest,
     ImageEvidenceResponse,
+    NlpEvidenceRequest,
+    NlpEvidenceResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -325,4 +327,13 @@ async def validate_image_evidence(request: ImageEvidenceRequest):
     return {
         **request.model_dump(),
         "accepted_for_fusion": request.quality_status.value != "rejected",
+    }
+
+
+@router.post("/evidence/nlp", response_model=NlpEvidenceResponse)
+async def validate_nlp_evidence(request: NlpEvidenceRequest):
+    """Validate Team 2 NLP evidence contract for fusion consumers."""
+    return {
+        **request.model_dump(),
+        "accepted_for_fusion": True,
     }

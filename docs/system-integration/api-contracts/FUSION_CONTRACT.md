@@ -124,3 +124,15 @@ Executable tracer: `POST /api/evidence/image`. The validator enforces:
 - `model_version` and `inference_mode` are present.
 - rejected image evidence includes at least one `rejection_reasons` entry.
 - rejected image evidence returns `accepted_for_fusion: false`.
+
+
+## Team 2 NLP Evidence Validation Rules
+
+Executable tracer: `POST /api/evidence/nlp`. The validator enforces:
+
+- `disease_scores` has exactly `healthy`, `FMD`, and `LSD`.
+- each disease score is between 0.0 and 1.0.
+- `top_class` matches the highest disease score.
+- `model_version` and `inference_mode` are present.
+- questionnaire answers and optional notes are Team 2-owned inputs.
+- evidence must include questionnaire answers or `notes_present: true`.
