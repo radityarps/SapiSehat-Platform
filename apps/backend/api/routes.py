@@ -18,11 +18,16 @@ from api.schemas import (
     CattleTimelineEventRequest,
     CattleTimelineEventResponse,
     CattleProfileDetailResponse,
+    QuickScanDetectionRequest,
+    AttachDetectionRequest,
+    DetectionEventResponse,
+    DetectionEventListResponse,
 )
 from config import settings
 from utils.logger import get_logger
 from api.farmer_accounts import farmer_account_store
 from api.cattle_profiles import CattleEventType, CattleSex, CattleStatus, cattle_profile_store
+from api.detection_events import detection_event_store
 from api.authorization import DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, filter_visible_farmers
 
 logger = get_logger(__name__)
@@ -60,6 +65,18 @@ def _serialize_cattle_detail(profile):
     detail = _serialize_cattle(profile)
     detail["timeline"] = [_serialize_cattle_event(event) for event in cattle_profile_store.list_timeline_events(profile.id)]
     return detail
+
+
+def _serialize_detection(event):
+    return {
+        "id": event.id,
+        "farmer_id": event.farmer_id,
+        "cattle_id": event.cattle_id,
+        "result_label": event.result_label,
+        "confidence": event.confidence,
+        "source": event.source,
+        "attached": event.attached,
+    }
 
 @router.post("/predict", response_model=PredictResponse)
 async def predict(
@@ -252,3 +269,49 @@ async def get_agency_visible_cattle_detail(
         if profile.id == cattle_id:
             return _serialize_cattle_detail(profile)
     raise HTTPException(status_code=404, detail="Cattle not visible to agency")
+
+
+@router.post("/detections/quick-scan", response_model=DetectionEventResponse)
+async def create_quick_scan_detection(request: QuickScanDetectionRequest):
+    """Create unattached emergency quick-scan detection."""
+    if farmer_account_store.get_by_id(request.farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    event = detection_event_store.create_quick_scan(
+        farmer_id=request.farmer_id,
+        result_label=request.result_label,
+        confidence=request.confidence,
+        source=request.source,
+    )
+    return _serialize_detection(event)
+
+@router.post("/farmers/{farmer_id}/detections/{detection_id}/attach", response_model=DetectionEventResponse)
+async def attach_quick_scan_detection(
+    request: AttachDetectionRequest,
+    farmer_id: str = Path(...),
+    detection_id: str = Path(...),
+):
+    """Attach unattached quick-scan result to farmer-owned cattle."""
+    if cattle_profile_store.get_owned(farmer_id=farmer_id, cattle_id=request.cattle_id) is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    event = detection_event_store.attach_to_cattle(
+        farmer_id=farmer_id,
+        detection_id=detection_id,
+        cattle_id=request.cattle_id,
+    )
+    if event is None:
+        raise HTTPException(status_code=404, detail="Unattached detection not found for farmer")
+    return _serialize_detection(event)
+
+@router.get("/agency/detections", response_model=DetectionEventListResponse)
+async def list_agency_visible_attached_detections(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """List attached detections visible to agency after cattle authorization."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    visible_cattle = cattle_profile_store.list_visible_to_agency(
+        agency=agency,
+        farmers_by_id=farmer_account_store.all_by_id(),
+        jurisdictions=DEMO_JURISDICTIONS,
+    )
+    events = detection_event_store.list_by_cattle_ids({profile.id for profile in visible_cattle})
+    return {"detections": [_serialize_detection(event) for event in events]}

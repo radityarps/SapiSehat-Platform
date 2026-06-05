@@ -143,3 +143,29 @@ class CattleTimelineEventResponse(BaseModel):
 class CattleProfileDetailResponse(CattleProfileResponse):
     """Cattle detail with timeline."""
     timeline: List[CattleTimelineEventResponse]
+
+
+class QuickScanDetectionRequest(BaseModel):
+    """Create unattached quick-scan detection."""
+    farmer_id: str = Field(min_length=1, max_length=120)
+    result_label: str = Field(min_length=1, max_length=120)
+    confidence: float = Field(ge=0.0, le=1.0)
+    source: str = "quick_scan"
+
+class AttachDetectionRequest(BaseModel):
+    """Attach quick-scan detection to owned cattle."""
+    cattle_id: str = Field(min_length=1, max_length=120)
+
+class DetectionEventResponse(BaseModel):
+    """Detection event response."""
+    id: str
+    farmer_id: str
+    cattle_id: Optional[str]
+    result_label: str
+    confidence: float
+    source: str
+    attached: bool
+
+class DetectionEventListResponse(BaseModel):
+    """Detection event list response."""
+    detections: List[DetectionEventResponse]
