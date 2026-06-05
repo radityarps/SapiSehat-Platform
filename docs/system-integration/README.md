@@ -73,8 +73,8 @@ Shared backend, mobile, dashboard, API, data model, or fusion-flow changes must 
 | Consent, retention, access control | `privacy-security/` |
 | Deployment topology | `deployment/` |
 | Cross-team validation | `validation/` |
-| Image-specific implementation | `../team-1-image/` |
-| NLP-specific implementation | `../team-2-nlp/` |
+| Image-specific implementation | `../../team-1-image/` |
+| NLP-specific implementation | `../../team-2-nlp/` |
 
 ## Shared Contract Approval Rule
 

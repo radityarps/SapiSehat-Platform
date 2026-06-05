@@ -39,7 +39,7 @@ Before changing NLP evidence shape or behavior, update:
 
 - [Fusion Contract](../system-integration/api-contracts/FUSION_CONTRACT.md)
 - [Data Model](../system-integration/database/DATA_MODEL.md) when stored questionnaire/notes change
-- [System Integration README](../system-integration/README.md) when ownership/routing changes
+- [System Integration README](../../README.md) when ownership/routing changes
 
 
 ## NLP Evidence Contract Tracer

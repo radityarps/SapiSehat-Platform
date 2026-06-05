@@ -9,14 +9,22 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from docs.model.yolo_symptom_detector import convert_annotations_to_yolo, evaluate_predictions  # noqa: E402
+import importlib.util  # noqa: E402
+
+MODEL_DOCS = os.path.join(REPO_ROOT, 'docs', 'team-1-image', 'model')
+spec = importlib.util.spec_from_file_location('yolo_symptom_detector', os.path.join(MODEL_DOCS, 'yolo_symptom_detector.py'))
+yolo_symptom_detector = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = yolo_symptom_detector
+spec.loader.exec_module(yolo_symptom_detector)
+convert_annotations_to_yolo = yolo_symptom_detector.convert_annotations_to_yolo
+evaluate_predictions = yolo_symptom_detector.evaluate_predictions
 
 
 class YoloSymptomDetectorTest(unittest.TestCase):
     def test_convert_annotations_writes_yolo_labels_and_yaml(self):
         with TemporaryDirectory() as out:
             grouped = convert_annotations_to_yolo(
-                os.path.join(REPO_ROOT, "docs/model/templates/symptom_region_annotations_example.csv"),
+                os.path.join(REPO_ROOT, "docs/team-1-image/model/templates/symptom_region_annotations_example.csv"),
                 out,
             )
             label_path = os.path.join(out, "labels", "field-0001.txt")
@@ -31,8 +39,8 @@ class YoloSymptomDetectorTest(unittest.TestCase):
 
     def test_evaluate_predictions_reports_precision_recall(self):
         metrics = evaluate_predictions(
-            os.path.join(REPO_ROOT, "docs/model/templates/symptom_region_annotations_example.csv"),
-            os.path.join(REPO_ROOT, "docs/model/templates/yolo_predictions_example.csv"),
+            os.path.join(REPO_ROOT, "docs/team-1-image/model/templates/symptom_region_annotations_example.csv"),
+            os.path.join(REPO_ROOT, "docs/team-1-image/model/templates/yolo_predictions_example.csv"),
         )
 
         self.assertEqual(metrics["overall"]["tp"], 4)
@@ -46,10 +54,10 @@ class YoloSymptomDetectorTest(unittest.TestCase):
             result = subprocess.run(
                 [
                     sys.executable,
-                    "docs/model/yolo_symptom_detector.py",
+                    "docs/team-1-image/model/yolo_symptom_detector.py",
                     "evaluate",
-                    "--ground-truth", "docs/model/templates/symptom_region_annotations_example.csv",
-                    "--predictions", "docs/model/templates/yolo_predictions_example.csv",
+                    "--ground-truth", "docs/team-1-image/model/templates/symptom_region_annotations_example.csv",
+                    "--predictions", "docs/team-1-image/model/templates/yolo_predictions_example.csv",
                     "--out", out,
                 ],
                 cwd=REPO_ROOT,

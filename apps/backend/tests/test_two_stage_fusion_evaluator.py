@@ -7,7 +7,16 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from docs.model.two_stage_fusion_evaluator import aggregate_top_crops, evaluate_fusion, success_gate  # noqa: E402
+import importlib.util  # noqa: E402
+
+MODEL_DOCS = os.path.join(REPO_ROOT, 'docs', 'team-1-image', 'model')
+spec = importlib.util.spec_from_file_location('two_stage_fusion_evaluator', os.path.join(MODEL_DOCS, 'two_stage_fusion_evaluator.py'))
+two_stage_fusion_evaluator = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = two_stage_fusion_evaluator
+spec.loader.exec_module(two_stage_fusion_evaluator)
+aggregate_top_crops = two_stage_fusion_evaluator.aggregate_top_crops
+evaluate_fusion = two_stage_fusion_evaluator.evaluate_fusion
+success_gate = two_stage_fusion_evaluator.success_gate
 
 
 class TwoStageFusionEvaluatorTest(unittest.TestCase):

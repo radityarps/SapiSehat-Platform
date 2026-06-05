@@ -16,7 +16,7 @@ MobileNetV2 model to TFLite and verify parity against the Keras server model.
 %cd /kaggle/working/repo
 
 # Export + parity check (uses the .keras from the training run):
-!python docs/model/tflite_export.py \
+!python docs/team-1-image/model/tflite_export.py \
     --keras /kaggle/working/run_out_mobilenetv2/mobilenetv2.keras \
     --manifest /kaggle/working/dataset_artifacts/split_manifest.csv \
     --model-name mobilenetv2 \
@@ -52,9 +52,9 @@ tflite_out/
 Copy back to repo:
 
 ```
-tflite_out/TFLITE_PARITY_REPORT.md → docs/model/TFLITE_PARITY_REPORT.md
-tflite_out/parity_results.json → docs/model/results/parity_results.json
-tflite_out/preprocessing.json → docs/model/results/preprocessing.json
+tflite_out/TFLITE_PARITY_REPORT.md → docs/team-1-image/model/TFLITE_PARITY_REPORT.md
+tflite_out/parity_results.json → docs/team-1-image/model/results/parity_results.json
+tflite_out/preprocessing.json → docs/team-1-image/model/results/preprocessing.json
 tflite_out/mobilenetv2_dynamic_range.tflite → (keep out-of-band, reference in report)
 ```
 

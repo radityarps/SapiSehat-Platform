@@ -7,10 +7,10 @@ script as the single source of truth.
 ## Source of truth
 
 ```
-docs/model/evaluate_candidates.py   # trains + evaluates candidates (the truth)
-docs/model/training_wrapper.py       # thin wrapper: metadata + versioned bundle
-docs/model/notebooks/kaggle_train.py # paste-into-Kaggle cell
-docs/model/notebooks/colab_train.py  # paste-into-Colab cell
+docs/team-1-image/model/evaluate_candidates.py   # trains + evaluates candidates (the truth)
+docs/team-1-image/model/training_wrapper.py       # thin wrapper: metadata + versioned bundle
+docs/team-1-image/model/notebooks/kaggle_train.py # paste-into-Kaggle cell
+docs/team-1-image/model/notebooks/colab_train.py  # paste-into-Colab cell
 ```
 
 Notebooks contain **no training logic** — they only call
@@ -52,7 +52,7 @@ cd apps/backend
 python -m dataset_prep.cli --data "/path/to/dataset" --out dataset_artifacts
 # produces dataset_artifacts/split_manifest.csv (+ reports)
 
-python ../../docs/model/training_wrapper.py \
+python ../../docs/team-1-image/model/training_wrapper.py \
     --manifest dataset_artifacts/split_manifest.csv \
     --architecture mobilenetv2 --seed 42 --epochs 50 --out run_out
 ```
@@ -78,7 +78,7 @@ used instead of the raw source split.
 
 1. Notebook settings → Accelerator → **GPU**.
 2. Clone the repo and add the dataset as a Kaggle input.
-3. Paste `docs/model/notebooks/kaggle_train.py` into a cell, edit `DATA_DIR`,
+3. Paste `docs/team-1-image/model/notebooks/kaggle_train.py` into a cell, edit `DATA_DIR`,
    and run (it defaults to the prepared-split path). Or directly:
 
    ```bash
@@ -88,27 +88,27 @@ used instead of the raw source split.
        --data /kaggle/input/pmk-dan-penyakit-lato-lato \
        --out /kaggle/working/dataset_artifacts
    # Train from the manifest (test split -> final metrics):
-   !python repo/docs/model/training_wrapper.py \
+   !python repo/docs/team-1-image/model/training_wrapper.py \
        --manifest /kaggle/working/dataset_artifacts/split_manifest.csv \
        --architecture mobilenetv2 --seed 42 --epochs 50 \
        --out /kaggle/working/run_out
    ```
 
 4. Download `model_training_artifacts_*.zip` from `/kaggle/working/run_out` and
-   copy it back into the repo (e.g. `docs/model/artifacts/`).
+   copy it back into the repo (e.g. `docs/team-1-image/model/artifacts/`).
 
 ## Google Colab (fallback)
 
 1. Runtime → Change runtime type → **T4 GPU**.
 2. Clone the repo; mount Drive or download the dataset into `/content/data`.
-3. Paste `docs/model/notebooks/colab_train.py`, edit `DATA_DIR`, and run
+3. Paste `docs/team-1-image/model/notebooks/colab_train.py`, edit `DATA_DIR`, and run
    (defaults to the prepared-split path). Or:
 
    ```bash
    !git clone https://github.com/radityarps/Tugas-Akhir-Klasifikasi-Penyakit-Sapi-CNN.git repo
    !cd repo/apps/backend && python -m dataset_prep.cli \
        --data /content/data --out /content/dataset_artifacts
-   !python repo/docs/model/training_wrapper.py \
+   !python repo/docs/team-1-image/model/training_wrapper.py \
        --manifest /content/dataset_artifacts/split_manifest.csv \
        --architecture mobilenetv2 --seed 42 --epochs 50 \
        --out /content/run_out
@@ -120,14 +120,14 @@ Validates the wrapper, metadata, manifest, and bundle packaging without
 training. Used by CI/tests:
 
 ```bash
-python docs/model/training_wrapper.py --dry-run \
+python docs/team-1-image/model/training_wrapper.py --dry-run \
     --architecture mobilenetv2 --seed 42 --out ./run_out
 ```
 
 ## Local real run
 
 ```bash
-python docs/model/training_wrapper.py \
+python docs/team-1-image/model/training_wrapper.py \
     --data /path/to/dataset --architecture mobilenetv2 --seed 42 --epochs 50 \
     --out ./run_out
 ```

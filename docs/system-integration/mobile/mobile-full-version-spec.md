@@ -1,4 +1,4 @@
-> **Legacy mobile note:** This spec describes the earlier image-first Android app. Current farmer mobile app must align with platform contracts in [system integration mobile](../system-integration/mobile/README.md) and [platform PRD](../system-integration/product/PRD-platform-rebuild.md).
+> **Legacy mobile note:** This spec describes the earlier image-first Android app. Current farmer mobile app must align with platform contracts in [system integration mobile](README.md) and [platform PRD](../product/PRD-platform-rebuild.md). Shared platform contracts path: `docs/system-integration/mobile/README.md`.
 
 
 # SapiSehat Mobile — Full Version Spec

@@ -1,192 +1,183 @@
 # SapiSehat Platform
 
-SapiSehat adalah platform early detection penyakit sapi untuk peternak dan instansi: aplikasi farmer mobile, profil ternak lengkap, bukti image Team 1, bukti NLP Team 2, backend fusion, database PostgreSQL target, dan dashboard agency. Modul image MobileNetV2 tetap ada sebagai subsystem Team 1, bukan seluruh produk.
+SapiSehat adalah platform early detection penyakit sapi untuk peternak dan instansi. Platform mencakup aplikasi farmer mobile, profil ternak lengkap, bukti image Team 1, bukti NLP Team 2, backend fusion, target database PostgreSQL, dan dashboard agency. Modul image MobileNetV2 tetap ada sebagai subsystem Team 1, bukan seluruh produk.
 
 **Tim:** Raditya Rafif Pratama Sasmita & Noval Putra Ramadhan  
 **Institusi:** Politeknik Negeri Semarang — Teknik Informatika  
 **Deadline:** Juni 2026 (field testing), Juli 2026 (sidang)
 
----
+## Product Scope
 
-## Struktur Repositori
+SapiSehat provides disease early detection support, not veterinary diagnosis.
 
-```
+Core capabilities:
+
+- farmer phone-number account
+- complete cattle/livestock profile
+- image evidence contract for FMD/LSD/healthy signals
+- NLP questionnaire/notes evidence contract
+- backend-primary fusion with offline sync support
+- role + jurisdiction + consent agency access
+- agency dashboard for disease risk signals, not confirmed outbreaks
+- stored media governance with consent opt-in
+
+Current executable implementation is FastAPI/in-memory tracer proving platform contracts. Target production architecture: Go gateway + Python inference services + PostgreSQL + Next.js/TanStack dashboard.
+
+## Repository Structure
+
+```text
 sapisehat/
 ├── apps/
-│   ├── backend/          # FastAPI tracer + Python image inference prototype
+│   ├── backend/          # FastAPI contract tracer + Python inference prototype
 │   ├── dashboard/        # Next.js/TanStack agency dashboard tracer
-│   └── mobile/           # Android farmer app (Kotlin)
+│   └── mobile/           # Android farmer app / legacy image mobile app
 ├── docs/
-│   ├── README.md              # Documentation routing and ownership
-│   ├── system-integration/    # Shared platform contracts
-│   ├── team-1-image/          # Image subsystem docs
+│   ├── README.md              # documentation routing and ownership
+│   ├── system-integration/    # shared platform contracts
+│   ├── team-1-image/          # image subsystem docs
 │   ├── team-2-nlp/            # NLP subsystem docs
-│   ├── adr/                   # Architecture decision records
-│   └── changelog.md           # Version history
-├── package.json          # pnpm scripts (build, deploy, test)
+│   ├── adr/                   # architecture decision records
+│   └── changelog.md           # version history
+├── .github/              # issue and PR templates
+├── CONTRIBUTING.md       # contribution rules
+├── LICENSE
+├── package.json
 └── .gitignore
 ```
 
 ## Documentation
 
-Start at [docs/README.md](docs/README.md). Shared platform contracts live in [docs/system-integration](docs/system-integration/README.md). Team-specific model docs live in [docs/team-1-image](docs/team-1-image/README.md) and [docs/team-2-nlp](docs/team-2-nlp/README.md).
+Start at [docs/README.md](docs/README.md). Shared platform contracts live in [docs/system-integration/README.md](docs/system-integration/README.md).
 
----
+| Need | Document |
+| --- | --- |
+| Platform scope | [docs/system-integration/product/PLATFORM_SCOPE.md](docs/system-integration/product/PLATFORM_SCOPE.md) |
+| Platform PRD | [docs/system-integration/product/PRD-platform-rebuild.md](docs/system-integration/product/PRD-platform-rebuild.md) |
+| Shared API/fusion contracts | [docs/system-integration/api-contracts/FUSION_CONTRACT.md](docs/system-integration/api-contracts/FUSION_CONTRACT.md) |
+| Data model | [docs/system-integration/database/DATA_MODEL.md](docs/system-integration/database/DATA_MODEL.md) |
+| Team 1 image work | [docs/team-1-image/README.md](docs/team-1-image/README.md) |
+| Team 2 NLP work | [docs/team-2-nlp/README.md](docs/team-2-nlp/README.md) |
+| Dashboard contracts | [docs/system-integration/web-dashboard/README.md](docs/system-integration/web-dashboard/README.md) |
+| Contributing | [CONTRIBUTING.md](CONTRIBUTING.md) |
+
+Legacy image-first docs remain for historical subsystem context. They must not override system-integration contracts.
 
 ## Quick Start
 
 ### Prerequisites
 
-| Tool           | Version  | Keperluan                          |
-| -------------- | -------- | ---------------------------------- |
-| Node.js        | 18+      | Monorepo scripts                   |
-| pnpm           | 10+      | Package manager                    |
-| Docker         | 24+      | Backend containerized              |
-| Android SDK    | API 24+  | Mobile (Android Studio opsional)   |
-| adb            | latest   | Deploy & debug ke device           |
+| Tool | Version | Use |
+| --- | --- | --- |
+| Node.js | 18+ | monorepo scripts |
+| pnpm | 10+ | package manager |
+| Python | 3.10+ | backend tracer/inference prototype |
+| Docker | 24+ | backend containerized flow |
+| Android SDK | API 24+ | farmer mobile app |
+| adb | latest | device deploy/debug |
 
-### Backend
+### Backend Tracer
 
 ```bash
-# Build & jalankan (dari root)
 pnpm backend:up
-
-# Development (hot reload)
 pnpm backend:dev
-
-# Lihat logs
 pnpm backend:logs
-
-# Stop
 pnpm backend:down
 ```
 
-Backend berjalan di `http://localhost:8000`. Docs: `http://localhost:8000/docs`
+Backend runs at `http://localhost:8000`. OpenAPI docs: `http://localhost:8000/docs`.
+
+Focused test command:
+
+```bash
+python -m pytest apps/backend/tests -q
+```
 
 ### Mobile
 
-Tidak perlu Android Studio. Pastikan device terhubung via USB atau WiFi (lihat [Wireless Debugging](docs/Mobile/WIRELESS-DEBUGGING.md)).
+No Android Studio required for scripted deploy. Connect device via USB or WiFi. See [Wireless Debugging](docs/system-integration/mobile/WIRELESS-DEBUGGING.md).
 
 ```bash
-# Build + install + launch di device
 pnpm mobile:run
-
-# Build + install saja
 pnpm mobile:deploy
-
-# Restart app tanpa rebuild
 pnpm mobile:restart
-
-# Lihat logs
 pnpm mobile:log
-
-# Clean build
 pnpm mobile:clean
+pnpm mobile:test
 ```
 
-Atur Server URL dari dalam aplikasi: **Settings → Server URL** (tanpa rebuild).
+Set Server URL in app: **Settings → Server URL**.
 
----
+### Dashboard
 
-## Apps
+Dashboard tracer lives in `apps/dashboard` and targets Next.js + TanStack table patterns.
 
-### `apps/backend` — FastAPI Inference Server
+Important routes:
 
-- **Tech:** Python 3.10, FastAPI, TensorFlow, MobileNetV2
-- **Model:** `mobilenetv2_best.keras` (~20MB, tersedia via Docker volume mount)
-- **Endpoint legacy image:** `POST /api/predict` — terima gambar sapi, return early detection image classification result
-- **Shared contracts:** [System Integration](docs/system-integration/README.md)
-- **Legacy image/backend docs:** [API reference](docs/Backend/README.md) | [Dev guide](docs/Backend/development.md)
+- `/agency/registry`
+- `/agency/detections`
+- `/agency/risk-signals`
+
+## Current Tracer APIs
+
+Representative endpoints:
+
+- `POST /api/farmers/accounts`
+- `POST /api/farmers/{farmer_id}/cattle`
+- `POST /api/evidence/image`
+- `POST /api/evidence/nlp`
+- `POST /api/fusion/results`
+- `POST /api/offline/detections/sync`
+- `GET /api/agency/registry`
+- `GET /api/agency/detection-monitoring`
+- `GET /api/agency/risk-signals`
+
+## Model Files (Team 1 Image Subsystem)
+
+Model files are not committed because they are large.
+
+Expected local files:
+
+1. `apps/backend/model/mobilenetv2_best.keras` for server image inference prototype.
+2. `apps/mobile/app/src/main/assets/cattle_disease.tflite` for offline image evidence prototype.
+
+Image model outputs are early detection signals only. They are not veterinary diagnosis.
+
+## Safe Language Policy
+
+Use:
+
+- early detection
+- evidence
+- disease risk signal
+- possible increased risk
+- follow-up priority
+- needs review
+
+Avoid:
+
+- confirmed outbreak
+- diagnosis
+- infected/positive case
+- certificate/proof of disease
+
+## Development Workflow
+
+```text
+main          <- production-ready code
+dev           <- integration branch
+feat/xxx      <- feature branch
+fix/xxx       <- bug fix branch
+docs/xxx      <- documentation branch
+```
+
+Before PR:
 
 ```bash
-make backend-run       # Development (hot reload)
-make backend-test      # Run unit tests
-make backend-docker    # Build & run via Docker
+python -m pytest apps/backend/tests -q
 ```
 
-### `apps/mobile` — Android App
+See [CONTRIBUTING.md](CONTRIBUTING.md) for contract-first rules and PR checklist.
 
-- **Tech:** Kotlin, Jetpack Compose, MVVM, Hilt, Room, CameraX, TFLite (offline fallback)
-- **Min SDK:** API 24 (Android 7.0)
-- **Docs:** [Mobile contracts](docs/system-integration/mobile/README.md) | [Legacy setup](docs/Mobile/README.md) | [Wireless Debugging](docs/Mobile/WIRELESS-DEBUGGING.md)
+## License
 
-```bash
-pnpm mobile:run        # Build + install + launch
-pnpm mobile:deploy     # Build + install
-pnpm mobile:restart    # Restart tanpa rebuild
-pnpm mobile:log        # Logcat filtered
-pnpm mobile:clean      # Clean build cache
-pnpm mobile:test       # Run unit tests
-```
-
----
-
-## Workflow Development
-
-### Jalankan backend
-
-```bash
-pnpm dev
-```
-
-Ini menjalankan backend via Docker Compose.
-
-### Cek semua test
-
-```bash
-pnpm test
-```
-
----
-
-## Model File (Team 1 Image Subsystem)
-
-File model **tidak di-commit** ke git karena ukurannya besar (~20MB).
-
-Cara setup:
-
-1. Pastikan file `mobilenetv2_best.keras` ada di `apps/backend/model/`
-2. Untuk development dengan Docker: file model otomatis tersedia via volume mount
-3. Untuk Android offline: gunakan `cattle_disease.tflite` di `apps/mobile/app/src/main/assets/`
-4. Jika ingin mengganti model offline, replace file dengan nama yang sama: `cattle_disease.tflite`
-
----
-
-## Docs
-
-Legacy docs below may describe image/mobile subsystems. Platform source of truth: [docs/system-integration/README.md](docs/system-integration/README.md) and [PRD platform rebuild](docs/system-integration/product/PRD-platform-rebuild.md).
-
-| Dokumen                                                                                          | Deskripsi                               |
-| ------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| [docs/system-integration/README.md](docs/system-integration/README.md)                         | Shared platform contracts               |
-| [docs/system-integration/product/PRD-platform-rebuild.md](docs/system-integration/product/PRD-platform-rebuild.md) | Current platform PRD                    |
-| [docs/team-1-image/README.md](docs/team-1-image/README.md)                                      | Team 1 image subsystem routing          |
-| [docs/team-2-nlp/README.md](docs/team-2-nlp/README.md)                                          | Team 2 NLP subsystem routing            |
-| [docs/architecture/overview.md](docs/architecture/overview.md)                                   | Legacy architecture & data flow         |
-| [docs/backend/README.md](docs/backend/README.md)                                                 | Backend API reference & setup           |
-| [docs/backend/development.md](docs/backend/development.md)                                       | Backend development guide               |
-| [docs/mobile/README.md](docs/mobile/README.md)                                                   | Mobile app documentation                |
-| [docs/changelog.md](docs/changelog.md)                                                           | Version history                         |
-| [docs/backend/migration/01-overview.md](docs/backend/migration/01-overview.md)                   | Arsitektur backend & rencana migrasi Go |
-| [docs/backend/migration/02-go-gateway.md](docs/backend/migration/02-go-gateway.md)               | Implementasi Go Gateway (Phase 3)       |
-| [docs/backend/migration/04-migration-runbook.md](docs/backend/migration/04-migration-runbook.md) | Langkah-langkah migrasi ke Go           |
-
----
-
-## Branching Strategy
-
-```
-main          ← production-ready code only
-dev           ← integration branch
-feat/xxx      ← fitur baru (dari dev)
-fix/xxx       ← bug fix (dari dev)
-```
-
-```bash
-# Mulai fitur baru
-git checkout dev
-git checkout -b feat/nama-fitur
-
-# Selesai → PR ke dev
-# Setelah testing → PR dari dev ke main
-```
+MIT. See [LICENSE](LICENSE).

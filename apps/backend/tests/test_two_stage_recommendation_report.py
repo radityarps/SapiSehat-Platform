@@ -2,7 +2,7 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[3]
-REPORT = ROOT / "docs/model/TWO_STAGE_MODEL_COMPARISON_RECOMMENDATION.md"
+REPORT = ROOT / "docs/team-1-image/model/TWO_STAGE_MODEL_COMPARISON_RECOMMENDATION.md"
 
 
 def test_report_preserves_single_stage_as_main_implementation():

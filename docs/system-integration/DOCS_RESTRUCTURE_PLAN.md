@@ -92,26 +92,26 @@ Owns shared platform documentation:
 
 | Current path | Proposed path | Notes |
 | --- | --- | --- |
-| `docs/model/**` | `docs/team-1-image/model/**` | Image model docs/scripts/results. |
-| `docs/Backend/README.md` | `docs/system-integration/backend/README.md` + `docs/team-1-image/backend/README.md` | Split shared API/backend from image inference detail. |
-| `docs/Backend/development.md` | `docs/system-integration/backend/development.md` | Shared backend development unless image-only. |
+| `docs/team-1-image/model/**` | `docs/team-1-image/model/**` | Image model docs/scripts/results. |
+| `docs/team-1-image/backend/README.md` | `docs/system-integration/backend/README.md` + `docs/team-1-image/backend/README.md` | Split shared API/backend from image inference detail. |
+| `docs/system-integration/backend/development.md` | `docs/system-integration/backend/development.md` | Shared backend development unless image-only. |
 | `docs/Backend/migration/**` | `docs/system-integration/deployment/backend-migration/**` | Shared deployment/migration. |
 | `docs/Mobile/**` | `docs/system-integration/mobile/**` | Farmer app flow shared across image + NLP. |
 | `docs/architecture/**` | `docs/system-integration/architecture/**` | Shared architecture. |
-| `docs/validation/**` | `docs/system-integration/validation/**` | Shared validation; team-specific parts later copied or split. |
-| `docs/PRD.md` | `docs/system-integration/product/PRD.md` | Product scope must include platform, not image-only app. |
-| `docs/PRD-proposal-based.md` | `docs/system-integration/product/PRD-proposal-based.md` | Review before move. |
-| `docs/PRD-two-stage-real-world-model.md` | `docs/team-1-image/model/PRD-two-stage-real-world-model.md` | Image/model-specific. |
-| `docs/preprocessing-mismatch-analysis.md` | `docs/team-1-image/model/preprocessing-mismatch-analysis.md` | Image preprocessing-specific. |
+| `docs/system-integration/validation/**` | `docs/system-integration/validation/**` | Shared validation; team-specific parts later copied or split. |
+| `docs/system-integration/product/PRD.md` | `docs/system-integration/product/PRD.md` | Product scope must include platform, not image-only app. |
+| `docs/system-integration/product/PRD-proposal-based.md` | `docs/system-integration/product/PRD-proposal-based.md` | Review before move. |
+| `docs/team-1-image/model/PRD-two-stage-real-world-model.md` | `docs/team-1-image/model/PRD-two-stage-real-world-model.md` | Image/model-specific. |
+| `docs/team-1-image/model/preprocessing-mismatch-analysis.md` | `docs/team-1-image/model/preprocessing-mismatch-analysis.md` | Image preprocessing-specific. |
 | `docs/Postman/**` | `docs/system-integration/api-contracts/postman/**` | Shared API contract artifacts. |
-| `docs/specs/mobile-full-version-spec.md` | `docs/system-integration/mobile/mobile-full-version-spec.md` | Farmer mobile app shared flow. |
+| `docs/system-integration/mobile/mobile-full-version-spec.md` | `docs/system-integration/mobile/mobile-full-version-spec.md` | Farmer mobile app shared flow. |
 | `docs/adr/0001-yolo-symptom-region-detector.md` | `docs/adr/0001-yolo-symptom-region-detector.md` or `docs/team-1-image/adr/0001-yolo-symptom-region-detector.md` | Keep system-wide until ADR policy decided. |
 | `docs/plans/**` | `docs/plans/**` | Keep until plan ownership reviewed. |
 | `docs/changelog.md` | `docs/changelog.md` | Keep global changelog. |
 
 ## Required New Docs Before File Moves
 
-1. `docs/system-integration/README.md`
+1. `docs/../README.md`
    - New platform overview.
    - Explain team split.
    - Link to Team 1 and Team 2 folders.

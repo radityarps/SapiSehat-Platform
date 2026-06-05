@@ -16,3 +16,10 @@ Mobile offline flow may run bundled image and NLP models, create local fused det
 - image and NLP `model_version`.
 - evidence `inference_mode: offline`.
 - sync status from backend response.
+
+
+## Migrated Mobile Docs
+
+- [Legacy mobile README](legacy-mobile-readme.md)
+- [Mobile full version spec](mobile-full-version-spec.md)
+- [Wireless debugging](WIRELESS-DEBUGGING.md)

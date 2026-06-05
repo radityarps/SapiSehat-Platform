@@ -1,4 +1,4 @@
-> **Team 1 image subsystem note:** This model folder supports image inference prototype only. Platform contracts live in `docs/system-integration/README.md`; Team 1 docs live in `docs/team-1-image/README.md`.
+> **Team 1 image subsystem note:** This model folder supports image inference prototype only. Platform contracts live in `docs/../README.md`; Team 1 docs live in `docs/team-1-image/README.md`. Shared platform contracts path: `docs/system-integration/README.md`.
 
 # Model Directory
 

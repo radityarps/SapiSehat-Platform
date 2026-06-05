@@ -9,7 +9,7 @@ def _read(path: str) -> str:
 
 
 def test_region_ux_validation_protocol_keeps_farmer_boxes_gated():
-    protocol = _read("docs/validation/VALIDATION_PROTOCOL.md")
+    protocol = _read("docs/system-integration/validation/VALIDATION_PROTOCOL.md")
 
     assert "model attention area" in protocol
     assert "area to review" in protocol
@@ -19,8 +19,8 @@ def test_region_ux_validation_protocol_keeps_farmer_boxes_gated():
 
 
 def test_region_ux_capture_sheets_record_misleading_risk():
-    metrics = _read("docs/validation/METRICS_SHEET.md")
-    report = _read("docs/validation/REPORT_TEMPLATE.md")
+    metrics = _read("docs/system-integration/validation/METRICS_SHEET.md")
+    report = _read("docs/system-integration/validation/REPORT_TEMPLATE.md")
 
     assert "detected lesion" in metrics
     assert "misleading" in metrics

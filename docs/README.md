@@ -4,11 +4,11 @@ SapiSehat documentation is split by ownership so Team 1 image, Team 2 NLP, and s
 
 ## Start Here
 
-- [System Integration](system-integration/README.md) — shared product scope, architecture, backend/database, mobile flow, web dashboard, privacy, deployment, and cross-team contracts.
+- [System Integration](../README.md) — shared product scope, architecture, backend/database, mobile flow, web dashboard, privacy, deployment, and cross-team contracts.
 - [Team 1 Image](team-1-image/README.md) — image-based early detection subsystem.
 - [Team 2 NLP](team-2-nlp/README.md) — NLP-based symptom screening subsystem.
 - [ADRs](adr/) — hard-to-reverse architecture decisions.
-- [Docs Restructure Plan](system-integration/DOCS_RESTRUCTURE_PLAN.md) — migration guardrails before moving legacy docs.
+- [Docs Restructure Plan](system-integration/DOCS_RESTRUCTURE_PLAN.md) — approved migration map and routing record.
 
 ## Routing Rules
 
@@ -41,6 +41,6 @@ Do not duplicate shared schemas in team folders. Team folders may reference shar
 
 ## Legacy Docs
 
-Legacy docs still exist under `docs/model`, `docs/Backend`, `docs/Mobile`, `docs/architecture`, `docs/validation`, and other old paths. Do not bulk-move them until [Docs Restructure Plan](system-integration/DOCS_RESTRUCTURE_PLAN.md) is approved.
+Legacy docs have been migrated into owned folders per [Docs Restructure Plan](system-integration/DOCS_RESTRUCTURE_PLAN.md). Old image/model docs now live under `docs/team-1-image/model`; shared backend/mobile/architecture/validation docs live under `docs/system-integration/**`.
 
-When editing legacy docs, add pointers to the new entrypoints instead of creating another shared contract location.
+When editing migrated legacy docs, keep pointers to the new entrypoints instead of creating another shared contract location.

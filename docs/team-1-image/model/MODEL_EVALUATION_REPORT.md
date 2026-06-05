@@ -233,8 +233,8 @@ TensorFlow: 2.18.0
 Python: 3.12.13
 Seed: 42
 Data source: prepared_split_manifest (issue #18)
-Script: `docs/model/evaluate_candidates.py`
-Wrapper: `docs/model/training_wrapper.py`
+Script: `docs/team-1-image/model/evaluate_candidates.py`
+Wrapper: `docs/team-1-image/model/training_wrapper.py`
 
 To reproduce:
 
@@ -244,10 +244,10 @@ cd apps/backend
 python -m dataset_prep.cli --data /path/to/dataset --out dataset_artifacts
 
 # 2. Train + evaluate all three candidates:
-python ../../docs/model/evaluate_candidates.py \
+python ../../docs/team-1-image/model/evaluate_candidates.py \
     --manifest dataset_artifacts/split_manifest.csv \
     --epochs 50 --fine-tune-epochs 10 --seed 42 \
-    --out ../../docs/model/results
+    --out ../../docs/team-1-image/model/results
 ```
 
 See [`KAGGLE_RUN_GUIDE.md`](KAGGLE_RUN_GUIDE.md) and
@@ -257,8 +257,8 @@ See [`KAGGLE_RUN_GUIDE.md`](KAGGLE_RUN_GUIDE.md) and
 
 ## 9. References
 
-- Evaluation script: `docs/model/evaluate_candidates.py`
-- Training wrapper + bundle: `docs/model/training_wrapper.py`, `TRAINING_WORKFLOW.md`
+- Evaluation script: `docs/team-1-image/model/evaluate_candidates.py`
+- Training wrapper + bundle: `docs/team-1-image/model/training_wrapper.py`, `TRAINING_WORKFLOW.md`
 - Dataset prep / split: `apps/backend/dataset_prep/`, `DATASET_SPLIT_REPORT.md`
 - Custom CNN metrics: [`results/custom_cnn/custom_cnn_metrics.json`](results/custom_cnn/custom_cnn_metrics.json)
 - MobileNetV2 metrics: [`results/mobilenetv2/mobilenetv2_metrics.json`](results/mobilenetv2/mobilenetv2_metrics.json)

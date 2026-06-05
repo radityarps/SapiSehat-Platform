@@ -4,7 +4,7 @@ This package supports issue #28. It evaluates the current single-stage classifie
 
 ## Inputs
 
-1. `field_manifest.csv` from `docs/model/FIELD_DATA_MANIFEST.md`.
+1. `field_manifest.csv` from `docs/team-1-image/model/FIELD_DATA_MANIFEST.md`.
 2. Prediction CSV from the current single-stage classifier with columns:
    - `image_id`
    - `predicted_label`
@@ -30,12 +30,12 @@ This package supports issue #28. It evaluates the current single-stage classifie
 ## Run
 
 ```bash
-python docs/model/field_baseline_evaluation.py \
-  --field-manifest docs/model/templates/field_manifest_eval_example.csv \
-  --predictions docs/model/templates/field_predictions_example.csv \
+python docs/team-1-image/model/field_baseline_evaluation.py \
+  --field-manifest docs/team-1-image/model/templates/field_manifest_eval_example.csv \
+  --predictions docs/team-1-image/model/templates/field_predictions_example.csv \
   --split test \
-  --out docs/model/results/FIELD_ONLY_BASELINE_REPORT.md \
-  --metrics-json docs/model/results/field_only_baseline_metrics.json
+  --out docs/team-1-image/model/results/FIELD_ONLY_BASELINE_REPORT.md \
+  --metrics-json docs/team-1-image/model/results/field_only_baseline_metrics.json
 ```
 
 The script writes a Markdown report with macro F1, per-class recall, FMD recall, LSD recall, confusion matrix, Insufficient Visual Evidence rate, False Confident Result rate, and common failure categories.

@@ -9,7 +9,16 @@ REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.p
 if REPO_ROOT not in sys.path:
     sys.path.insert(0, REPO_ROOT)
 
-from docs.model.field_baseline_evaluation import evaluate, load_field_examples, load_predictions  # noqa: E402
+import importlib.util  # noqa: E402
+
+MODEL_DOCS = os.path.join(REPO_ROOT, 'docs', 'team-1-image', 'model')
+spec = importlib.util.spec_from_file_location('field_baseline_evaluation', os.path.join(MODEL_DOCS, 'field_baseline_evaluation.py'))
+field_baseline_evaluation = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = field_baseline_evaluation
+spec.loader.exec_module(field_baseline_evaluation)
+evaluate = field_baseline_evaluation.evaluate
+load_field_examples = field_baseline_evaluation.load_field_examples
+load_predictions = field_baseline_evaluation.load_predictions
 
 
 FIELD_COLUMNS = [
@@ -79,9 +88,9 @@ class FieldBaselineEvaluationTest(unittest.TestCase):
             result = subprocess.run(
                 [
                     sys.executable,
-                    "docs/model/field_baseline_evaluation.py",
-                    "--field-manifest", "docs/model/templates/field_manifest_eval_example.csv",
-                    "--predictions", "docs/model/templates/field_predictions_example.csv",
+                    "docs/team-1-image/model/field_baseline_evaluation.py",
+                    "--field-manifest", "docs/team-1-image/model/templates/field_manifest_eval_example.csv",
+                    "--predictions", "docs/team-1-image/model/templates/field_predictions_example.csv",
                     "--split", "test",
                     "--out", out,
                 ],

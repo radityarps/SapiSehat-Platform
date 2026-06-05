@@ -81,14 +81,14 @@ and dataset eligibility.
 
 See:
 
-- `docs/model/FIELD_DATA_MANIFEST.md`
-- `docs/model/templates/field_manifest_example.csv`
+- `docs/team-1-image/model/FIELD_DATA_MANIFEST.md`
+- `docs/team-1-image/model/templates/field_manifest_example.csv`
 
 Validate a manifest:
 
 ```bash
 cd apps/backend
-python -m dataset_prep.field_manifest ../../docs/model/templates/field_manifest_example.csv
+python -m dataset_prep.field_manifest ../../docs/team-1-image/model/templates/field_manifest_example.csv
 ```
 
 ## Symptom-region annotation protocol
@@ -100,14 +100,14 @@ may optionally mark confusing regions for threshold/error analysis.
 
 See:
 
-- `docs/model/SYMPTOM_REGION_ANNOTATION_PROTOCOL.md`
-- `docs/model/templates/symptom_region_annotations_example.csv`
+- `docs/team-1-image/model/SYMPTOM_REGION_ANNOTATION_PROTOCOL.md`
+- `docs/team-1-image/model/templates/symptom_region_annotations_example.csv`
 
 Validate annotation rows:
 
 ```bash
 cd apps/backend
-python -m dataset_prep.symptom_annotations ../../docs/model/templates/symptom_region_annotations_example.csv
+python -m dataset_prep.symptom_annotations ../../docs/team-1-image/model/templates/symptom_region_annotations_example.csv
 ```
 
 ## Leakage prevention

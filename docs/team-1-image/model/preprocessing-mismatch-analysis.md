@@ -88,7 +88,7 @@ The backend produces NEGATIVE values; the model expects POSITIVE values in [0, 1
 
 ## Why the Notebook Comment About MobileNetV2 Is Misleading
 
-From `docs/PRD.md` (line 123-127):
+From `docs/system-integration/product/PRD.md` (line 123-127):
 
 > "Mengapa standardisasi ImageNet tidak bisa dilewati? MobileNetV2 menggunakan
 > bobot pretrained ImageNet. Saat training ImageNet, semua gambar distandardisasi

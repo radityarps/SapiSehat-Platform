@@ -1,4 +1,4 @@
-> **Legacy backend note:** This document describes the Python/FastAPI image inference prototype and tracer backend. Current target architecture is Go gateway + Python inference services; shared contracts live in [system integration backend](../system-integration/backend/README.md) and [platform PRD](../system-integration/product/PRD-platform-rebuild.md).
+> **Legacy backend note:** This document describes the Python/FastAPI image inference prototype and tracer backend. Current target architecture is Go gateway + Python inference services; shared contracts live in [system integration backend](../../system-integration/backend/README.md) and [platform PRD](../../system-integration/product/PRD-platform-rebuild.md).
 
 # SapiSehat Backend
 
@@ -238,7 +238,7 @@ gcloud run deploy sapisehat-backend \
 
 ### AWS EC2
 
-See [development.md](development.md) for EC2 deployment instructions.
+See [system integration backend development](../../system-integration/backend/development.md) for EC2 deployment instructions.
 
 ### Docker Compose
 

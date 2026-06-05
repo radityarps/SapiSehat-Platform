@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Platform documentation
+    url: https://github.com/radityarps/SapiSehat-Platform/tree/main/docs/system-integration
+    about: Read shared SapiSehat platform contracts before filing cross-team issues.

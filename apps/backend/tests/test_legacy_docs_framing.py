@@ -22,11 +22,11 @@ def test_readme_describes_platform_not_image_only_app():
 
 def test_legacy_docs_have_redirect_notes_to_platform_contracts():
     files = [
-        "docs/PRD.md",
-        "docs/specs/mobile-full-version-spec.md",
-        "docs/Backend/README.md",
-        "docs/Backend/development.md",
-        "docs/model/README.md",
+        "docs/system-integration/product/PRD.md",
+        "docs/system-integration/mobile/mobile-full-version-spec.md",
+        "docs/team-1-image/backend/README.md",
+        "docs/system-integration/backend/development.md",
+        "docs/team-1-image/model/README.md",
         "apps/backend/model/README.md",
         "apps/mobile/SMOKE_TEST_CHECKLIST.md",
         "apps/mobile/TFLITE_PARITY.md",
@@ -41,10 +41,10 @@ def test_legacy_docs_have_redirect_notes_to_platform_contracts():
 def test_reviewed_docs_do_not_claim_product_is_only_image_app():
     reviewed = [
         "README.md",
-        "docs/PRD.md",
-        "docs/specs/mobile-full-version-spec.md",
-        "docs/Backend/README.md",
-        "docs/model/README.md",
+        "docs/system-integration/product/PRD.md",
+        "docs/system-integration/mobile/mobile-full-version-spec.md",
+        "docs/team-1-image/backend/README.md",
+        "docs/team-1-image/model/README.md",
     ]
     banned = [
         "Aplikasi Android untuk deteksi penyakit sapi",

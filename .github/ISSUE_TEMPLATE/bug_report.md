@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-about: Report a bug to help us improve SapiSehat
+about: Report a defect in SapiSehat platform, tracer, mobile, dashboard, or docs
 title: "[BUG] "
 labels: bug
 assignees: ""
@@ -8,60 +8,50 @@ assignees: ""
 
 ## Bug Description
 
-<!-- A clear and concise description of the bug -->
+<!-- Clear defect summary. -->
+
+## Affected Area
+
+- [ ] Shared platform contract (`docs/system-integration`)
+- [ ] Backend tracer/API
+- [ ] Team 1 image evidence/model
+- [ ] Team 2 NLP evidence/model
+- [ ] Farmer mobile app
+- [ ] Agency dashboard
+- [ ] Privacy/consent/media governance
+- [ ] Documentation
 
 ## Steps to Reproduce
 
-1. 
-2. 
-3. 
-4. 
+1.
+2.
+3.
 
 ## Expected Behavior
 
-<!-- What you expected to happen -->
+<!-- What should happen? -->
 
 ## Actual Behavior
 
-<!-- What actually happened -->
+<!-- What happened? -->
 
-## Screenshots
+## Contract Impact
 
-<!-- If applicable, add screenshots to help explain -->
+- [ ] No shared contract change needed
+- [ ] API/schema behavior differs from docs
+- [ ] Data model behavior differs from docs
+- [ ] Consent/jurisdiction visibility differs from docs
+- [ ] Dashboard wording violates safe-language policy
+
+Relevant docs:
+
+- `docs/../README.md`
+- `docs/system-integration/product/PRD-platform-rebuild.md`
+- `docs/system-integration/api-contracts/FUSION_CONTRACT.md`
 
 ## Environment
 
-**Backend (if applicable):**
-- OS: [e.g., Ubuntu 22.04, Windows 11 + WSL2]
-- Python version: [e.g., 3.10.12]
-- TensorFlow version: [e.g., 2.19.0]
-- Running via: [Docker / local]
-
-**Mobile (if applicable):**
-- Device: [e.g., Samsung Galaxy S23]
-- Android version: [e.g., 14]
-- App version: [e.g., 1.0.0]
-
-## Request/Response (if applicable)
-
-**Request:**
-```bash
-# curl command or request details
-```
-
-**Response:**
-```json
-{
-  "error": "..."
-}
-```
-
-## Logs
-
-```
-<!-- Paste relevant logs here -->
-```
-
-## Additional Context
-
-<!-- Any other context about the problem -->
+**Backend:**
+- OS:
+- Python version:
+- Running via

@@ -40,14 +40,14 @@ This protocol supports issue #27 and future server-first two-stage experiments. 
 Template:
 
 ```text
-docs/model/templates/symptom_region_annotations_example.csv
+docs/team-1-image/model/templates/symptom_region_annotations_example.csv
 ```
 
 Validate:
 
 ```bash
 cd apps/backend
-python -m dataset_prep.symptom_annotations ../../docs/model/templates/symptom_region_annotations_example.csv
+python -m dataset_prep.symptom_annotations ../../docs/team-1-image/model/templates/symptom_region_annotations_example.csv
 ```
 
 Validator checks accepted categories, healthy no-box rule, hard-negative confusing-region rule, disease image box requirement, duplicate annotation ids, invalid boxes, and reviewer disagreement warnings.

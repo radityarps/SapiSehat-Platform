@@ -9,7 +9,7 @@
 
 **Goal:** Transform MVP 1-screen skeleton menjadi 8-screen full version dengan design system Tropis Bersih, iOS-style tab bar, bilingual, dan full aksesibilitas.
 
-**Spec:** [docs/specs/mobile-full-version-spec.md](../specs/mobile-full-version-spec.md)
+**Spec:** [docs/system-integration/mobile/mobile-full-version-spec.md](../system-integration/mobile/mobile-full-version-spec.md)
 
 **Tech Stack:** Kotlin, Jetpack Compose + Material3, Hilt, Room, CameraX, Retrofit, TFLite
 

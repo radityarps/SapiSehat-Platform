@@ -1,4 +1,4 @@
-> **Team 1 image subsystem note:** TFLite parity applies to offline image evidence only, not the whole SapiSehat platform. Shared platform contracts live in `docs/system-integration/README.md`.
+> **Team 1 image subsystem note:** TFLite parity applies to offline image evidence only, not the whole SapiSehat platform. Shared platform contracts live in `docs/../README.md`. Shared platform contracts path: `docs/system-integration/README.md`.
 
 # TFLite Parity and Version Traceability
 

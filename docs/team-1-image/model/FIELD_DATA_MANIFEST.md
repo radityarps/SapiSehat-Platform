@@ -59,7 +59,7 @@ Use `field_manifest.csv` with these required columns:
 
 ```bash
 cd apps/backend
-python -m dataset_prep.field_manifest ../../docs/model/templates/field_manifest_example.csv
+python -m dataset_prep.field_manifest ../../docs/team-1-image/model/templates/field_manifest_example.csv
 ```
 
 Validator checks required columns, allowed values, weak-label restrictions, validation/test expert-review requirement, duplicate image ids, Scan History warning, and 50-entry target progress.

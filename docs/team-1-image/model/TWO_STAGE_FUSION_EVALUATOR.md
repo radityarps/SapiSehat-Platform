@@ -35,11 +35,11 @@ Two-stage candidate passes only if all are true versus current single-stage fiel
 ## Run
 
 ```bash
-python docs/model/two_stage_fusion_evaluator.py \
-  --truth docs/model/templates/field_manifest_eval_example.csv \
-  --full-scores docs/model/templates/field_predictions_example.csv \
-  --crop-scores docs/model/templates/two_stage_crop_scores_example.csv \
-  --baseline-metrics docs/model/templates/field_baseline_metrics_example.json \
+python docs/team-1-image/model/two_stage_fusion_evaluator.py \
+  --truth docs/team-1-image/model/templates/field_manifest_eval_example.csv \
+  --full-scores docs/team-1-image/model/templates/field_predictions_example.csv \
+  --crop-scores docs/team-1-image/model/templates/two_stage_crop_scores_example.csv \
+  --baseline-metrics docs/team-1-image/model/templates/field_baseline_metrics_example.json \
   --out /tmp/two_stage_fusion_metrics.json
 ```
 

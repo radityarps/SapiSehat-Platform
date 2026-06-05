@@ -1,4 +1,4 @@
-> **Team 1 image subsystem note:** This folder documents image-classification model work only. Current platform contracts live in [system integration](../system-integration/README.md); Team 1 routing lives in [team-1-image](../team-1-image/README.md).
+> **Team 1 image subsystem note:** This folder documents image-classification model work only. Current platform contracts live in [system integration](../../system-integration/README.md) (`docs/system-integration/README.md`); Team 1 routing lives in [team-1-image](../README.md).
 
 # Model Candidate Evaluation
 
@@ -32,7 +32,7 @@ SapiSehat cattle disease classifier (FMD / LSD / healthy).
 After all three candidates have real test-split metrics in `results/`, run:
 
 ```bash
-cd docs/model
+cd docs/team-1-image/model
 python model_selection.py --results-dir results
 # Or write the report to a file:
 python model_selection.py --results-dir results --out MODEL_SELECTION_REPORT.md
@@ -49,7 +49,7 @@ Selection rules (priority order):
 ## Training a Single Candidate
 
 ```bash
-cd docs/model
+cd docs/team-1-image/model
 python training_wrapper.py \
     --manifest /path/to/split_manifest.csv \
     --architecture mobilenetv2 \
@@ -71,7 +71,7 @@ The wrapper outputs per run:
 After model selection (issue #21), export the winner to TFLite and verify parity:
 
 ```bash
-cd docs/model
+cd docs/team-1-image/model
 python tflite_export.py \
     --keras /path/to/selected_model.keras \
     --manifest /path/to/split_manifest.csv \

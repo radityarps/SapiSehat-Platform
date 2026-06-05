@@ -36,8 +36,8 @@ No farmer-facing symptom boxes are enabled by this slice.
 ## Prepare YOLO labels
 
 ```bash
-python docs/model/yolo_symptom_detector.py convert \
-  --annotations docs/model/templates/symptom_region_annotations_example.csv \
+python docs/team-1-image/model/yolo_symptom_detector.py convert \
+  --annotations docs/team-1-image/model/templates/symptom_region_annotations_example.csv \
   --out run_out/yolo_symptom_detector
 ```
 
@@ -76,9 +76,9 @@ image_id,symptom_category,x_min,y_min,x_max,y_max,confidence
 Evaluate simple held-out box metrics at IoU 0.5:
 
 ```bash
-python docs/model/yolo_symptom_detector.py evaluate \
-  --ground-truth docs/model/templates/symptom_region_annotations_example.csv \
-  --predictions docs/model/templates/yolo_predictions_example.csv \
+python docs/team-1-image/model/yolo_symptom_detector.py evaluate \
+  --ground-truth docs/team-1-image/model/templates/symptom_region_annotations_example.csv \
+  --predictions docs/team-1-image/model/templates/yolo_predictions_example.csv \
   --out /tmp/yolo_symptom_metrics.json
 ```
 

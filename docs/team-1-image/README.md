@@ -28,11 +28,11 @@ Before changing image evidence shape or behavior, update:
 
 - [Fusion Contract](../system-integration/api-contracts/FUSION_CONTRACT.md)
 - [Data Model](../system-integration/database/DATA_MODEL.md) when stored image evidence/media changes
-- [System Integration README](../system-integration/README.md) when ownership/routing changes
+- [System Integration README](../../README.md) when ownership/routing changes
 
-## Legacy Image Docs
+## Image Docs
 
-Current image/model docs still live in `docs/model` until the restructure plan is approved. Treat those docs as Team 1 legacy material.
+Migrated image/model docs live in `docs/team-1-image/model`. Treat those docs as Team 1 image subsystem material and keep shared API/data/fusion rules in `docs/system-integration`.
 
 
 ## Image Evidence Contract Tracer

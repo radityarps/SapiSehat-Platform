@@ -16,10 +16,10 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-# Load the selection module from docs/model/model_selection.py
+# Load the selection module from docs/team-1-image/model/model_selection.py
 THIS_FILE = Path(__file__).resolve()
 REPO_ROOT = THIS_FILE.parents[3]
-SELECTION_PATH = REPO_ROOT / "docs" / "model" / "model_selection.py"
+SELECTION_PATH = REPO_ROOT / "docs" / "team-1-image" / "model" / "model_selection.py"
 
 
 def _load_selection():
@@ -149,7 +149,7 @@ class TestSelectionLogic(unittest.TestCase):
 
     def test_real_results_select_mobilenetv2(self):
         """The real Kaggle results should select MobileNetV2 (Android viable)."""
-        results_dir = REPO_ROOT / "docs" / "model" / "results"
+        results_dir = REPO_ROOT / "docs" / "team-1-image" / "model" / "results"
         if not results_dir.exists():
             self.skipTest("Real results not available")
         candidates = self.sel.load_results_dir(str(results_dir))

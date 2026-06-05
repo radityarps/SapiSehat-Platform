@@ -1,51 +1,83 @@
-## Description
+## Summary
 
-<!-- Provide a clear and concise description of your changes -->
+<!-- What changed? Keep concise. -->
 
 ## Type of Change
 
-- [ ] Bug fix (non-breaking change that fixes an issue)
-- [ ] New feature (non-breaking change that adds functionality)
-- [ ] Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] Documentation update
-- [ ] Code refactoring
-- [ ] Performance improvement
-- [ ] Test enhancement
+- [ ] Feature
+- [ ] Bug fix
+- [ ] Docs update
+- [ ] Refactor
+- [ ] Tests
+- [ ] Chore/CI
+
+## Affected Area
+
+- [ ] Shared platform contract
+- [ ] Backend tracer/API
+- [ ] Team 1 image subsystem
+- [ ] Team 2 NLP subsystem
+- [ ] Farmer mobile app
+- [ ] Agency dashboard
+- [ ] Database/PostgreSQL target
+- [ ] Privacy/security/consent
+- [ ] Legacy docs framing
+
+## Contract-First Check
+
+- [ ] No shared contract change
+- [ ] Updated relevant `docs/system-integration/**` before code
+- [ ] Updated Team 1 docs for image-specific change
+- [ ] Updated Team 2 docs for NLP-specific change
+- [ ] Linked PRD/platform docs when changing scope
+
+Relevant docs:
+
+- `docs/../README.md`
+- `docs/system-integration/product/PRD-platform-rebuild.md`
+- `docs/system-integration/api-contracts/FUSION_CONTRACT.md`
+
+## Safe Language Check
+
+- [ ] Uses early detection / evidence / disease risk signal wording
+- [ ] Avoids veterinary diagnosis claims
+- [ ] Avoids confirmed outbreak claims
+- [ ] Avoids certificate/proof wording
 
 ## Testing
 
-<!-- Describe the tests you ran and how to reproduce them -->
+Commands run:
+
+```bash
+# paste commands
+```
+
+Results:
+
+```text
+# paste summary, e.g. 64 passed
+```
 
 - [ ] Unit tests added/updated
-- [ ] Integration tests added/updated
-- [ ] Manual testing performed
+- [ ] Integration/contract tests added/updated
+- [ ] Manual test performed
+- [ ] Not applicable; docs only
 
-**Test Instructions:**
-```
-<!-- How to test your changes -->
-```
+## Privacy / Consent Check
 
-## Checklist
+- [ ] No personal data added to examples/logs
+- [ ] Agency visibility respects role + jurisdiction + consent
+- [ ] Media retention behavior unchanged or documented first
+- [ ] Not applicable
 
-- [ ] My code follows the project's coding style and conventions
-- [ ] I have performed a self-review of my code
-- [ ] I have commented my code, particularly in hard-to-understand areas
-- [ ] I have made corresponding changes to the documentation
-- [ ] My changes generate no new warnings or errors
-- [ ] All existing tests pass
-- [ ] I have added tests that prove my fix is effective or my feature works
-- [ ] New and existing unit tests pass locally
+## Screenshots / Evidence
+
+<!-- Dashboard/mobile screenshots, API output, docs screenshots if useful. -->
 
 ## Related Issues
 
-<!-- Link related issues using #issue_number -->
-
 Closes #
 
-## Screenshots (if applicable)
+## Reviewer Notes
 
-<!-- Add screenshots to help explain your changes -->
-
-## Additional Notes
-
-<!-- Any additional information reviewers should know -->
+<!-- Risks, migrations, follow-up work, known limitations. -->

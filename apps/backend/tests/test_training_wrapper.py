@@ -5,7 +5,7 @@ These are DRY-RUN tests: they verify wrapper argument handling, version-string
 pattern, runtime-metadata generation, bundle manifest, and the versioned zip —
 WITHOUT requiring a GPU, TensorFlow, or the real dataset.
 
-The wrapper module lives at docs/model/training_wrapper.py; we import it by path.
+The wrapper module lives at docs/team-1-image/model/training_wrapper.py; we import it by path.
 """
 
 import importlib.util
@@ -19,11 +19,11 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-# Locate docs/model/training_wrapper.py relative to the repo root.
+# Locate docs/team-1-image/model/training_wrapper.py relative to the repo root.
 THIS_FILE = Path(__file__).resolve()
 REPO_ROOT = THIS_FILE.parents[3]  # apps/backend/tests -> repo root
-WRAPPER_PATH = REPO_ROOT / "docs" / "model" / "training_wrapper.py"
-EVAL_PATH = REPO_ROOT / "docs" / "model" / "evaluate_candidates.py"
+WRAPPER_PATH = REPO_ROOT / "docs" / "team-1-image" / "model" / "training_wrapper.py"
+EVAL_PATH = REPO_ROOT / "docs" / "team-1-image" / "model" / "evaluate_candidates.py"
 
 
 def _load_wrapper():

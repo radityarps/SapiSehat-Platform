@@ -1,4 +1,4 @@
-> **Legacy scope note:** This PRD documents the earlier Team 1 image/mobile subsystem. Current product scope is the full SapiSehat disease early detection platform. Start from [system integration README](system-integration/README.md) and [platform PRD](system-integration/product/PRD-platform-rebuild.md).
+> **Legacy scope note:** This PRD documents the earlier Team 1 image/mobile subsystem. Current product scope is the full SapiSehat disease early detection platform. Start from [system integration README](../README.md) (`docs/system-integration/README.md`) and [platform PRD](PRD-platform-rebuild.md).
 
 # PRD — SapiSehat: Model CNN & Sistem Mobile Android
 
@@ -695,7 +695,7 @@ class ModelPreprocessor @Inject constructor() {
     companion object {
         const val INPUT_SIZE = 224
         // Simple rescale ÷255 — tidak menggunakan ImageNet normalization
-        // (lihat Section 2.3 dan docs/architecture/overview.md)
+        // (lihat Section 2.3 dan docs/system-integration/architecture/legacy-architecture-overview.md)
     }
 
     /**

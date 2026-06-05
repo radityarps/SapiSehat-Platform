@@ -358,8 +358,8 @@ This is possible because the inference logic is already **decoupled** from HTTP
 ## Related Documents
 
 - [README.md](../../README.md) — Project overview and quick start
-- [PRD.md](../PRD.md) — Product Requirements Document
+- [PRD.md](../product/PRD.md) — Product Requirements Document
 - [DEVELOPMENT.md](../backend/development.md) — Backend development guide
 - [Backend README](../backend/README.md) — API reference and setup
-- [CONTRIBUTING.md](../../CONTRIBUTING.md) — Contribution guidelines
-- [CHANGELOG.md](../changelog.md) — Version history
+- [CONTRIBUTING.md](../../../CONTRIBUTING.md) — Contribution guidelines
+- [CHANGELOG.md](../../changelog.md) — Version history

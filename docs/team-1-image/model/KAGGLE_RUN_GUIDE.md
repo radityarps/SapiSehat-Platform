@@ -97,7 +97,7 @@ Verify paths:
 ```python
 print("REPO:", REPO)
 print("BACKEND:", BACKEND)
-!ls -lah "$REPO/docs/model"
+!ls -lah "$REPO/docs/team-1-image/model"
 !ls -lah "$BACKEND/dataset_prep"
 ```
 
@@ -232,7 +232,7 @@ Run a short test before spending GPU time on full training:
 
 ```python
 %cd $REPO
-!python docs/model/training_wrapper.py \
+!python docs/team-1-image/model/training_wrapper.py \
   --manifest /kaggle/working/dataset_artifacts/split_manifest.csv \
   --architecture mobilenetv2 \
   --seed 42 \
@@ -264,7 +264,7 @@ All runs must use the same prepared split manifest:
 
 ```python
 %cd $REPO
-!python docs/model/training_wrapper.py \
+!python docs/team-1-image/model/training_wrapper.py \
   --manifest /kaggle/working/dataset_artifacts/split_manifest.csv \
   --architecture custom_cnn \
   --seed 42 \
@@ -276,7 +276,7 @@ All runs must use the same prepared split manifest:
 
 ```python
 %cd $REPO
-!python docs/model/training_wrapper.py \
+!python docs/team-1-image/model/training_wrapper.py \
   --manifest /kaggle/working/dataset_artifacts/split_manifest.csv \
   --architecture mobilenetv2 \
   --seed 42 \
@@ -288,7 +288,7 @@ All runs must use the same prepared split manifest:
 
 ```python
 %cd $REPO
-!python docs/model/training_wrapper.py \
+!python docs/team-1-image/model/training_wrapper.py \
   --manifest /kaggle/working/dataset_artifacts/split_manifest.csv \
   --architecture densenet121 \
   --seed 42 \
@@ -322,17 +322,17 @@ After downloading and extracting `model_run_outputs.zip` locally, copy real outp
 Copy metrics:
 
 ```text
-run_out_custom_cnn/custom_cnn_metrics.json       → docs/model/results/custom_cnn_metrics.json
-run_out_mobilenetv2/mobilenetv2_metrics.json     → docs/model/results/mobilenetv2_metrics.json
-run_out_densenet121/densenet121_metrics.json     → docs/model/results/densenet121_metrics.json
+run_out_custom_cnn/custom_cnn_metrics.json       → docs/team-1-image/model/results/custom_cnn_metrics.json
+run_out_mobilenetv2/mobilenetv2_metrics.json     → docs/team-1-image/model/results/mobilenetv2_metrics.json
+run_out_densenet121/densenet121_metrics.json     → docs/team-1-image/model/results/densenet121_metrics.json
 ```
 
 Copy confusion matrices:
 
 ```text
-run_out_custom_cnn/custom_cnn_confusion_matrix.png       → docs/model/results/custom_cnn_confusion_matrix.png
-run_out_mobilenetv2/mobilenetv2_confusion_matrix.png     → docs/model/results/mobilenetv2_confusion_matrix.png
-run_out_densenet121/densenet121_confusion_matrix.png     → docs/model/results/densenet121_confusion_matrix.png
+run_out_custom_cnn/custom_cnn_confusion_matrix.png       → docs/team-1-image/model/results/custom_cnn_confusion_matrix.png
+run_out_mobilenetv2/mobilenetv2_confusion_matrix.png     → docs/team-1-image/model/results/mobilenetv2_confusion_matrix.png
+run_out_densenet121/densenet121_confusion_matrix.png     → docs/team-1-image/model/results/densenet121_confusion_matrix.png
 ```
 
 Copy shared run artifacts from one successful run, or keep per-run copies if needed:
@@ -348,7 +348,7 @@ comparison_summary.json
 Update:
 
 ```text
-docs/model/MODEL_EVALUATION_REPORT.md
+docs/team-1-image/model/MODEL_EVALUATION_REPORT.md
 ```
 
 Use real **test-split** metrics only. Remove `PENDING_HITL_RUN` only after real metrics are present.
@@ -364,7 +364,7 @@ git status --short
 Confirm metrics are not pending/null:
 
 ```bash
-rg -n "PENDING_HITL_RUN|null|TBD|old-split" docs/model/MODEL_EVALUATION_REPORT.md docs/model/results
+rg -n "PENDING_HITL_RUN|null|TBD|old-split" docs/team-1-image/model/MODEL_EVALUATION_REPORT.md docs/team-1-image/model/results
 ```
 
 Some `old-split` wording may remain only if it clearly labels legacy MobileNetV2 numbers as legacy, not final.

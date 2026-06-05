@@ -12,7 +12,7 @@ Current model:
 - Version: `cattle-disease-mobilenetv2-v20260601-s42-dynamic-range`
 - Class order: `0 = FMD`, `1 = LSD`, `2 = healthy`
 - Preprocessing: RGB decode, EXIF orientation correction where available, 224 × 224 resize, rescale `1/255`
-- Parity source: `docs/model/results/tflite_out/TFLITE_PARITY_REPORT.md`
+- Parity source: `docs/team-1-image/model/results/tflite_out/TFLITE_PARITY_REPORT.md`
 
 Notes:
 

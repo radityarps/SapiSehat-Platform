@@ -13,7 +13,7 @@ from tempfile import TemporaryDirectory
 
 THIS_FILE = Path(__file__).resolve()
 REPO_ROOT = THIS_FILE.parents[3]
-TFLITE_PATH = REPO_ROOT / "docs" / "model" / "tflite_export.py"
+TFLITE_PATH = REPO_ROOT / "docs" / "team-1-image" / "model" / "tflite_export.py"
 
 
 def _load_tflite():
