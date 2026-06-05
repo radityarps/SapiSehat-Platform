@@ -126,3 +126,7 @@ Dashboard must avoid:
 - confirmed outbreak
 - official epidemiological finding
 - veterinary diagnosis
+
+## Production Rebuild
+
+- [Production Rebuild Plan](PRODUCTION_REBUILD_PLAN.md)

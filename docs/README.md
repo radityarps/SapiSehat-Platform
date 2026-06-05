@@ -9,6 +9,7 @@ SapiSehat documentation is split by ownership so Team 1 image, Team 2 NLP, and s
 - [Team 2 NLP](team-2-nlp/README.md) — NLP-based symptom screening subsystem.
 - [ADRs](adr/) — hard-to-reverse architecture decisions.
 - [Docs Cleanup Report](system-integration/DOCS_CLEANUP_REPORT.md) — removed legacy/duplicate docs and records current routing.
+- [Production Rebuild Plan](system-integration/product/PRODUCTION_REBUILD_PLAN.md) — target production implementation milestones and issue slices.
 
 ## Routing Rules
 

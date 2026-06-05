@@ -92,17 +92,25 @@ _Avoid_: Canonical label, database label
 Primary non-technical mobile user who registers cattle, maintains cattle records, submits early detection inputs, and needs simple guidance in farm conditions.
 _Avoid_: Researcher user, agency operator, admin user
 
-**Phone-Number Farmer Account**:
-Farmer identity model where a farmer registers and signs in using a phone number, with verification or password mechanism defined by implementation phase.
-_Avoid_: Device-only identity, anonymous farmer data, agency-only account creation
+**Farmer User Account**:
+Platform user account used by a farmer to manage cattle records, detection history, consent choices, and follow-up contact through one or more verified credentials such as phone number or Google OAuth.
+_Avoid_: Anonymous-only scan history, device-only identity, agency-created farmer identity only, phone-only identity assumption
+
+**User Credential**:
+Login credential linked to a platform user, such as a verified phone number or Google OAuth subject, used for authentication without defining the user's domain role by itself.
+_Avoid_: Treating Google account, phone number, farmer profile, and agency profile as the same concept
+
+**RBAC Authorization Model**:
+Authorization model where users receive roles, roles grant permissions, and protected platform actions check permissions plus domain constraints such as jurisdiction and consent.
+_Avoid_: Hard-coded role checks only, provider-based authorization, global agency access
 
 **Agency User**:
 Secondary web-dashboard user from a local agency who monitors farmer and cattle records, reviews early detection trends, and supports follow-up actions without replacing veterinary diagnosis.
 _Avoid_: Farmer user, veterinarian-only user, system administrator
 
-**Role-Jurisdiction Agency Account**:
-Agency identity model where each dashboard user has a platform role and assigned administrative jurisdiction that together determine which farmer, cattle, detection, media, and report data the user can access.
-_Avoid_: Single global agency account, role-only account, jurisdiction-only account
+**Agency User Account**:
+Platform user account used by an agency officer or administrator, authorized through roles, permissions, assigned jurisdiction, and verification status to view scoped dashboard data and follow-up workflows.
+_Avoid_: Global dashboard account, farmer account, model-team account, OAuth-only authorization
 
 **Animal Health Advisor**:
 Secondary user such as animal health officer or veterinarian who reviews early detection results and advises farmer without requiring separate app role.
@@ -196,6 +204,18 @@ _Avoid_: Dataset collection by default, stored upload
 Platform storage policy where farmer data, cattle records, detection results, symptom questionnaire answers, NLP notes, and uploaded detection images may be stored in the backend for agency monitoring, audit, and follow-up according to consent, access-control, and data-governance rules.
 _Avoid_: No server storage, local-only scan history, undocumented media retention
 
+**Consent Tier**:
+Farmer-controlled data sharing level where `private` hides routine agency dashboard visibility and uses Private Media Escrow for disclosed risk-signal follow-up, `monitoring` allows authorized agency monitoring with stored media for follow-up and audit, and `research_and_monitoring` additionally allows controlled raw model-team access for research or model-improvement work.
+_Avoid_: Single blanket consent, undisclosed agency follow-up, routine private media browsing, unrestricted research access
+
+**Risk-Signal Follow-Up Exception**:
+Disclosed privacy exception where a private farmer record can expose the full follow-up record, including escrowed media, to authorized agency users when disease-risk signal thresholds require follow-up; access is scoped, logged, and never described as confirmed outbreak or diagnosis.
+_Avoid_: Routine private-data browsing, anonymous-only risk signal when follow-up is required, unlogged emergency access
+
+**Private Media Escrow**:
+Encrypted media retention mode for private-consent detections where media is hidden from routine agency access, revealed only if disease-risk signal thresholds trigger follow-up, and purged after 30 days if no threshold trigger occurs.
+_Avoid_: No private media retention when follow-up needs media, routine private media browsing, indefinite private media storage
+
 **Role-Jurisdiction-Consent Access**:
 Data access policy where agency visibility depends on user role, assigned geographic jurisdiction, and farmer consent tier, so stored farmer, cattle, detection, NLP, and media data is not globally visible by default.
 _Avoid_: All-agency global access, role-only access, consent-only access
@@ -203,6 +223,10 @@ _Avoid_: All-agency global access, role-only access, consent-only access
 **Backend Deployment Phase**:
 Planned server availability stage, starting from LAN backend for TA/demo and scaling to institutional or VPS server for production pilot.
 _Avoid_: Undefined deployment, cloud-scale assumption
+
+**Production Rebuild Phase**:
+Product development stage that graduates the executable tracer into the target platform architecture while preserving the same disease early detection contracts and safe-language rules.
+_Avoid_: Legacy Phase 2 deployment label, image-only backend migration, unrelated model-training phase
 
 **Shared Platform Backend**:
 Rebuilt backend architecture where one platform API owns authentication, farmer data, cattle records, agency dashboard data, shared API contracts, and persistence, while image and NLP inference run as integrated modules or backing services.
@@ -235,6 +259,10 @@ _Avoid_: Clinical validation, lab-confirmed trial
 **Acceptance Test Suite**:
 Minimum verification set covering preprocessing, API prediction, online-to-offline fallback, local history storage, and Android real-device smoke flow.
 _Avoid_: Manual demo only, unit-only testing
+
+**Tracer Acceptance Contract**:
+Expected platform behavior captured by the current executable FastAPI tracer tests and used as the behavioral contract for the Production Rebuild Phase.
+_Avoid_: Reusing tracer internals, docs-only rewrite, silent behavior drift
 
 **Early Detection Result**:
 Scan outcome containing either a disease-class prediction with confidence and handling advice or an insufficient-visual-evidence outcome, used only as early indication rather than veterinary diagnosis.
@@ -345,13 +373,13 @@ _Avoid_: Prototype, demo app
 - Backend deploys the selected Keras/SavedModel server artifact and Android deploys the matching selected TFLite artifact; both must share class index order, preprocessing, model version, and evaluation report, and release is blocked if parity thresholds fail.
 - **Scan History** stores **Early Detection Result** data locally, including **Insufficient Visual Evidence** outcomes, timestamp, image source, confidence, and inference mode.
 - Deleted **Scan History** items are hidden as soft-deleted records and automatically purged with local image/PDF cache after 30 days.
-- Server upload requires **Upload Consent**, EXIF metadata removal, local-only **Scan History**, user-controlled record deletion, and **No-retention Server Inference**.
+- Server upload in the legacy image-only flow required **Upload Consent**, EXIF metadata removal, local-only **Scan History**, user-controlled record deletion, and **No-retention Server Inference**; the platform flow uses **Consent Tier** and **Full Platform Data Retention** instead.
 - Crash-free metric uses **Crash Reporting Consent** or limited field-test logs when consent is unavailable.
-- If **Upload Consent** is denied or disabled, **Online-first Detection** skips **Server Inference** and uses **On-device Inference**.
+- If platform consent is `private`, backend may process detections and store farmer-owned detection metadata with **Private Media Escrow**; routine agency visibility is blocked except through the **Risk-Signal Follow-Up Exception**.
 - Production readiness includes **Limited Field Validation** but not lab-confirmed clinical validation.
 - Production readiness requires **Acceptance Test Suite** before release candidate.
 - Production app targets online inference under 3 seconds, offline inference under 1 second, crash-free sessions at least 99%, fallback success at least 95%, and APK size under 50 MB.
-- App does not require user account because **Scan History** remains local to device.
+- Production platform app requires a **Farmer User Account** with verified phone before cattle registration or detection submission.
 - **Backend Deployment Phase** starts with HTTP LAN backend for current TA/demo, then scales to HTTPS institutional or VPS server for production pilot.
 - Proposal-based PRD is written in English and includes explicit deviation section for online-first architecture and production-scope expansion.
 - **Production App** includes **Core Screen Set** and **Basic Accessibility** for complete farmer-facing workflow.
