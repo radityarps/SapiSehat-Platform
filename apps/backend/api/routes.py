@@ -34,6 +34,7 @@ from api.schemas import (
     StoredMediaRequest,
     StoredMediaResponse,
     StoredMediaListResponse,
+    AgencyRegistryResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -471,3 +472,28 @@ async def get_agency_visible_media(media_id: str = Path(...), agency_user_id: st
     if not can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
         raise HTTPException(status_code=403, detail="Media not visible to agency")
     return _serialize_media(media)
+
+
+@router.get("/agency/registry", response_model=AgencyRegistryResponse)
+async def get_agency_dashboard_registry(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Return dashboard registry farmers and cattle scoped to agency authorization."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    visible_demo_farmers = filter_visible_farmers(agency=agency, farmers=DEMO_FARMERS, jurisdictions=DEMO_JURISDICTIONS)
+    visible_cattle = cattle_profile_store.list_visible_to_agency(
+        agency=agency,
+        farmers_by_id=farmer_account_store.all_by_id(),
+        jurisdictions=DEMO_JURISDICTIONS,
+    )
+    return {
+        "agency_user_id": agency_user_id,
+        "farmers": [farmer.__dict__ for farmer in visible_demo_farmers],
+        "cattle": [_serialize_cattle(profile) for profile in visible_cattle],
+        "filters": {
+            "search": "name/tag",
+            "jurisdiction_id": agency.jurisdiction_id,
+            "consent_scope": "agency_monitoring_or_research_and_monitoring",
+            "table_pattern": "TanStack Table compatible columns",
+        },
+    }

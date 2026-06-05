@@ -1,0 +1,13 @@
+{
+  "name": "sapisehat-dashboard-tracer",
+  "private": true,
+  "scripts": {
+    "test:registry": "python ../backend/tests/test_dashboard_registry_tracer.py"
+  },
+  "dependencies": {
+    "@tanstack/react-table": "latest",
+    "next": "latest",
+    "react": "latest",
+    "react-dom": "latest"
+  }
+}

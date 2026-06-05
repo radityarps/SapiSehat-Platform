@@ -322,3 +322,10 @@ class StoredMediaResponse(BaseModel):
 class StoredMediaListResponse(BaseModel):
     """Stored media list response."""
     media: List[StoredMediaResponse]
+
+class AgencyRegistryResponse(BaseModel):
+    """Agency dashboard registry response."""
+    agency_user_id: str
+    farmers: List[AgencyVisibleFarmer]
+    cattle: List[CattleProfileResponse]
+    filters: Dict[str, object]
