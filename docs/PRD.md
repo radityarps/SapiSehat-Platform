@@ -1,3 +1,5 @@
+> **Legacy scope note:** This PRD documents the earlier Team 1 image/mobile subsystem. Current product scope is the full SapiSehat disease early detection platform. Start from [system integration README](system-integration/README.md) and [platform PRD](system-integration/product/PRD-platform-rebuild.md).
+
 # PRD — SapiSehat: Model CNN & Sistem Mobile Android
 
 **Product Requirements Document**

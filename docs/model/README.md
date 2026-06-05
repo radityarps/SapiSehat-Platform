@@ -1,3 +1,5 @@
+> **Team 1 image subsystem note:** This folder documents image-classification model work only. Current platform contracts live in [system integration](../system-integration/README.md); Team 1 routing lives in [team-1-image](../team-1-image/README.md).
+
 # Model Candidate Evaluation
 
 This directory contains the model candidate evaluation artifacts for the

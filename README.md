@@ -1,6 +1,6 @@
 # SapiSehat Platform
 
-Aplikasi Android untuk deteksi penyakit sapi (PMK dan Lato-Lato) menggunakan foto, berbasis model CNN MobileNetV2.
+SapiSehat adalah platform early detection penyakit sapi untuk peternak dan instansi: aplikasi farmer mobile, profil ternak lengkap, bukti image Team 1, bukti NLP Team 2, backend fusion, database PostgreSQL target, dan dashboard agency. Modul image MobileNetV2 tetap ada sebagai subsystem Team 1, bukan seluruh produk.
 
 **Tim:** Raditya Rafif Pratama Sasmita & Noval Putra Ramadhan  
 **Institusi:** Politeknik Negeri Semarang — Teknik Informatika  
@@ -13,8 +13,9 @@ Aplikasi Android untuk deteksi penyakit sapi (PMK dan Lato-Lato) menggunakan fot
 ```
 sapisehat/
 ├── apps/
-│   ├── backend/          # FastAPI inference server (Python)
-│   └── mobile/           # Android app (Kotlin)
+│   ├── backend/          # FastAPI tracer + Python image inference prototype
+│   ├── dashboard/        # Next.js/TanStack agency dashboard tracer
+│   └── mobile/           # Android farmer app (Kotlin)
 ├── docs/
 │   ├── README.md              # Documentation routing and ownership
 │   ├── system-integration/    # Shared platform contracts
@@ -93,9 +94,9 @@ Atur Server URL dari dalam aplikasi: **Settings → Server URL** (tanpa rebuild)
 
 - **Tech:** Python 3.10, FastAPI, TensorFlow, MobileNetV2
 - **Model:** `mobilenetv2_best.keras` (~20MB, tersedia via Docker volume mount)
-- **Endpoint:** `POST /api/predict` — terima gambar sapi, return diagnosis
-- **Docs:** [API reference](docs/backend/README.md)
-- **Dev guide:** [docs/backend/development.md](docs/backend/development.md)
+- **Endpoint legacy image:** `POST /api/predict` — terima gambar sapi, return early detection image classification result
+- **Shared contracts:** [System Integration](docs/system-integration/README.md)
+- **Legacy image/backend docs:** [API reference](docs/Backend/README.md) | [Dev guide](docs/Backend/development.md)
 
 ```bash
 make backend-run       # Development (hot reload)
@@ -107,7 +108,7 @@ make backend-docker    # Build & run via Docker
 
 - **Tech:** Kotlin, Jetpack Compose, MVVM, Hilt, Room, CameraX, TFLite (offline fallback)
 - **Min SDK:** API 24 (Android 7.0)
-- **Docs:** [Mobile setup](docs/Mobile/README.md) | [Wireless Debugging](docs/Mobile/WIRELESS-DEBUGGING.md)
+- **Docs:** [Mobile contracts](docs/system-integration/mobile/README.md) | [Legacy setup](docs/Mobile/README.md) | [Wireless Debugging](docs/Mobile/WIRELESS-DEBUGGING.md)
 
 ```bash
 pnpm mobile:run        # Build + install + launch
@@ -138,7 +139,7 @@ pnpm test
 
 ---
 
-## Model File
+## Model File (Team 1 Image Subsystem)
 
 File model **tidak di-commit** ke git karena ukurannya besar (~20MB).
 
@@ -153,9 +154,15 @@ Cara setup:
 
 ## Docs
 
+Legacy docs below may describe image/mobile subsystems. Platform source of truth: [docs/system-integration/README.md](docs/system-integration/README.md) and [PRD platform rebuild](docs/system-integration/product/PRD-platform-rebuild.md).
+
 | Dokumen                                                                                          | Deskripsi                               |
 | ------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| [docs/architecture/overview.md](docs/architecture/overview.md)                                   | System architecture & data flow         |
+| [docs/system-integration/README.md](docs/system-integration/README.md)                         | Shared platform contracts               |
+| [docs/system-integration/product/PRD-platform-rebuild.md](docs/system-integration/product/PRD-platform-rebuild.md) | Current platform PRD                    |
+| [docs/team-1-image/README.md](docs/team-1-image/README.md)                                      | Team 1 image subsystem routing          |
+| [docs/team-2-nlp/README.md](docs/team-2-nlp/README.md)                                          | Team 2 NLP subsystem routing            |
+| [docs/architecture/overview.md](docs/architecture/overview.md)                                   | Legacy architecture & data flow         |
 | [docs/backend/README.md](docs/backend/README.md)                                                 | Backend API reference & setup           |
 | [docs/backend/development.md](docs/backend/development.md)                                       | Backend development guide               |
 | [docs/mobile/README.md](docs/mobile/README.md)                                                   | Mobile app documentation                |

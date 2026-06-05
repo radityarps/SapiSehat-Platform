@@ -1,3 +1,5 @@
+> **Legacy backend note:** This document describes the Python/FastAPI image inference prototype and tracer backend. Current target architecture is Go gateway + Python inference services; shared contracts live in [system integration backend](../system-integration/backend/README.md) and [platform PRD](../system-integration/product/PRD-platform-rebuild.md).
+
 # SapiSehat Backend
 
 FastAPI backend for cattle disease detection (PMK & LSD) using MobileNetV2 CNN.

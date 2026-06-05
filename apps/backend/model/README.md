@@ -1,3 +1,5 @@
+> **Team 1 image subsystem note:** This model folder supports image inference prototype only. Platform contracts live in `docs/system-integration/README.md`; Team 1 docs live in `docs/team-1-image/README.md`.
+
 # Model Directory
 
 Place your trained MobileNetV2 model here.

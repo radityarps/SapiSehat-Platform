@@ -1,3 +1,5 @@
+> **Legacy backend note:** Use this for FastAPI/image tracer development only. Current shared backend direction lives in [system integration backend](../system-integration/backend/README.md).
+
 # SapiSehat Backend - Development Guide
 
 ## Architecture Overview

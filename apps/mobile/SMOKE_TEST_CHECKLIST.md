@@ -1,3 +1,5 @@
+> **Legacy mobile note:** This checklist covers the image-first Android flow. Current farmer app must follow platform mobile contracts in `docs/system-integration/mobile/README.md`.
+
 # SapiSehat — Smoke Test Checklist
 
 Manual smoke test flow to verify core functionality before release.
