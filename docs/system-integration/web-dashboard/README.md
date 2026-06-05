@@ -29,3 +29,12 @@ Executable API: `GET /api/agency/detection-monitoring`. Dashboard detection moni
 - image/NLP evidence breakdown.
 
 Prototype UI path: `apps/dashboard/app/agency/detections/page.tsx`. UI uses safe language: disease risk signals, not diagnosis or confirmed outbreak wording.
+
+
+## Disease Risk Signal Summary Tracer
+
+Human-approved placeholder rule: **2+ signals**. Flag `possible_increased_risk` when two or more non-healthy `reliable` or `needs_review` fused detections appear in the same jurisdiction within a 7-day window.
+
+Executable API: `GET /api/agency/risk-signals`. Dashboard output is scoped by agency role, jurisdiction, and consent. Language must say possible increased disease risk signal and follow-up priority only; no confirmed outbreak or veterinary diagnosis claims.
+
+Prototype UI path: `apps/dashboard/app/agency/risk-signals/page.tsx`.

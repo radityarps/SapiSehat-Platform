@@ -336,3 +336,20 @@ class AgencyDetectionMonitoringResponse(BaseModel):
     agency_user_id: str
     detections: List[FusionResultResponse]
     safe_language: Dict[str, str]
+
+class JurisdictionRiskSignalResponse(BaseModel):
+    """Jurisdiction-level disease risk signal summary."""
+    jurisdiction_id: str
+    disease_class: str
+    signal_count: int
+    window_days: int
+    risk_level: str
+    priority: str
+    summary_label: str
+
+class AgencyRiskSignalSummaryResponse(BaseModel):
+    """Agency dashboard disease risk signal summary response."""
+    agency_user_id: str
+    rule: Dict[str, object]
+    signals: List[JurisdictionRiskSignalResponse]
+    safe_language: Dict[str, str]

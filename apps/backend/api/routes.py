@@ -36,6 +36,7 @@ from api.schemas import (
     StoredMediaListResponse,
     AgencyRegistryResponse,
     AgencyDetectionMonitoringResponse,
+    AgencyRiskSignalSummaryResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -45,6 +46,7 @@ from api.detection_events import detection_event_store
 from api.fusion_results import fusion_result_store
 from api.offline_sync import offline_detection_sync_store
 from api.media_governance import media_store
+from api.risk_signals import summarize_risk_signals
 from api.authorization import ConsentTier, FarmerRecord, DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, can_agency_access_farmer, filter_visible_farmers
 
 logger = get_logger(__name__)
@@ -519,5 +521,37 @@ async def get_agency_detection_monitoring(agency_user_id: str = Header(..., alia
             "title": "Disease risk signals",
             "description": "Early detection signals for monitoring and follow-up, not confirmed diagnosis or outbreak declaration.",
             "forbidden_terms": "confirmed outbreak, confirmed diagnosis",
+        },
+    }
+
+
+@router.get("/agency/risk-signals", response_model=AgencyRiskSignalSummaryResponse)
+async def get_agency_risk_signal_summary(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Return jurisdiction-level possible increased disease risk signals inside agency scope."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    visible_cattle = cattle_profile_store.list_visible_to_agency(
+        agency=agency,
+        farmers_by_id=farmer_account_store.all_by_id(),
+        jurisdictions=DEMO_JURISDICTIONS,
+    )
+    visible_cattle_ids = {profile.id for profile in visible_cattle}
+    results = fusion_result_store.list_by_cattle_ids(visible_cattle_ids)
+    jurisdictions = {profile.id: profile.jurisdiction_id for profile in visible_cattle}
+    signals = summarize_risk_signals(results, jurisdictions)
+    return {
+        "agency_user_id": agency_user_id,
+        "rule": {
+            "name": "two_or_more_non_healthy_signals_7d",
+            "threshold_count": 2,
+            "window_days": 7,
+            "included_reliability": ["reliable", "needs_review"],
+            "language": "possible increased risk, not confirmed outbreak or diagnosis",
+        },
+        "signals": [signal.__dict__ for signal in signals],
+        "safe_language": {
+            "title": "Disease risk signal summary",
+            "description": "Possible increased risk signals for follow-up prioritization. Not confirmed outbreak. Not veterinary diagnosis.",
         },
     }
