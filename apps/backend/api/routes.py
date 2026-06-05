@@ -26,12 +26,16 @@ from api.schemas import (
     ImageEvidenceResponse,
     NlpEvidenceRequest,
     NlpEvidenceResponse,
+    FusionRequest,
+    FusionResultResponse,
+    FusionResultListResponse,
 )
 from config import settings
 from utils.logger import get_logger
 from api.farmer_accounts import farmer_account_store
 from api.cattle_profiles import CattleEventType, CattleSex, CattleStatus, cattle_profile_store
 from api.detection_events import detection_event_store
+from api.fusion_results import fusion_result_store
 from api.authorization import DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, filter_visible_farmers
 
 logger = get_logger(__name__)
@@ -70,6 +74,25 @@ def _serialize_cattle_detail(profile):
     detail["timeline"] = [_serialize_cattle_event(event) for event in cattle_profile_store.list_timeline_events(profile.id)]
     return detail
 
+
+
+def _serialize_fusion_result(result):
+    return {
+        "id": result.id,
+        "fusion_version": result.fusion_version,
+        "inference_mode": result.inference_mode,
+        "farmer_id": result.farmer_id,
+        "cattle_id": result.cattle_id,
+        "disease_class": result.disease_class,
+        "confidence": result.confidence,
+        "confidence_level": result.confidence_level,
+        "reliability": result.reliability,
+        "handling_advice_key": result.handling_advice_key,
+        "evidence_breakdown": result.evidence_breakdown,
+        "conflict_status": result.conflict_status,
+        "model_versions": result.model_versions,
+        "created_at": result.created_at,
+    }
 
 def _serialize_detection(event):
     return {
@@ -337,3 +360,27 @@ async def validate_nlp_evidence(request: NlpEvidenceRequest):
         **request.model_dump(),
         "accepted_for_fusion": True,
     }
+
+
+@router.post("/fusion/results", response_model=FusionResultResponse)
+async def create_backend_primary_fusion_result(request: FusionRequest):
+    """Fuse Team 1 image and Team 2 NLP evidence into safe early detection result."""
+    if farmer_account_store.get_by_id(request.farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    try:
+        result = fusion_result_store.create(
+            farmer_id=request.farmer_id,
+            cattle_id=request.cattle_id,
+            image_evidence=request.image_evidence,
+            nlp_evidence=request.nlp_evidence,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return _serialize_fusion_result(result)
+
+@router.get("/fusion/results", response_model=FusionResultListResponse)
+async def list_fusion_results():
+    """List stored backend-primary fusion tracer results."""
+    return {"results": [_serialize_fusion_result(result) for result in fusion_result_store.list_all()]}

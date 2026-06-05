@@ -251,3 +251,31 @@ class NlpEvidenceRequest(BaseModel):
 class NlpEvidenceResponse(NlpEvidenceRequest):
     """Validated Team 2 NLP evidence response."""
     accepted_for_fusion: bool
+
+class FusionRequest(BaseModel):
+    """Backend-primary fusion request."""
+    farmer_id: str = Field(min_length=1, max_length=120)
+    cattle_id: Optional[str] = None
+    image_evidence: Optional[ImageEvidenceRequest] = None
+    nlp_evidence: Optional[NlpEvidenceRequest] = None
+
+class FusionResultResponse(BaseModel):
+    """Stored fusion result response."""
+    id: str
+    fusion_version: str
+    inference_mode: str
+    farmer_id: str
+    cattle_id: Optional[str]
+    disease_class: str
+    confidence: float
+    confidence_level: str
+    reliability: str
+    handling_advice_key: str
+    evidence_breakdown: Dict[str, object]
+    conflict_status: str
+    model_versions: Dict[str, str]
+    created_at: str
+
+class FusionResultListResponse(BaseModel):
+    """Fusion result list response."""
+    results: List[FusionResultResponse]

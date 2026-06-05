@@ -136,3 +136,15 @@ Executable tracer: `POST /api/evidence/nlp`. The validator enforces:
 - `model_version` and `inference_mode` are present.
 - questionnaire answers and optional notes are Team 2-owned inputs.
 - evidence must include questionnaire answers or `notes_present: true`.
+
+
+## Backend-Primary Fusion Tracer
+
+Executable tracer: `POST /api/fusion/results`. Backend accepts Team 1 image evidence and/or Team 2 NLP evidence, stores one fusion result, and returns safe early detection handling advice. Rules:
+
+- matching medium/high image + NLP top classes may return `reliable`.
+- image/NLP top-class conflict returns `needs_review`.
+- missing image, missing NLP, or rejected image returns `low_reliability`.
+- low confidence returns `insufficient_evidence`.
+- stored result includes `evidence_breakdown`, `confidence`, `confidence_level`, `reliability`, `conflict_status`, and `model_versions`.
+- handling advice keys must avoid diagnosis or confirmed outbreak wording.
