@@ -6,10 +6,12 @@ from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Header
 from fastapi.responses import JSONResponse
 from PIL import Image
 from inference_server import get_inference_service, is_model_ready, get_model_status
-from api.schemas import PredictResponse, HealthResponse, AgencyFarmersResponse
+from api.schemas import PredictResponse, HealthResponse, AgencyFarmersResponse, FarmerAccountRequest, FarmerAccountResponse
 from config import settings
 from utils.logger import get_logger
 
+
+from api.farmer_accounts import farmer_account_store
 from api.authorization import (
     DEMO_AGENCY_USERS,
     DEMO_FARMERS,
@@ -155,4 +157,30 @@ async def list_agency_visible_farmers(
     return {
         "agency_user_id": agency_user_id,
         "farmers": [farmer.__dict__ for farmer in visible_farmers],
+    }
+
+@router.post("/farmers/accounts", response_model=FarmerAccountResponse)
+async def register_or_sign_in_farmer_account(request: FarmerAccountRequest):
+    """Register or sign in farmer using phone-number identity.
+
+    Duplicate normalized phone numbers return existing farmer identity so future
+    cattle and detection records can link to one stable farmer id. Consent starts
+    private until farmer explicitly opts into agency monitoring.
+    """
+    try:
+        account, created = farmer_account_store.upsert_by_phone(
+            phone_number=request.phone_number,
+            name=request.name,
+            jurisdiction_id=request.jurisdiction_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+
+    return {
+        "id": account.id,
+        "phone_number": account.phone_number,
+        "name": account.name,
+        "jurisdiction_id": account.jurisdiction_id,
+        "consent_state": account.consent_state.value,
+        "created": created,
     }

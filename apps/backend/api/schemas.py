@@ -75,3 +75,19 @@ class AgencyFarmersResponse(BaseModel):
     """Agency-scoped farmer list response."""
     agency_user_id: str
     farmers: List[AgencyVisibleFarmer]
+
+
+class FarmerAccountRequest(BaseModel):
+    """Register or sign in farmer by phone-number identity."""
+    phone_number: str = Field(min_length=8, max_length=32)
+    name: str = Field(min_length=1, max_length=120)
+    jurisdiction_id: str = Field(min_length=1, max_length=120)
+
+class FarmerAccountResponse(BaseModel):
+    """Phone-number farmer account response."""
+    id: str
+    phone_number: str
+    name: str
+    jurisdiction_id: str
+    consent_state: str
+    created: bool
