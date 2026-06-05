@@ -22,6 +22,8 @@ from api.schemas import (
     AttachDetectionRequest,
     DetectionEventResponse,
     DetectionEventListResponse,
+    ImageEvidenceRequest,
+    ImageEvidenceResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -315,3 +317,12 @@ async def list_agency_visible_attached_detections(agency_user_id: str = Header(.
     )
     events = detection_event_store.list_by_cattle_ids({profile.id for profile in visible_cattle})
     return {"detections": [_serialize_detection(event) for event in events]}
+
+
+@router.post("/evidence/image", response_model=ImageEvidenceResponse)
+async def validate_image_evidence(request: ImageEvidenceRequest):
+    """Validate Team 1 image evidence contract for fusion consumers."""
+    return {
+        **request.model_dump(),
+        "accepted_for_fusion": request.quality_status.value != "rejected",
+    }

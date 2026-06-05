@@ -33,3 +33,21 @@ Before changing image evidence shape or behavior, update:
 ## Legacy Image Docs
 
 Current image/model docs still live in `docs/model` until the restructure plan is approved. Treat those docs as Team 1 legacy material.
+
+
+## Image Evidence Contract Tracer
+
+Issue #7 adds the first executable Team 1 image evidence contract. Image evidence must include:
+
+1. `source: image`.
+2. `model_version`.
+3. `inference_mode: online|offline`.
+4. `disease_scores` with exactly `healthy`, `FMD`, and `LSD`.
+5. `top_class` matching the highest disease score.
+6. `confidence` from 0.0 to 1.0.
+7. `quality_status: accepted|warning|rejected`.
+8. `rejection_reasons` when `quality_status` is `rejected`.
+
+Rejected image evidence must be marked not accepted for fusion so poor image inputs do not create misleading reliable results.
+
+Prototype validation endpoint: `POST /api/evidence/image`.

@@ -112,3 +112,15 @@ Fusion result may be stored with:
 - Thresholds for confidence and conflict.
 - Whether `healthy` should be allowed when image and NLP evidence are both weak.
 - Exact sync conflict handling if offline result changes after backend re-fusion.
+
+
+## Team 1 Image Evidence Validation Rules
+
+Executable tracer: `POST /api/evidence/image`. The validator enforces:
+
+- `disease_scores` has exactly `healthy`, `FMD`, and `LSD`.
+- each disease score is between 0.0 and 1.0.
+- `top_class` matches the highest disease score.
+- `model_version` and `inference_mode` are present.
+- rejected image evidence includes at least one `rejection_reasons` entry.
+- rejected image evidence returns `accepted_for_fusion: false`.

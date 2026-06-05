@@ -169,3 +169,46 @@ class DetectionEventResponse(BaseModel):
 class DetectionEventListResponse(BaseModel):
     """Detection event list response."""
     detections: List[DetectionEventResponse]
+
+class ImageEvidenceQualityStatus(str, Enum):
+    ACCEPTED = "accepted"
+    REJECTED = "rejected"
+    WARNING = "warning"
+
+class ImageEvidenceInferenceMode(str, Enum):
+    ONLINE = "online"
+    OFFLINE = "offline"
+
+class ImageEvidenceRequest(BaseModel):
+    """Team 1 image evidence contract payload."""
+    source: str = "image"
+    model_version: str = Field(min_length=1, max_length=80)
+    inference_mode: ImageEvidenceInferenceMode
+    disease_scores: Dict[str, float]
+    top_class: str
+    confidence: float = Field(ge=0.0, le=1.0)
+    quality_status: ImageEvidenceQualityStatus
+    rejection_reasons: List[str] = Field(default_factory=list)
+    debug: Dict[str, object] = Field(default_factory=dict)
+
+    @classmethod
+    def _required_score_keys(cls) -> set[str]:
+        return {"healthy", "FMD", "LSD"}
+
+    def model_post_init(self, __context):
+        if self.source != "image":
+            raise ValueError("source must be image")
+        if set(self.disease_scores.keys()) != self._required_score_keys():
+            raise ValueError("disease_scores must contain exactly healthy, FMD, and LSD")
+        if any(score < 0.0 or score > 1.0 for score in self.disease_scores.values()):
+            raise ValueError("disease_scores values must be between 0 and 1")
+        if self.top_class not in self._required_score_keys():
+            raise ValueError("top_class must be healthy, FMD, or LSD")
+        if self.top_class != max(self.disease_scores, key=self.disease_scores.get):
+            raise ValueError("top_class must match highest disease score")
+        if self.quality_status == ImageEvidenceQualityStatus.REJECTED and not self.rejection_reasons:
+            raise ValueError("rejected image evidence requires rejection_reasons")
+
+class ImageEvidenceResponse(ImageEvidenceRequest):
+    """Validated Team 1 image evidence response."""
+    accepted_for_fusion: bool
