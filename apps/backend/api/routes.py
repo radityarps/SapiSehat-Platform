@@ -2,13 +2,20 @@
 
 import asyncio
 import io
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query
+from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Header
 from fastapi.responses import JSONResponse
 from PIL import Image
 from inference_server import get_inference_service, is_model_ready, get_model_status
-from api.schemas import PredictResponse, HealthResponse
+from api.schemas import PredictResponse, HealthResponse, AgencyFarmersResponse
 from config import settings
 from utils.logger import get_logger
+
+from api.authorization import (
+    DEMO_AGENCY_USERS,
+    DEMO_FARMERS,
+    DEMO_JURISDICTIONS,
+    filter_visible_farmers,
+)
 
 logger = get_logger(__name__)
 
@@ -125,3 +132,27 @@ async def health():
                 "model_version": "unknown",
             },
         )
+
+@router.get("/agency/farmers", response_model=AgencyFarmersResponse)
+async def list_agency_visible_farmers(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    """Return farmers visible to agency user after role-jurisdiction-consent filtering.
+
+    This tracer endpoint proves platform data access is not global by default.
+    It uses in-memory demo records until the rebuilt Go gateway/PostgreSQL
+    implementation replaces this FastAPI prototype.
+    """
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+
+    visible_farmers = filter_visible_farmers(
+        agency=agency,
+        farmers=DEMO_FARMERS,
+        jurisdictions=DEMO_JURISDICTIONS,
+    )
+    return {
+        "agency_user_id": agency_user_id,
+        "farmers": [farmer.__dict__ for farmer in visible_farmers],
+    }

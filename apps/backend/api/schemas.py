@@ -62,3 +62,16 @@ class ErrorResponse(BaseModel):
     status: str = "error"
     error_code: str
     message: str = Field(max_length=256)
+
+
+class AgencyVisibleFarmer(BaseModel):
+    """Farmer record visible to an agency user after authorization filtering."""
+    id: str
+    name: str
+    jurisdiction_id: str
+    consent_tier: str
+
+class AgencyFarmersResponse(BaseModel):
+    """Agency-scoped farmer list response."""
+    agency_user_id: str
+    farmers: List[AgencyVisibleFarmer]
