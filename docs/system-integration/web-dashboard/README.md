@@ -16,3 +16,16 @@ Prototype UI path: `apps/dashboard/app/agency/registry/page.tsx`. It uses Next.j
 - permitted cattle table.
 - shared text filter.
 - no records outside agency jurisdiction or consent scope.
+
+
+## Agency Detection Monitoring Tracer
+
+Executable API: `GET /api/agency/detection-monitoring`. Dashboard detection monitoring returns agency-scoped fused detection rows with:
+
+- disease risk signal class.
+- confidence.
+- reliability.
+- conflict status.
+- image/NLP evidence breakdown.
+
+Prototype UI path: `apps/dashboard/app/agency/detections/page.tsx`. UI uses safe language: disease risk signals, not diagnosis or confirmed outbreak wording.

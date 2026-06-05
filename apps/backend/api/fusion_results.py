@@ -51,6 +51,9 @@ class FusionResultStore:
     def list_all(self) -> list[FusionResult]:
         return list(self.results_by_id.values())
 
+    def list_by_cattle_ids(self, cattle_ids: set[str]) -> list[FusionResult]:
+        return [result for result in self.results_by_id.values() if result.cattle_id in cattle_ids]
+
 
 def confidence_level(confidence: float) -> str:
     if confidence >= 0.75:

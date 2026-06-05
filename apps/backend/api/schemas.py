@@ -329,3 +329,10 @@ class AgencyRegistryResponse(BaseModel):
     farmers: List[AgencyVisibleFarmer]
     cattle: List[CattleProfileResponse]
     filters: Dict[str, object]
+
+
+class AgencyDetectionMonitoringResponse(BaseModel):
+    """Agency dashboard detection monitoring response."""
+    agency_user_id: str
+    detections: List[FusionResultResponse]
+    safe_language: Dict[str, str]

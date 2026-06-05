@@ -35,6 +35,7 @@ from api.schemas import (
     StoredMediaResponse,
     StoredMediaListResponse,
     AgencyRegistryResponse,
+    AgencyDetectionMonitoringResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -495,5 +496,28 @@ async def get_agency_dashboard_registry(agency_user_id: str = Header(..., alias=
             "jurisdiction_id": agency.jurisdiction_id,
             "consent_scope": "agency_monitoring_or_research_and_monitoring",
             "table_pattern": "TanStack Table compatible columns",
+        },
+    }
+
+
+@router.get("/agency/detection-monitoring", response_model=AgencyDetectionMonitoringResponse)
+async def get_agency_detection_monitoring(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Return agency-scoped fused detection monitoring rows with safe risk language."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    visible_cattle = cattle_profile_store.list_visible_to_agency(
+        agency=agency,
+        farmers_by_id=farmer_account_store.all_by_id(),
+        jurisdictions=DEMO_JURISDICTIONS,
+    )
+    results = fusion_result_store.list_by_cattle_ids({profile.id for profile in visible_cattle})
+    return {
+        "agency_user_id": agency_user_id,
+        "detections": [_serialize_fusion_result(result) for result in results],
+        "safe_language": {
+            "title": "Disease risk signals",
+            "description": "Early detection signals for monitoring and follow-up, not confirmed diagnosis or outbreak declaration.",
+            "forbidden_terms": "confirmed outbreak, confirmed diagnosis",
         },
     }
