@@ -9,6 +9,12 @@ from inference_server import get_inference_service, is_model_ready, get_model_st
 from api.schemas import (
     PredictResponse,
     HealthResponse,
+    FarmerRegisterRequest,
+    FarmerLoginRequest,
+    FarmerGoogleLoginRequest,
+    AgencyLoginRequest,
+    AuthResponse,
+    AuthAccountResponse,
     AgencyFarmersResponse,
     FarmerAccountRequest,
     FarmerAccountResponse,
@@ -37,6 +43,9 @@ from api.schemas import (
     AgencyRegistryResponse,
     AgencyDetectionMonitoringResponse,
     AgencyRiskSignalSummaryResponse,
+    FollowUpCreateRequest,
+    AgencyFollowUpResponse,
+    FarmerFollowUpListResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -46,11 +55,80 @@ from api.detection_events import detection_event_store
 from api.fusion_results import fusion_result_store
 from api.offline_sync import offline_detection_sync_store
 from api.media_governance import media_store
-from api.risk_signals import summarize_risk_signals
+from api.follow_ups import follow_up_store
+from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
 from api.authorization import ConsentTier, FarmerRecord, DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, can_agency_access_farmer, filter_visible_farmers
+from api.surface_auth import issue_token, read_token, seed_default_agency_accounts, surface_account_store
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api", tags=["prediction"])
+
+
+def _serialize_auth_account(account):
+    return {"id": account.id, "account_type": account.account_type, "email": account.email}
+
+
+@router.post("/auth/farmer/register", response_model=AuthResponse)
+async def register_farmer_surface_account(request: FarmerRegisterRequest):
+    """Register farmer mobile account with email/password and issue token."""
+    try:
+        account = surface_account_store.register_farmer(
+            email=request.email,
+            password=request.password,
+            name=request.name,
+            jurisdiction_id=request.jurisdiction_id,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
+
+
+@router.post("/auth/farmer/login", response_model=AuthResponse)
+async def login_farmer_surface_account(request: FarmerLoginRequest):
+    """Login farmer mobile account with email/password and issue token."""
+    account = surface_account_store.authenticate(account_type="farmer", email=request.email, password=request.password)
+    if account is None:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
+
+@router.post("/auth/farmer/google", response_model=AuthResponse)
+async def login_farmer_google_account(request: FarmerGoogleLoginRequest):
+    """Exchange verified Google token for farmer backend JWT."""
+    try:
+        account = surface_account_store.register_farmer_google(id_token=request.id_token, jurisdiction_id=request.jurisdiction_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc))
+    return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
+
+
+@router.post("/auth/agency/login", response_model=AuthResponse)
+async def login_agency_surface_account(request: AgencyLoginRequest):
+    """Login admin-seeded agency dashboard account with email/password."""
+    seed_default_agency_accounts()
+    account = surface_account_store.authenticate(account_type="agency", email=request.email, password=request.password)
+    if account is None:
+        raise HTTPException(status_code=401, detail="Invalid email or password")
+    return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
+
+@router.post("/auth/agency/google")
+async def reject_agency_google_login():
+    """Agency Google sign-in disabled in first release."""
+    raise HTTPException(status_code=404, detail="Agency Google login not available")
+
+
+@router.get("/me", response_model=AuthAccountResponse)
+async def get_current_surface_account(authorization: str = Header(..., alias="Authorization")):
+    """Return current account from bearer token."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    account = surface_account_store.get_by_id(account_type=str(claims["account_type"]), account_id=str(claims["sub"]))
+    if account is None:
+        raise HTTPException(status_code=401, detail="Account not found")
+    return _serialize_auth_account(account)
 
 
 def _serialize_cattle(profile):
@@ -99,6 +177,25 @@ def _serialize_media(media):
         "storage_reference": media.storage_reference,
     }
 
+def _serialize_agency_follow_up(follow_up):
+    return {
+        "id": follow_up.id,
+        "farmer_id": follow_up.farmer_id,
+        "cattle_id": follow_up.cattle_id,
+        "status": follow_up.status,
+        "public_message": follow_up.public_message,
+        "internal_notes": follow_up.internal_notes,
+    }
+
+def _serialize_farmer_follow_up(follow_up):
+    return {
+        "id": follow_up.id,
+        "farmer_id": follow_up.farmer_id,
+        "cattle_id": follow_up.cattle_id,
+        "status": follow_up.status,
+        "public_message": follow_up.public_message,
+    }
+
 def _serialize_fusion_result(result):
     return {
         "id": result.id,
@@ -134,7 +231,11 @@ async def predict(
     two_stage: bool = Query(False, description="Developer-only two-stage prototype path"),
     debug_regions: bool = Query(False, description="Include developer-only symptom-region debug data"),
 ):
-    """Predict cattle disease from image."""
+    """Predict cattle disease from image using no-retention request handling.
+
+    Uploaded image bytes are processed in memory for this request only and are
+    not written to backend storage by this legacy prediction endpoint.
+    """
     if not is_model_ready():
         raise HTTPException(status_code=503, detail="Model not loaded")
 
@@ -263,6 +364,14 @@ async def select_farmer_cattle_for_detection(farmer_id: str = Path(...), cattle_
     if profile is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     return _serialize_cattle_detail(profile)
+
+@router.delete("/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileResponse)
+async def archive_farmer_cattle(farmer_id: str = Path(...), cattle_id: str = Path(...)):
+    """Archive cattle instead of true deletion in first release."""
+    profile = cattle_profile_store.archive(farmer_id=farmer_id, cattle_id=cattle_id)
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    return _serialize_cattle(profile)
 
 
 @router.get("/agency/cattle", response_model=CattleProfileListResponse)
@@ -477,6 +586,37 @@ async def get_agency_visible_media(media_id: str = Path(...), agency_user_id: st
     return _serialize_media(media)
 
 
+@router.post("/agency/follow-ups", response_model=AgencyFollowUpResponse)
+async def create_agency_follow_up(request: FollowUpCreateRequest, agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Create agency follow-up status; internal notes stay agency-only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    farmer = farmer_account_store.get_by_id(request.farmer_id)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    record = FarmerRecord(farmer.id, farmer.name, farmer.jurisdiction_id, ConsentTier(farmer.consent_state.value))
+    if not can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
+        raise HTTPException(status_code=403, detail="Farmer not visible to agency")
+    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    follow_up = follow_up_store.create(
+        farmer_id=request.farmer_id,
+        cattle_id=request.cattle_id,
+        status=request.status,
+        public_message=request.public_message,
+        internal_notes=request.internal_notes,
+    )
+    return _serialize_agency_follow_up(follow_up)
+
+@router.get("/farmers/{farmer_id}/follow-ups", response_model=FarmerFollowUpListResponse)
+async def list_farmer_follow_up_status(farmer_id: str = Path(...)):
+    """List farmer-visible follow-up statuses without agency internal notes."""
+    if farmer_account_store.get_by_id(farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    return {"follow_ups": [_serialize_farmer_follow_up(item) for item in follow_up_store.list_by_farmer(farmer_id)]}
+
+
 @router.get("/agency/registry", response_model=AgencyRegistryResponse)
 async def get_agency_dashboard_registry(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
     """Return dashboard registry farmers and cattle scoped to agency authorization."""
@@ -540,11 +680,13 @@ async def get_agency_risk_signal_summary(agency_user_id: str = Header(..., alias
     results = fusion_result_store.list_by_cattle_ids(visible_cattle_ids)
     jurisdictions = {profile.id: profile.jurisdiction_id for profile in visible_cattle}
     signals = summarize_risk_signals(results, jurisdictions)
+    cluster_risk_signal_store.replace_all(signals)
+    signals = cluster_risk_signal_store.list_all()
     return {
         "agency_user_id": agency_user_id,
         "rule": {
-            "name": "two_or_more_non_healthy_signals_7d",
-            "threshold_count": 2,
+            "name": "three_or_more_non_healthy_signals_7d",
+            "threshold_count": 3,
             "window_days": 7,
             "included_reliability": ["reliable", "needs_review"],
             "language": "possible increased risk, not confirmed outbreak or diagnosis",

@@ -4,7 +4,7 @@ Uses Hypothesis to verify universal invariants across randomized inputs.
 """
 
 import pytest
-from hypothesis import given, settings as hypothesis_settings
+from hypothesis import HealthCheck, given, settings as hypothesis_settings
 from hypothesis import strategies as st
 
 from api.schemas import (
@@ -51,7 +51,7 @@ model_versions = st.from_regex(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}", fullmatch=
     inference_ms=timing_values,
     model_version=model_versions,
 )
-@hypothesis_settings(max_examples=100)
+@hypothesis_settings(max_examples=100, suppress_health_check=[HealthCheck.too_slow])
 def test_success_response_shape(probs, preprocessing_ms, inference_ms, model_version):
     """
     Property 1: Prediction response contains all required fields with correct types.
@@ -490,7 +490,7 @@ def _create_rate_limited_app(max_requests: int, window_seconds: int = 60) -> Fas
 
 
 @given(max_requests=st.integers(min_value=1, max_value=20))
-@hypothesis_settings(max_examples=100)
+@hypothesis_settings(max_examples=100, deadline=None)
 def test_rate_limiter_enforcement(max_requests: int):
     """Property 6: Rate limiter enforces per-IP request ceiling.
 

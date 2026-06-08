@@ -1,12 +1,11 @@
-from pathlib import Path
+from tests.conftest import repo_text
 
 
-ROOT = Path(__file__).resolve().parents[3]
-REPORT = ROOT / "docs/team-1-image/model/TWO_STAGE_MODEL_COMPARISON_RECOMMENDATION.md"
+REPORT = "docs/team-1-image/model/TWO_STAGE_MODEL_COMPARISON_RECOMMENDATION.md"
 
 
 def test_report_preserves_single_stage_as_main_implementation():
-    text = REPORT.read_text(encoding="utf-8")
+    text = repo_text(REPORT)
 
     assert "main proposal-aligned implementation remains the three-class CNN classifier" in text
     assert "Android/on-device inference should remain the existing single-stage TFLite" in text
@@ -14,7 +13,7 @@ def test_report_preserves_single_stage_as_main_implementation():
 
 
 def test_report_requires_real_expert_reviewed_same_test_set():
-    text = REPORT.read_text(encoding="utf-8")
+    text = repo_text(REPORT)
 
     assert "same expert-reviewed field-only test set" in text
     assert "label_tier=expert_reviewed" in text
@@ -25,7 +24,7 @@ def test_report_requires_real_expert_reviewed_same_test_set():
 
 
 def test_report_applies_success_gate_and_recommendation():
-    text = REPORT.read_text(encoding="utf-8")
+    text = repo_text(REPORT)
 
     assert "False Confident Result rate" in text
     assert "Macro F1" in text

@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from main import app
+from tests.conftest import repo_text
 
 client = TestClient(app)
 
@@ -30,7 +31,8 @@ def create_signal(jurisdiction_id="tembalang", disease="FMD"):
     return response.json()
 
 
-def test_two_signal_threshold_marks_possible_increased_risk():
+def test_three_signal_threshold_marks_possible_increased_risk():
+    create_signal()
     create_signal()
     create_signal()
 
@@ -39,10 +41,12 @@ def test_two_signal_threshold_marks_possible_increased_risk():
     assert response.status_code == 200, response.text
     body = response.json()
     signal = next(item for item in body["signals"] if item["jurisdiction_id"] == "tembalang" and item["disease_class"] == "FMD")
-    assert signal["signal_count"] >= 2
+    assert signal["signal_count"] >= 3
     assert signal["risk_level"] == "possible_increased_risk"
     assert signal["priority"] == "follow_up_priority"
-    assert body["rule"]["threshold_count"] == 2
+    assert signal["id"].startswith("cluster-risk-")
+    assert len(signal["source_result_ids"]) >= 3
+    assert body["rule"]["threshold_count"] == 3
     assert body["rule"]["window_days"] == 7
 
 
@@ -56,7 +60,7 @@ def test_risk_signal_summary_filters_out_unauthorized_jurisdiction():
 
 
 def test_risk_signal_dashboard_uses_safe_wording():
-    source = open("apps/dashboard/app/agency/risk-signals/page.tsx", encoding="utf-8").read().lower()
+    source = repo_text("apps/dashboard/app/agency/risk-signals/page.tsx").lower()
 
     assert "disease risk signal summary" in source
     assert "possible increased risk" in source

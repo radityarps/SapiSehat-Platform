@@ -101,7 +101,7 @@ class InferenceService:
             # Preprocessing: Convert image to numpy array
             image_array = self.preprocessor.process(image)
             
-            preprocessing_ms = int((time.time() - start_time) * 1000)
+            preprocessing_ms = max(1, int((time.time() - start_time) * 1000))
             infer_start = time.time()
             
             # Inference (TensorFlow/Keras)
@@ -110,8 +110,8 @@ class InferenceService:
             exp = np.exp(output[0] - np.max(output[0]))
             probs = exp / exp.sum()
             
-            inference_ms = int((time.time() - infer_start) * 1000)
-            total_ms = int((time.time() - start_time) * 1000)
+            inference_ms = max(1, int((time.time() - infer_start) * 1000))
+            total_ms = max(1, int((time.time() - start_time) * 1000))
             
             prediction = self._build_prediction(probs)
             pred_label = prediction["disease_class"]
@@ -146,7 +146,7 @@ class InferenceService:
             return {
                 "status": "error",
                 "message": str(e),
-                "processing_time_ms": int((time.time() - start_time) * 1000)
+                "processing_time_ms": max(1, int((time.time() - start_time) * 1000))
             }
 
     def predict_two_stage_prototype(self, image: Image.Image, *, include_debug_regions: bool = False) -> Dict[str, Any]:

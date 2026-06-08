@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from main import app
+from tests.conftest import repo_text
 
 client = TestClient(app)
 
@@ -57,7 +58,7 @@ def test_detection_monitoring_shows_conflict_and_evidence_breakdown():
 
 
 def test_detection_monitoring_ui_uses_safe_language():
-    source = open("apps/dashboard/app/agency/detections/page.tsx", encoding="utf-8").read()
+    source = repo_text("apps/dashboard/app/agency/detections/page.tsx")
 
     assert "Disease risk signals" in source
     assert "Risk signal" in source

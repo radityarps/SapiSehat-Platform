@@ -3,11 +3,14 @@
 from dataclasses import dataclass
 from typing import Iterable
 
+from api.database import SessionLocal, create_all_tables
+from api.db_models import ClusterRiskSignalModel
 from api.fusion_results import FusionResult
 
 
 @dataclass(frozen=True)
 class JurisdictionRiskSignal:
+    id: str
     jurisdiction_id: str
     disease_class: str
     signal_count: int
@@ -15,10 +18,12 @@ class JurisdictionRiskSignal:
     risk_level: str
     priority: str
     summary_label: str
+    source_result_ids: list[str]
 
 
 def summarize_risk_signals(results: Iterable[FusionResult], cattle_jurisdictions: dict[str, str]) -> list[JurisdictionRiskSignal]:
     counts: dict[tuple[str, str], int] = {}
+    source_ids: dict[tuple[str, str], list[str]] = {}
     for result in results:
         if result.cattle_id is None:
             continue
@@ -31,11 +36,13 @@ def summarize_risk_signals(results: Iterable[FusionResult], cattle_jurisdictions
             continue
         key = (jurisdiction_id, result.disease_class)
         counts[key] = counts.get(key, 0) + 1
+        source_ids.setdefault(key, []).append(result.id)
 
     signals = []
     for (jurisdiction_id, disease_class), count in counts.items():
-        elevated = count >= 2
+        elevated = count >= 3
         signals.append(JurisdictionRiskSignal(
+            id=f"cluster-risk-{jurisdiction_id}-{disease_class}".lower(),
             jurisdiction_id=jurisdiction_id,
             disease_class=disease_class,
             signal_count=count,
@@ -43,5 +50,47 @@ def summarize_risk_signals(results: Iterable[FusionResult], cattle_jurisdictions
             risk_level="possible_increased_risk" if elevated else "baseline_monitoring",
             priority="follow_up_priority" if elevated else "routine_monitoring",
             summary_label="Possible increased disease risk signal" if elevated else "Routine monitoring signal",
+            source_result_ids=source_ids[(jurisdiction_id, disease_class)],
         ))
     return sorted(signals, key=lambda signal: (signal.jurisdiction_id, signal.disease_class))
+
+
+class ClusterRiskSignalStore:
+    """Materialized cluster risk signals for agency dashboard reads."""
+
+    def __init__(self) -> None:
+        create_all_tables()
+
+    def replace_all(self, signals: list[JurisdictionRiskSignal]) -> None:
+        with SessionLocal() as session:
+            session.query(ClusterRiskSignalModel).delete()
+            for signal in signals:
+                session.add(ClusterRiskSignalModel(**signal.__dict__))
+            session.commit()
+
+    def list_all(self) -> list[JurisdictionRiskSignal]:
+        with SessionLocal() as session:
+            rows = session.query(ClusterRiskSignalModel).order_by(ClusterRiskSignalModel.jurisdiction_id, ClusterRiskSignalModel.disease_class).all()
+            return [_signal_from_row(row) for row in rows]
+
+    def clear(self) -> None:
+        with SessionLocal() as session:
+            session.query(ClusterRiskSignalModel).delete()
+            session.commit()
+
+
+def _signal_from_row(row: ClusterRiskSignalModel) -> JurisdictionRiskSignal:
+    return JurisdictionRiskSignal(
+        id=row.id,
+        jurisdiction_id=row.jurisdiction_id,
+        disease_class=row.disease_class,
+        signal_count=row.signal_count,
+        window_days=row.window_days,
+        risk_level=row.risk_level,
+        priority=row.priority,
+        summary_label=row.summary_label,
+        source_result_ids=row.source_result_ids,
+    )
+
+
+cluster_risk_signal_store = ClusterRiskSignalStore()
