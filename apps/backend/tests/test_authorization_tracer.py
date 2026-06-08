@@ -3,6 +3,8 @@
 from fastapi.testclient import TestClient
 
 from main import app
+from api.database import SessionLocal
+from api.db_models import AgencyJurisdictionModel, AgencyUserModel
 from api.authorization import (
     AgencyRole,
     AgencyUser,
@@ -15,6 +17,9 @@ from api.authorization import (
 
 
 def test_authorization_allows_same_jurisdiction_with_monitoring_consent():
+    with SessionLocal() as session:
+        assert session.query(AgencyJurisdictionModel).count() >= 5
+        assert session.query(AgencyUserModel).count() >= 3
     agency = AgencyUser("officer", AgencyRole.DISTRICT_OFFICER, "semarang-city")
     farmer = FarmerRecord("farmer", "Pak Tono", "tembalang", ConsentTier.AGENCY_MONITORING)
     assert can_agency_access_farmer(agency, farmer, DEMO_JURISDICTIONS) is True

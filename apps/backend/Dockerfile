@@ -1,5 +1,5 @@
 # Multi-stage build for smaller image size
-FROM python:3.10-slim as builder
+FROM python:3.10-slim AS builder
 
 WORKDIR /app
 
@@ -35,11 +35,11 @@ ENV PATH="/opt/venv/bin:$PATH" \
     FASTAPI_ENV=production \
     DEBUG=false
 
-# Copy application code
-COPY . .
-
 # Create non-root user for security
-RUN useradd -m -u 1000 appuser && chown -R appuser:appuser /app /opt/venv
+RUN useradd -m -u 1000 appuser && chown appuser:appuser /app
+
+# Copy application code with correct owner; keep venv root-owned and read-only.
+COPY --chown=appuser:appuser . .
 USER appuser
 
 # Expose port

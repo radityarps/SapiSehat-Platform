@@ -1,10 +1,10 @@
 """Legacy docs framing tests."""
 
-from pathlib import Path
+from tests.conftest import repo_text
 
 
 def read(path):
-    return Path(path).read_text(encoding="utf-8")
+    return repo_text(path)
 
 
 def test_readme_describes_platform_not_image_only_app():

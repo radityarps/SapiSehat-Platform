@@ -3,11 +3,23 @@
 import tensorflow as tf
 import numpy as np
 from pathlib import Path
+from config import settings
 from typing import Optional
 from utils.errors import ModelLoadError
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+class DeterministicFallbackModel:
+    """Small deterministic model used when no local model file exists in dev/test."""
+
+    def count_params(self) -> int:
+        return 0
+
+    def predict(self, image_array: np.ndarray, verbose: int = 0) -> np.ndarray:
+        mean = float(np.mean(image_array))
+        logits = np.array([[mean, 1.0 - mean, 0.5]], dtype=np.float32)
+        return logits
 
 
 class ModelLoader:
@@ -36,6 +48,13 @@ class ModelLoader:
             path = Path(model_path)
 
             if not path.exists():
+                if settings.fastapi_env in {"development", "test"}:
+                    logger.warning(
+                        "Model file missing; using deterministic fallback model for development/test.",
+                        extra={"model_path": model_path},
+                    )
+                    self.model = DeterministicFallbackModel()
+                    return
                 raise ModelLoadError(f"Model file not found: {model_path}")
 
             logger.info(f"Loading model from {model_path}")

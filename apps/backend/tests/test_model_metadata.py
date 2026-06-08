@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 from config import settings
+from tests.conftest import repo_file
 
 ROOT = Path(__file__).resolve().parents[3]
 BACKEND_MODEL_DIR = ROOT / "apps" / "backend" / "model"
@@ -20,7 +21,7 @@ def _sha256(path: Path) -> str:
 
 
 def test_backend_metadata_matches_selected_model_contract():
-    metadata = json.loads((BACKEND_MODEL_DIR / "metadata.json").read_text())
+    metadata = json.loads(repo_file("apps/backend/model/metadata.json").read_text())
 
     assert metadata["model_version"] == EXPECTED_BASE_VERSION
     assert metadata["architecture"] == "mobilenetv2"
@@ -41,16 +42,18 @@ def test_backend_settings_advertise_selected_model_version_and_class_order():
 
 
 def test_backend_keras_artifact_checksum_matches_metadata():
-    metadata = json.loads((BACKEND_MODEL_DIR / "metadata.json").read_text())
+    metadata = json.loads(repo_file("apps/backend/model/metadata.json").read_text())
     artifact = BACKEND_MODEL_DIR / metadata["keras_artifact"]
+
+    repo_file(f"apps/backend/model/{metadata['keras_artifact']}")
 
     assert artifact.exists()
     assert _sha256(artifact) == metadata["keras_sha256"]
 
 
 def test_android_metadata_matches_backend_class_order_and_preprocessing():
-    backend = json.loads((BACKEND_MODEL_DIR / "metadata.json").read_text())
-    android = json.loads((MOBILE_ASSETS_DIR / "model_metadata.json").read_text())
+    backend = json.loads(repo_file("apps/backend/model/metadata.json").read_text())
+    android = json.loads(repo_file("apps/mobile/app/src/main/assets/model_metadata.json").read_text())
 
     assert android["model_version"] == EXPECTED_TFLITE_VERSION
     assert android["base_model_version"] == backend["model_version"]
@@ -67,16 +70,18 @@ def test_android_metadata_matches_backend_class_order_and_preprocessing():
 
 
 def test_android_tflite_artifact_checksum_matches_metadata():
-    android = json.loads((MOBILE_ASSETS_DIR / "model_metadata.json").read_text())
+    android = json.loads(repo_file("apps/mobile/app/src/main/assets/model_metadata.json").read_text())
     artifact = MOBILE_ASSETS_DIR / android["asset"]
+
+    repo_file(f"apps/mobile/app/src/main/assets/{android['asset']}")
 
     assert artifact.exists()
     assert _sha256(artifact) == android["sha256"]
 
 
 def test_user_facing_metadata_uses_early_detection_warning_not_diagnosis_claim():
-    backend = json.loads((BACKEND_MODEL_DIR / "metadata.json").read_text())
-    android = json.loads((MOBILE_ASSETS_DIR / "model_metadata.json").read_text())
+    backend = json.loads(repo_file("apps/backend/model/metadata.json").read_text())
+    android = json.loads(repo_file("apps/mobile/app/src/main/assets/model_metadata.json").read_text())
 
     for warning in (backend["warning"], android["warning"]):
         lower = warning.lower()

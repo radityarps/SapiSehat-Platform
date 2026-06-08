@@ -6,12 +6,13 @@ from dataclasses import dataclass
 from enum import Enum
 import re
 
+from api.database import SessionLocal, create_all_tables
+from api.db_models import FarmerAccountModel
 
 class FarmerConsentState(str, Enum):
     PRIVATE = "private"
     AGENCY_MONITORING = "agency_monitoring"
     RESEARCH_AND_MONITORING = "research_and_monitoring"
-
 
 @dataclass(frozen=True)
 class FarmerAccount:
@@ -23,13 +24,11 @@ class FarmerAccount:
     jurisdiction_id: str
     consent_state: FarmerConsentState
 
-
 class FarmerAccountStore:
-    """In-memory account store for tracer implementation."""
+    """Farmer account store backed by platform database."""
 
     def __init__(self) -> None:
-        self._accounts_by_phone: dict[str, FarmerAccount] = {}
-        self._next_id = 1
+        create_all_tables()
 
     def upsert_by_phone(
         self,
@@ -40,34 +39,54 @@ class FarmerAccountStore:
         consent_state: FarmerConsentState = FarmerConsentState.PRIVATE,
     ) -> tuple[FarmerAccount, bool]:
         normalized_phone = normalize_phone_number(phone_number)
-        existing = self._accounts_by_phone.get(normalized_phone)
-        if existing is not None:
-            return existing, False
-
-        account = FarmerAccount(
-            id=f"farmer-{self._next_id}",
-            phone_number=normalized_phone,
-            name=name,
-            jurisdiction_id=jurisdiction_id,
-            consent_state=consent_state,
-        )
-        self._next_id += 1
-        self._accounts_by_phone[normalized_phone] = account
-        return account, True
+        with SessionLocal() as session:
+            row = session.query(FarmerAccountModel).filter_by(phone_number=normalized_phone).one_or_none()
+            if row is not None:
+                return _farmer_from_row(row), False
+            next_id = session.query(FarmerAccountModel).count() + 1
+            account = FarmerAccount(
+                id=f"farmer-{next_id}",
+                phone_number=normalized_phone,
+                name=name,
+                jurisdiction_id=jurisdiction_id,
+                consent_state=consent_state,
+            )
+            session.add(
+                FarmerAccountModel(
+                    id=account.id,
+                    phone_number=account.phone_number,
+                    name=account.name,
+                    jurisdiction_id=account.jurisdiction_id,
+                    consent_state=account.consent_state.value,
+                )
+            )
+            session.commit()
+            return account, True
 
     def get_by_id(self, farmer_id: str) -> FarmerAccount | None:
-        for account in self._accounts_by_phone.values():
-            if account.id == farmer_id:
-                return account
-        return None
+        with SessionLocal() as session:
+            row = session.get(FarmerAccountModel, farmer_id)
+            return None if row is None else _farmer_from_row(row)
 
     def all_by_id(self) -> dict[str, FarmerAccount]:
-        return {account.id: account for account in self._accounts_by_phone.values()}
+        with SessionLocal() as session:
+            rows = session.query(FarmerAccountModel).order_by(FarmerAccountModel.id).all()
+            return {row.id: _farmer_from_row(row) for row in rows}
 
     def clear(self) -> None:
-        self._accounts_by_phone.clear()
-        self._next_id = 1
+        with SessionLocal() as session:
+            session.query(FarmerAccountModel).delete()
+            session.commit()
 
+
+def _farmer_from_row(row: FarmerAccountModel) -> FarmerAccount:
+    return FarmerAccount(
+        id=row.id,
+        phone_number=row.phone_number,
+        name=row.name,
+        jurisdiction_id=row.jurisdiction_id,
+        consent_state=FarmerConsentState(row.consent_state),
+    )
 
 def normalize_phone_number(phone_number: str) -> str:
     """Normalize Indonesian phone number identity to +62 format."""
@@ -80,6 +99,5 @@ def normalize_phone_number(phone_number: str) -> str:
     if digits.startswith("8"):
         return f"+62{digits}"
     raise ValueError("Phone number must be Indonesian +62, 62, 0, or 8 prefix")
-
 
 farmer_account_store = FarmerAccountStore()

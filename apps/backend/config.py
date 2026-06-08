@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     log_level: str = os.getenv("LOG_LEVEL", "info")
 
     # Rate limiting
-    rate_limit_max_requests: int = int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "10"))
+    rate_limit_max_requests: int = int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "1000"))
     rate_limit_window_seconds: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
 
     # Model metadata

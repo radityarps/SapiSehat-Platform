@@ -1,12 +1,13 @@
-"""Backend-primary evidence fusion tracer."""
+"""Backend-primary evidence fusion persistence."""
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Dict, Optional
 from uuid import uuid4
 
+from api.database import SessionLocal, create_all_tables
+from api.db_models import FusionResultModel
 from api.schemas import ImageEvidenceRequest, NlpEvidenceRequest
-
 
 @dataclass(frozen=True)
 class FusionResult:
@@ -25,34 +26,39 @@ class FusionResult:
     model_versions: Dict[str, str]
     created_at: str
 
-
 @dataclass
 class FusionResultStore:
-    """In-memory fusion result store for tracer tests."""
-    results_by_id: Dict[str, FusionResult] = field(default_factory=dict)
+    def __post_init__(self) -> None:
+        create_all_tables()
 
-    def create(
-        self,
-        *,
-        farmer_id: str,
-        cattle_id: Optional[str],
-        image_evidence: Optional[ImageEvidenceRequest],
-        nlp_evidence: Optional[NlpEvidenceRequest],
-    ) -> FusionResult:
-        result = fuse_evidence(
-            farmer_id=farmer_id,
-            cattle_id=cattle_id,
-            image_evidence=image_evidence,
-            nlp_evidence=nlp_evidence,
-        )
-        self.results_by_id[result.id] = result
+    def create(self, *, farmer_id: str, cattle_id: Optional[str], image_evidence: Optional[ImageEvidenceRequest], nlp_evidence: Optional[NlpEvidenceRequest]) -> FusionResult:
+        result = fuse_evidence(farmer_id=farmer_id, cattle_id=cattle_id, image_evidence=image_evidence, nlp_evidence=nlp_evidence)
+        with SessionLocal() as session:
+            session.add(FusionResultModel(**result.__dict__))
+            session.commit()
         return result
 
+    def clear(self) -> None:
+        with SessionLocal() as session:
+            session.query(FusionResultModel).delete()
+            session.commit()
+
     def list_all(self) -> list[FusionResult]:
-        return list(self.results_by_id.values())
+        with SessionLocal() as session:
+            rows = session.query(FusionResultModel).order_by(FusionResultModel.created_at).all()
+            return [_fusion_from_row(row) for row in rows]
 
     def list_by_cattle_ids(self, cattle_ids: set[str]) -> list[FusionResult]:
-        return [result for result in self.results_by_id.values() if result.cattle_id in cattle_ids]
+        if not cattle_ids:
+            return []
+        with SessionLocal() as session:
+            rows = (
+                session.query(FusionResultModel)
+                .filter(FusionResultModel.cattle_id.in_(cattle_ids))
+                .order_by(FusionResultModel.created_at)
+                .all()
+            )
+            return [_fusion_from_row(row) for row in rows]
 
 
 def confidence_level(confidence: float) -> str:
@@ -75,13 +81,7 @@ def _evidence_dump(evidence):
     return evidence.model_dump() if evidence is not None else None
 
 
-def fuse_evidence(
-    *,
-    farmer_id: str,
-    cattle_id: Optional[str],
-    image_evidence: Optional[ImageEvidenceRequest],
-    nlp_evidence: Optional[NlpEvidenceRequest],
-) -> FusionResult:
+def fuse_evidence(*, farmer_id: str, cattle_id: Optional[str], image_evidence: Optional[ImageEvidenceRequest], nlp_evidence: Optional[NlpEvidenceRequest]) -> FusionResult:
     if image_evidence is None and nlp_evidence is None:
         raise ValueError("image_evidence or nlp_evidence is required")
 
@@ -132,7 +132,7 @@ def fuse_evidence(
     if any(getattr(evidence, "inference_mode", None).value == "offline" for evidence in candidates):
         mode = "offline"
 
-    result = FusionResult(
+    return FusionResult(
         id=f"fusion-{uuid4().hex[:12]}",
         fusion_version="fusion-tracer-1.0.0",
         inference_mode=mode,
@@ -143,18 +143,29 @@ def fuse_evidence(
         confidence_level=level,
         reliability=reliability,
         handling_advice_key=handling_advice_key(disease_class, reliability),
-        evidence_breakdown={
-            "image": _evidence_dump(image_evidence),
-            "nlp": _evidence_dump(nlp_evidence),
-        },
+        evidence_breakdown={"image": _evidence_dump(image_evidence), "nlp": _evidence_dump(nlp_evidence)},
         conflict_status=conflict_status,
-        model_versions={
-            "image": image_evidence.model_version if image_evidence is not None else "missing",
-            "nlp": nlp_evidence.model_version if nlp_evidence is not None else "missing",
-        },
+        model_versions={"image": image_evidence.model_version if image_evidence is not None else "missing", "nlp": nlp_evidence.model_version if nlp_evidence is not None else "missing"},
         created_at=datetime.now(timezone.utc).isoformat(),
     )
-    return result
 
+
+def _fusion_from_row(row: FusionResultModel) -> FusionResult:
+    return FusionResult(
+        id=row.id,
+        fusion_version=row.fusion_version,
+        inference_mode=row.inference_mode,
+        farmer_id=row.farmer_id,
+        cattle_id=row.cattle_id,
+        disease_class=row.disease_class,
+        confidence=row.confidence,
+        confidence_level=row.confidence_level,
+        reliability=row.reliability,
+        handling_advice_key=row.handling_advice_key,
+        evidence_breakdown=row.evidence_breakdown,
+        conflict_status=row.conflict_status,
+        model_versions=row.model_versions,
+        created_at=row.created_at,
+    )
 
 fusion_result_store = FusionResultStore()

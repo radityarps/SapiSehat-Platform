@@ -63,6 +63,69 @@ class ErrorResponse(BaseModel):
     error_code: str
     message: str = Field(max_length=256)
 
+class FarmerRegisterRequest(BaseModel):
+    """Register farmer mobile account with email/password."""
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+    name: str = Field(min_length=1, max_length=120)
+    jurisdiction_id: str = Field(min_length=1, max_length=120)
+
+class FarmerLoginRequest(BaseModel):
+    """Login farmer mobile account with email/password."""
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+
+class AgencyLoginRequest(BaseModel):
+    """Login agency dashboard account with email/password."""
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=128)
+
+class AuthAccountResponse(BaseModel):
+    """Authenticated surface account."""
+    id: str
+    account_type: str
+    email: str
+
+class AuthResponse(BaseModel):
+    """Access token response for surface auth."""
+    access_token: str
+    token_type: str = "bearer"
+    account: AuthAccountResponse
+
+class FarmerGoogleLoginRequest(BaseModel):
+    """Farmer Google sign-in token exchange."""
+    id_token: str = Field(min_length=1)
+    jurisdiction_id: str = Field(min_length=1, max_length=120)
+
+class FollowUpCreateRequest(BaseModel):
+    """Agency-created follow-up status with hidden internal notes."""
+    farmer_id: str = Field(min_length=1, max_length=120)
+    cattle_id: Optional[str] = Field(default=None, max_length=120)
+    status: str = Field(min_length=1, max_length=40)
+    public_message: str = Field(min_length=1, max_length=500)
+    internal_notes: str = Field(default="", max_length=1000)
+
+class AgencyFollowUpResponse(BaseModel):
+    """Agency-visible follow-up status."""
+    id: str
+    farmer_id: str
+    cattle_id: Optional[str]
+    status: str
+    public_message: str
+    internal_notes: str
+
+class FarmerFollowUpResponse(BaseModel):
+    """Farmer-visible follow-up status without internal notes."""
+    id: str
+    farmer_id: str
+    cattle_id: Optional[str]
+    status: str
+    public_message: str
+
+class FarmerFollowUpListResponse(BaseModel):
+    """Farmer follow-up status list."""
+    follow_ups: List[FarmerFollowUpResponse]
+
 
 class AgencyVisibleFarmer(BaseModel):
     """Farmer record visible to an agency user after authorization filtering."""
@@ -339,6 +402,7 @@ class AgencyDetectionMonitoringResponse(BaseModel):
 
 class JurisdictionRiskSignalResponse(BaseModel):
     """Jurisdiction-level disease risk signal summary."""
+    id: str
     jurisdiction_id: str
     disease_class: str
     signal_count: int
@@ -346,6 +410,7 @@ class JurisdictionRiskSignalResponse(BaseModel):
     risk_level: str
     priority: str
     summary_label: str
+    source_result_ids: List[str]
 
 class AgencyRiskSignalSummaryResponse(BaseModel):
     """Agency dashboard disease risk signal summary response."""

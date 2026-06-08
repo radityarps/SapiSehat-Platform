@@ -1,6 +1,9 @@
 import time
-from collections import defaultdict
 from threading import Lock
+from uuid import uuid4
+
+from api.database import SessionLocal, create_all_tables
+from api.db_models import RateLimitRequestModel
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
@@ -13,36 +16,52 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         super().__init__(app)
         self.max_requests = max_requests
         self.window_seconds = window_seconds
-        self._requests: dict[str, list[float]] = defaultdict(list)
+        self.instance_id = uuid4().hex
         self._lock = Lock()
+        create_all_tables()
 
     async def dispatch(self, request: Request, call_next):
         if request.url.path != "/api/predict" or request.method != "POST":
             return await call_next(request)
 
-        client_ip = request.client.host
+        client_ip = request.client.host if request.client is not None else "unknown"
         now = time.time()
+        client_key = f"{self.instance_id}:{client_ip}:{request.url.path}"
 
         with self._lock:
-            # Prune expired timestamps
             window_start = now - self.window_seconds
-            self._requests[client_ip] = [
-                t for t in self._requests[client_ip] if t > window_start
-            ]
+            with SessionLocal() as session:
+                session.query(RateLimitRequestModel).filter(
+                    RateLimitRequestModel.client_key == client_key,
+                    RateLimitRequestModel.path == request.url.path,
+                    RateLimitRequestModel.requested_at <= window_start,
+                ).delete(synchronize_session=False)
+                session.commit()
 
-            if len(self._requests[client_ip]) >= self.max_requests:
-                oldest = self._requests[client_ip][0]
-                retry_after = int(oldest + self.window_seconds - now) + 1
-                return JSONResponse(
-                    status_code=429,
-                    content={
-                        "status": "error",
-                        "error_code": "RATE_LIMITED",
-                        "message": "Rate limit exceeded. Try again later.",
-                    },
-                    headers={"Retry-After": str(retry_after)},
+                recent_requests = (
+                    session.query(RateLimitRequestModel)
+                    .filter(
+                        RateLimitRequestModel.client_key == client_key,
+                        RateLimitRequestModel.path == request.url.path,
+                    )
+                    .order_by(RateLimitRequestModel.requested_at)
+                    .all()
                 )
 
-            self._requests[client_ip].append(now)
+                if len(recent_requests) >= self.max_requests:
+                    oldest = recent_requests[0].requested_at
+                    retry_after = int(oldest + self.window_seconds - now) + 1
+                    return JSONResponse(
+                        status_code=429,
+                        content={
+                            "status": "error",
+                            "error_code": "RATE_LIMITED",
+                            "message": "Rate limit exceeded. Try again later.",
+                        },
+                        headers={"Retry-After": str(retry_after)},
+                    )
+
+                session.add(RateLimitRequestModel(client_key=client_key, path=request.url.path, requested_at=now))
+                session.commit()
 
         return await call_next(request)

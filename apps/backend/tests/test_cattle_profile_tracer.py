@@ -95,6 +95,23 @@ def test_cattle_creation_requires_existing_farmer():
 
     assert response.status_code == 404
 
+def test_farmer_archive_action_hides_cattle_without_backend_delete():
+    client = TestClient(app)
+    farmer = create_farmer(client)
+    cattle = create_cattle(client, farmer["id"])
+
+    archive = client.delete(f"/api/farmers/{farmer['id']}/cattle/{cattle['id']}")
+    list_response = client.get(f"/api/farmers/{farmer['id']}/cattle")
+    direct_response = client.get(f"/api/farmers/{farmer['id']}/cattle/{cattle['id']}")
+
+    assert archive.status_code == 200
+    assert archive.json()["id"] == cattle["id"]
+    assert archive.json()["status"] == "archived"
+    assert list_response.status_code == 200
+    assert list_response.json()["cattle"] == []
+    assert direct_response.status_code == 200
+    assert direct_response.json()["status"] == "archived"
+
 
 def test_agency_can_see_cattle_when_role_jurisdiction_and_consent_allow():
     client = TestClient(app)

@@ -1,11 +1,8 @@
-from pathlib import Path
-
-
-ROOT = Path(__file__).resolve().parents[3]
+from tests.conftest import repo_text
 
 
 def _read(path: str) -> str:
-    return (ROOT / path).read_text(encoding="utf-8")
+    return repo_text(path)
 
 
 def test_region_ux_validation_protocol_keeps_farmer_boxes_gated():

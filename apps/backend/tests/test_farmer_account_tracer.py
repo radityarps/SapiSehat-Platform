@@ -3,6 +3,8 @@
 from fastapi.testclient import TestClient
 
 from main import app
+from api.database import SessionLocal
+from api.db_models import FarmerAccountModel
 from api.farmer_accounts import farmer_account_store
 
 
@@ -25,6 +27,8 @@ def test_farmer_can_register_with_phone_number_identity():
     assert body["name"] == "Pak Tono"
     assert body["jurisdiction_id"] == "tembalang"
     assert body["created"] is True
+    with SessionLocal() as session:
+        assert session.query(FarmerAccountModel).count() == 1
 
 
 def test_duplicate_phone_signs_in_existing_farmer_account():
