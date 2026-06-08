@@ -15,14 +15,12 @@ def test_readme_describes_platform_not_image_only_app():
     assert "bukti NLP Team 2" in text
     assert "dashboard agency" in text
     assert "docs/system-integration/README.md" in text
-    assert "docs/system-integration/product/PRD-platform-rebuild.md" in text
     assert "Aplikasi Android untuk deteksi penyakit sapi" not in text
     assert "return diagnosis" not in text
 
 
 def test_current_docs_have_platform_contract_pointers():
     files = [
-        "docs/system-integration/product/PRD-platform-rebuild.md",
         "docs/system-integration/product/PLATFORM_SCOPE.md",
         "docs/system-integration/mobile/mobile-full-version-spec.md",
         "docs/team-1-image/backend/README.md",
@@ -42,7 +40,6 @@ def test_current_docs_have_platform_contract_pointers():
 def test_reviewed_docs_do_not_claim_product_is_only_image_app():
     reviewed = [
         "README.md",
-        "docs/system-integration/product/PRD-platform-rebuild.md",
         "docs/system-integration/product/PLATFORM_SCOPE.md",
         "docs/system-integration/mobile/mobile-full-version-spec.md",
         "docs/team-1-image/backend/README.md",

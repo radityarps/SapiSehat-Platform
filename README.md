@@ -52,7 +52,6 @@ Start at [docs/README.md](docs/README.md). Shared platform contracts live in [do
 | Need | Document |
 | --- | --- |
 | Platform scope | [docs/system-integration/product/PLATFORM_SCOPE.md](docs/system-integration/product/PLATFORM_SCOPE.md) |
-| Platform PRD | [docs/system-integration/product/PRD-platform-rebuild.md](docs/system-integration/product/PRD-platform-rebuild.md) |
 | Shared API/fusion contracts | [docs/system-integration/api-contracts/FUSION_CONTRACT.md](docs/system-integration/api-contracts/FUSION_CONTRACT.md) |
 | Data model | [docs/system-integration/database/DATA_MODEL.md](docs/system-integration/database/DATA_MODEL.md) |
 | Team 1 image work | [docs/team-1-image/README.md](docs/team-1-image/README.md) |

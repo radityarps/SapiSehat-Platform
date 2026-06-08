@@ -88,13 +88,7 @@ The backend produces NEGATIVE values; the model expects POSITIVE values in [0, 1
 
 ## Why the Notebook Comment About MobileNetV2 Is Misleading
 
-From `docs/system-integration/product/PRD-platform-rebuild.md` (line 123-127):
-
-> "Mengapa standardisasi ImageNet tidak bisa dilewati? MobileNetV2 menggunakan
-> bobot pretrained ImageNet. Saat training ImageNet, semua gambar distandardisasi
-> dengan nilai tersebut."
-
-This was the original assumption in the PRD — that ImageNet normalization is required.
+Historical platform-rebuild PRD reference removed; use current system-integration docs for active contracts.
 However, the partner **did not apply** ImageNet normalization during training.
 They used `rescale=1./255` only.
 

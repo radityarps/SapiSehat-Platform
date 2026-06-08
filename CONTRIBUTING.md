@@ -17,7 +17,6 @@ Start here: [docs/README.md](docs/README.md).
 | Shared product/API/data/privacy/dashboard contracts | [docs/system-integration](docs/../README.md) |
 | Team 1 image model/evidence work | [docs/team-1-image](docs/team-1-image/README.md) |
 | Team 2 NLP model/evidence work | [docs/team-2-nlp](docs/team-2-nlp/README.md) |
-| Platform PRD | [docs/system-integration/product/PRD-platform-rebuild.md](docs/system-integration/product/PRD-platform-rebuild.md) |
 
 Legacy backend/mobile/model docs may describe earlier image-first scope. Treat them as subsystem notes unless system-integration docs say otherwise.
 
