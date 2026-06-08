@@ -48,8 +48,6 @@ Shared backend, mobile, dashboard, API, data model, or fusion-flow changes must 
 
 - [Docs Cleanup Report](DOCS_CLEANUP_REPORT.md)
 - [Platform Scope](product/PLATFORM_SCOPE.md)
-- [Platform Rebuild PRD](product/PRD-platform-rebuild.md)
-- [Production Rebuild Plan](product/PRODUCTION_REBUILD_PLAN.md)
 - [Fusion Contract](api-contracts/FUSION_CONTRACT.md)
 - [Data Model](database/DATA_MODEL.md)
 - [Architecture Contracts](architecture/README.md)

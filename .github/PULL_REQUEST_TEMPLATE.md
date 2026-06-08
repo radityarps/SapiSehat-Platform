@@ -34,7 +34,6 @@
 Relevant docs:
 
 - `docs/../README.md`
-- `docs/system-integration/product/PRD-platform-rebuild.md`
 - `docs/system-integration/api-contracts/FUSION_CONTRACT.md`
 
 ## Safe Language Check

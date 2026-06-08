@@ -1,407 +1,226 @@
 # SapiSehat Context
 
-SapiSehat is a cattle disease early detection platform for farmers and local agencies in Indonesia, combining mobile farmer reporting, image-based detection, NLP-based symptom screening, backend data collection, and agency monitoring.
+SapiSehat is a cattle disease early detection platform for farmers and local livestock/animal-health agencies in Indonesia. It combines farmer mobile cattle records, Team 1 image evidence, Team 2 NLP evidence, FastAPI backend storage/fusion, and agency dashboard monitoring.
+
+SapiSehat supports early indication and follow-up prioritization. It must not claim veterinary diagnosis or confirmed outbreak declaration.
 
 ## Language
 
 **Disease Early Detection Platform**:
-Canonical product identity for SapiSehat: a platform that supports early indication of cattle disease through farmer-facing mobile workflows and agency-facing monitoring, without claiming veterinary diagnosis.
-_Avoid_: Image-only Android app, farmer management app only, clinical diagnosis system
-
-**Full Cattle Management**:
-Farmer-facing and agency-facing livestock management scope that includes cattle identity, ownership, health events, disease early detection history, and operational cattle records such as vaccination, reproduction, transfer, or sale when needed by local agencies.
-_Avoid_: Detection-only registry, farmer profile only, scan attribution only
-
-**Complete Livestock Profile**:
-Full cattle record maintained by the farmer and monitored by the agency, including cattle identity, ownership, age or birth estimate, sex, breed, location, photos, health events, early detection history, vaccination, reproduction, weight, feed, pregnancy, productivity, sale, and transfer when relevant.
-_Avoid_: Detection-only cattle profile, health timeline only, owner-only cattle record
-
-**Target System with MVP Phases**:
-Planning approach where SapiSehat documentation describes the complete intended platform while separating first-deliverable MVP scope from later expansion phases and team-specific modules.
-_Avoid_: Full-scope-only planning, MVP-only documentation, unphased thesis scope
-
-**Team Documentation Split**:
-Documentation organization where `docs/team-1-image` owns image-based early detection, `docs/team-2-nlp` owns NLP-based symptom screening, and `docs/system-integration` owns shared platform, backend, database, mobile flow, web dashboard, and cross-team contracts.
-_Avoid_: Single image-only docs folder, team-agnostic module docs, duplicated integration docs
-
-**Flexible Cross-Team Platform Contribution**:
-Team ownership model where Team 1 focuses on image classification implementation across mobile and backend, Team 2 focuses on NLP model integration across mobile and backend, and both teams may contribute to shared backend, mobile, or dashboard features as long as model-specific features remain owned by the responsible model team.
-_Avoid_: Rigid layer-only teams, Team 1-owned NLP features, Team 2-owned image features, isolated backend/mobile/dashboard ownership
-
-**Central Integration Contracts**:
-Documentation rule where shared data models, API contracts, mobile flow, web dashboard behavior, privacy rules, deployment, and cross-team interfaces live in `docs/system-integration`, while team folders document only team-specific model methods, experiments, validation, and implementation details.
-_Avoid_: Duplicated API contracts, team-local shared schemas, integration details scattered across team folders
-
-**Shared Contract Approval**:
-Cross-team change rule where shared backend, mobile, dashboard, API, data model, or fusion-flow changes must update the relevant `docs/system-integration` contract before implementation or release so Team 1 and Team 2 remain aligned.
-_Avoid_: Uncoordinated shared changes, implementation-first contract drift, model-team-only shared decisions
-
-**Docs Migration Plan First**:
-Documentation migration approach where the repository first gains an approved restructuring plan before files are moved into team-specific and system-integration folders.
-_Avoid_: Immediate bulk file move, unmanaged path breakage, empty folder-only restructuring
-
-**Online-first Detection**:
-A detection flow where Android sends cattle image to server as primary path to reduce computation on low-spec phones, then uses on-device inference when server, connection, consent, or timeout prevents online result.
-_Avoid_: Offline-first, server-only diagnosis
-
-**On-device Inference**:
-Model inference executed inside Android device using TensorFlow Lite bundled with the APK and updated only through app release.
-_Avoid_: Offline mode, local AI, remote model push
-
-**Server Inference**:
-Model inference executed by backend API after Android uploads preprocessed image.
-_Avoid_: Cloud diagnosis, online AI
-
-**Prediction Response**:
-Backend response containing status, disease class, display-label key, confidence, all class scores, reliability flag, model version, processing time, and optional developer-only symptom-region data when server inference uses a validated two-stage model.
-_Avoid_: Localized server text, label-only response
-
-**Parallel Evidence Fusion**:
-Early detection approach where image evidence and NLP symptom evidence are evaluated as separate model inputs, then combined into one early detection result with evidence breakdown, conflict handling, confidence, and reliability status.
-_Avoid_: Image-only result, NLP-only result, unmerged separate recommendations
-
-**Backend-Primary Fusion with Offline Sync**:
-Fusion execution policy where the backend is the source of truth for online image-plus-NLP fusion, while the mobile app may perform offline local fusion using bundled models or rules and later sync the offline result to the backend when connectivity returns.
-_Avoid_: Mobile-only fusion, online-only detection, unsynced offline results
-
-**Symptom Questionnaire with Notes**:
-NLP input flow where the farmer answers guided symptom questions and may add optional free-text notes, producing structured and textual evidence for early detection.
-_Avoid_: Free-text-only chat, officer-only notes, unguided symptom input
-
-**Offline NLP Model**:
-Team 2 responsibility for a bundled mobile NLP model that can evaluate symptom questionnaire and note evidence offline, participate in offline fusion, and sync its result to the backend when connectivity returns.
-_Avoid_: Online-only NLP, image-only offline mode, Team 1-owned NLP implementation
-
-**Prediction Error Code**:
-Stable backend error identifier for client handling and localization, including `INVALID_IMAGE`, `MODEL_NOT_READY`, `INFERENCE_FAILED`, `TIMEOUT`, and `RATE_LIMITED`.
-_Avoid_: Free-text-only error, silent failure
-
-**Disease Class**:
-Canonical classification category stored as `healthy`, `FMD`, or `LSD` independent of display language.
-_Avoid_: Indonesian-only labels, numeric-only labels
-
-**Extensible Disease Catalog**:
-Platform disease taxonomy that starts with `healthy`, `FMD`, and `LSD` for MVP early detection while allowing later addition of other cattle diseases without changing core farmer, cattle, or agency-monitoring concepts.
-_Avoid_: Fixed forever three-class taxonomy, unbounded first-release disease scope
-
-**Localized Display Label**:
-User-facing disease class name rendered from Android system language when supported, with Indonesian fallback.
-_Avoid_: Canonical label, database label
+Canonical product identity for SapiSehat: farmer-facing mobile workflows and agency-facing monitoring for early cattle disease-risk indication.
+_Avoid_: Image-only app, farmer inventory only, clinical diagnosis system
 
 **Farmer User**:
-Primary non-technical mobile user who registers cattle, maintains cattle records, submits early detection inputs, and needs simple guidance in farm conditions.
-_Avoid_: Researcher user, agency operator, admin user
-
-**Farmer User Account**:
-Platform user account used by a farmer to manage cattle records, detection history, consent choices, and follow-up contact through one or more verified credentials such as phone number or Google OAuth.
-_Avoid_: Anonymous-only scan history, device-only identity, agency-created farmer identity only, phone-only identity assumption
-
-**User Credential**:
-Login credential linked to a platform user, such as a verified phone number or Google OAuth subject, used for authentication without defining the user's domain role by itself.
-_Avoid_: Treating Google account, phone number, farmer profile, and agency profile as the same concept
-
-**RBAC Authorization Model**:
-Authorization model where users receive roles, roles grant permissions, and protected platform actions check permissions plus domain constraints such as jurisdiction and consent.
-_Avoid_: Hard-coded role checks only, provider-based authorization, global agency access
+Primary mobile user who registers an account, manages cattle records, submits detection scans, views results, and receives basic follow-up/advisory information.
+_Avoid_: Agency operator, dashboard user, veterinarian-only user
 
 **Agency User**:
-Secondary web-dashboard user from a local agency who monitors farmer and cattle records, reviews early detection trends, and supports follow-up actions without replacing veterinary diagnosis.
-_Avoid_: Farmer user, veterinarian-only user, system administrator
+Web-dashboard user from livestock or animal-health service who monitors jurisdiction-scoped farmer/cattle/detection data and records follow-up status/notes.
+_Avoid_: Farmer user, cattle record owner, public self-registered user
 
-**Agency User Account**:
-Platform user account used by an agency officer or administrator, authorized through roles, permissions, assigned jurisdiction, and verification status to view scoped dashboard data and follow-up workflows.
-_Avoid_: Global dashboard account, farmer account, model-team account, OAuth-only authorization
+**Farmer Account**:
+Mobile account registered by farmer using email/password or Google login. Phone number is optional contact information.
+_Avoid_: Phone-primary identity, anonymous-only farmer, agency-created farmer identity
 
-**Animal Health Advisor**:
-Secondary user such as animal health officer or veterinarian who reviews early detection results and advises farmer without requiring separate app role.
-_Avoid_: Admin dashboard user, separate role account
+**Agency Account**:
+Web-dashboard identity created by administrator and signed in with email/password only.
+_Avoid_: Google agency login, public agency self-registration, farmer account reuse
 
-**Detection Report PDF**:
-Shareable report containing image, timestamp, disease class, confidence, class scores, inference mode, handling advice, disclaimer, app version, model version, preprocessing summary, consent status, and non-identifying device info.
-_Avoid_: PDF diagnosis, medical certificate
+**Surface-Specific Account**:
+Account boundary where same email may exist separately as a **Farmer Account** for mobile and an **Agency Account** for web, without automatic permission sharing.
+_Avoid_: One merged account, automatic mobile access from agency account, automatic dashboard access from farmer account
 
-**Guided Capture**:
-Photo-taking flow that instructs user to capture relevant visible symptoms such as mouth or hoof lesions for FMD and skin nodules for LSD.
-_Avoid_: Free capture, unrestricted photo input
+**Flutter Farmer App**:
+Android-first active mobile app built in Flutter for farmer login, cattle records, online-first detection, offline TFLite fallback, sync, history, archive, and area risk advisory.
+_Avoid_: Native Android active app, iOS-first app, web/PWA farmer app
 
-**Image Source**:
-Origin of submitted cattle image, either live camera capture or gallery selection.
-_Avoid_: Unknown source
+**Legacy Android App**:
+Former native Android/Kotlin app retained as migration reference after moving from `apps/mobile` to `apps/mobile-android-legacy`.
+_Avoid_: Active farmer app, deleted reference app, mixed Flutter module
 
-**Coarse Location**:
-Optional non-precise farm area such as village or district entered manually or filled with GPS assistance after permission, then stored locally.
-_Avoid_: GPS coordinate, precise location, silent location capture
-
-**Administrative Jurisdiction**:
-Indonesia administrative area hierarchy used for agency access and reporting, starting from province, regency or city, district or subdistrict, and optionally village for farmer and cattle location.
-_Avoid_: Precise GPS-only scope, national-only scope, arbitrary unsourced area labels
-
-**Local Field Image**:
-Cattle image collected directly from local farms for project validation and dataset grounding.
-_Avoid_: Public dataset image, synthetic image
-
-**Hard-Negative Field Image**:
-Field image that should not support a confident FMD, LSD, or healthy result because it shows poor evidence, non-target conditions, or out-of-scope content.
-_Avoid_: Unknown disease label, confirmed healthy image, ignored failure case
-
-**Symptom Region Annotation**:
-Bounding-box label around visible disease-relevant image evidence such as FMD mouth or hoof lesions and LSD skin nodules.
-_Avoid_: Whole-cow-only box, segmentation mask, background cue
-
-**False Confident Result**:
-Wrong disease-class early detection result shown with confidence at or above 70% and top-class margin at or above 15 percentage points.
-_Avoid_: Any wrong result, insufficient-evidence outcome
-
-**Label Validation**:
-Dataset labeling process where labels are assigned a review tier, public labels are retained with review notes, researchers filter unusable images, and veterinarian or animal health officer review is preferred for final disease labels.
-_Avoid_: Unchecked labels, model-generated labels
-
-**Model Candidate**:
-CNN architecture trained and evaluated as alternative classifier before selecting production model.
-_Avoid_: Assumed final model
-
-**Symptom Region Detector**:
-Small object-detection model that proposes disease-relevant symptom regions before disease classification in the two-stage server pipeline.
-_Avoid_: Clinical lesion detector, whole-cow classifier, final diagnosis engine
-
-**Model Evaluation Report**:
-Evidence artifact containing accuracy, per-class precision, per-class recall, per-class F1-score, macro F1-score, confusion matrix, and field-only performance when field data is available.
-_Avoid_: Accuracy-only report, informal result
-
-**Training Augmentation**:
-Image variation applied only during model training, such as rotation and brightness changes, to improve robustness.
-_Avoid_: Runtime augmentation
-
-**Inference Preprocessing**:
-Deterministic image preparation before prediction, limited to orientation correction, resizing, compression, and pixel rescaling according to model input.
-_Avoid_: Training augmentation, random transform
-
-**Handling Advice**:
-General recommended action based on predicted disease class and confidence level, such as isolation, retake photo, or contacting veterinarian.
-_Avoid_: Detected symptom claim, treatment prescription
-
-**Confidence Level**:
-Interpretation band for model confidence: high at 80% or above, medium at 60–79%, and low below 60%.
-_Avoid_: Uncalibrated certainty, binary certainty
-
-**Scan History**:
-Local record of previous early detection results stored on device for follow-up and review, including id, timestamp, image path, image source, coarse location, disease class, confidence, class scores, inference mode, reliability, model version, app version, optional farmer notes, and soft-delete state.
-_Avoid_: Cloud history, server medical record
-
-**Upload Consent**:
-User permission given before cattle image is sent to server for inference, requested on first online scan and changeable in settings.
-_Avoid_: Silent upload, blanket consent
-
-**Crash Reporting Consent**:
-User permission for anonymous crash log collection without cattle images, location, or account identifiers.
-_Avoid_: Always-on analytics, image upload in logs
-
-**No-retention Server Inference**:
-Server inference policy where uploaded images are processed in memory and discarded after response.
-_Avoid_: Dataset collection by default, stored upload
-
-**Full Platform Data Retention**:
-Platform storage policy where farmer data, cattle records, detection results, symptom questionnaire answers, NLP notes, and uploaded detection images may be stored in the backend for agency monitoring, audit, and follow-up according to consent, access-control, and data-governance rules.
-_Avoid_: No server storage, local-only scan history, undocumented media retention
-
-**Consent Tier**:
-Farmer-controlled data sharing level where `private` hides routine agency dashboard visibility and uses Private Media Escrow for disclosed risk-signal follow-up, `monitoring` allows authorized agency monitoring with stored media for follow-up and audit, and `research_and_monitoring` additionally allows controlled raw model-team access for research or model-improvement work.
-_Avoid_: Single blanket consent, undisclosed agency follow-up, routine private media browsing, unrestricted research access
-
-**Risk-Signal Follow-Up Exception**:
-Disclosed privacy exception where a private farmer record can expose the full follow-up record, including escrowed media, to authorized agency users when disease-risk signal thresholds require follow-up; access is scoped, logged, and never described as confirmed outbreak or diagnosis.
-_Avoid_: Routine private-data browsing, anonymous-only risk signal when follow-up is required, unlogged emergency access
-
-**Private Media Escrow**:
-Encrypted media retention mode for private-consent detections where media is hidden from routine agency access, revealed only if disease-risk signal thresholds trigger follow-up, and purged after 30 days if no threshold trigger occurs.
-_Avoid_: No private media retention when follow-up needs media, routine private media browsing, indefinite private media storage
-
-**Role-Jurisdiction-Consent Access**:
-Data access policy where agency visibility depends on user role, assigned geographic jurisdiction, and farmer consent tier, so stored farmer, cattle, detection, NLP, and media data is not globally visible by default.
-_Avoid_: All-agency global access, role-only access, consent-only access
-
-**Backend Deployment Phase**:
-Planned server availability stage, starting from LAN backend for TA/demo and scaling to institutional or VPS server for production pilot.
-_Avoid_: Undefined deployment, cloud-scale assumption
-
-**Production Rebuild Phase**:
-Product development stage that graduates the executable tracer into the target platform architecture while preserving the same disease early detection contracts and safe-language rules.
-_Avoid_: Legacy Phase 2 deployment label, image-only backend migration, unrelated model-training phase
-
-**Shared Platform Backend**:
-Rebuilt backend architecture where one platform API owns authentication, farmer data, cattle records, agency dashboard data, shared API contracts, and persistence, while image and NLP inference run as integrated modules or backing services.
-_Avoid_: Image-only inference backend, separate team-owned backend silos, microservices-first platform
-
-**Go Gateway with Python Inference**:
-Backend rebuild architecture where a Go gateway owns platform API routing, authentication, shared data access, and dashboard-facing endpoints, while Python services handle image and NLP inference workloads.
-_Avoid_: FastAPI-only platform backend, Node-only backend, independent team backend silos
+**FastAPI Platform Backend**:
+Single shared backend that owns authentication, PostgreSQL persistence, farmer/cattle records, stored scan images, dashboard APIs, image evidence handling, NLP evidence handling, and image-plus-NLP fusion.
+_Avoid_: Go gateway rewrite, microservices-first platform, team-owned backend silos
 
 **Platform PostgreSQL Database**:
-Primary backend database for farmer accounts, cattle records, complete livestock profiles, administrative jurisdictions, consent tiers, detection events, media metadata, agency users, roles, and dashboard reporting data.
-_Avoid_: SQLite production database, inference-only storage, team-specific separate databases
+First-release source of truth for accounts, cattle records, jurisdictions, detection events, media metadata, review items, follow-up records, and dashboard reporting.
+_Avoid_: In-memory final storage, SQLite production database, team-specific separate databases
 
 **Next.js TanStack Dashboard**:
-Agency-facing web dashboard built with Next.js and TanStack libraries for data fetching and data-heavy interfaces, consuming the Go gateway platform API.
-_Avoid_: Mobile-only monitoring, Go-template dashboard, team-specific dashboard clients
+Agency-facing web dashboard built with Next.js and TanStack libraries, consuming FastAPI APIs.
+_Avoid_: Farmer dashboard, FastAPI template dashboard, Streamlit production dashboard
 
-**Outbreak Surveillance Dashboard**:
-Agency dashboard scope focused on monitoring disease-risk signals across farmer reports and cattle records, including jurisdiction-level trends, alerts, maps or area summaries, case clustering, and follow-up prioritization.
-_Avoid_: Analytics-only dashboard, farmer registry only, cattle inventory only
+**Farmer-Owned Cattle Record**:
+Cattle profile created and maintained by farmer in mobile app, including first-release fields such as tag/name, sex, estimated age or birth-year estimate, district/subdistrict location, status, and detection history.
+_Avoid_: Agency-owned cattle CRUD, scan-only record, backend-only hidden profile
 
-**Disease Risk Signal**:
-Dashboard alert language for possible increased cattle disease risk based on early detection submissions and livestock records, used to prioritize follow-up without declaring a confirmed outbreak.
-_Avoid_: Confirmed outbreak, official epidemiological finding, veterinary diagnosis
+**Complete Livestock Profile**:
+Longer-term cattle profile that may later include vaccination, health events, reproduction, pregnancy, feed, weight, productivity, sale, and transfer details.
+_Avoid_: First-release required scope, detection-only profile, agency-only registry
 
-**Limited Field Validation**:
-Real-device field test with farmers or animal health officers measuring task success, completion time, and qualitative feedback without claiming clinical validation.
-_Avoid_: Clinical validation, lab-confirmed trial
+**Administrative Jurisdiction**:
+Indonesia area hierarchy used for agency access and reporting: province, regency/city, district/subdistrict, and optional village.
+_Avoid_: Precise GPS-only scope, national-global access, arbitrary unsourced area label
 
-**Acceptance Test Suite**:
-Minimum verification set covering preprocessing, API prediction, online-to-offline fallback, local history storage, and Android real-device smoke flow.
-_Avoid_: Manual demo only, unit-only testing
+**Jurisdiction-Limited Visibility**:
+Rule where farmer names, cattle identities, and exact records are visible only to authorized agency users inside assigned jurisdiction.
+_Avoid_: All-agencies-see-all, global farmer visibility, mask-everything-by-default
 
-**Tracer Acceptance Contract**:
-Expected platform behavior captured by the current executable FastAPI tracer tests and used as the behavioral contract for the Production Rebuild Phase.
-_Avoid_: Reusing tracer internals, docs-only rewrite, silent behavior drift
+**Disease Class**:
+Canonical disease category stored independently of display text. First active set is `healthy`, `FMD`, and `LSD`.
+_Avoid_: Indonesian-only labels, numeric-only labels, unlimited first-release disease scope
+
+**Extensible Disease Catalog**:
+Disease taxonomy that starts with FMD and LSD risk monitoring and can add other cattle diseases later without changing core platform concepts.
+_Avoid_: Fixed forever three-class taxonomy, unbounded initial scope
+
+**Image Evidence**:
+Team 1 model output from cattle scan image, including disease class scores, confidence, model version, and evidence state.
+_Avoid_: Final diagnosis, unlabeled photo upload, Team 2-owned image result
+
+**NLP Evidence**:
+Team 2 model output from symptom input, used as separate evidence for fusion once real Team 2 integration is available.
+_Avoid_: Team 1-owned NLP behavior, fake symptom score, free-form undocumented output
+
+**Image-Only Evidence Result**:
+Early detection result produced from Team 1 image evidence before Team 2 NLP evidence is available, clearly labeled image-only and not presented as fused evidence.
+_Avoid_: Fake fusion result, mock NLP result, unlabeled partial evidence
+
+**NLP Placeholder**:
+Temporary backend contract response stating NLP is unavailable, without producing scores or affecting risk, fusion, review items, or alerts.
+_Avoid_: Fake neutral NLP, mock symptom score, placeholder-driven alert
+
+**Weighted Evidence Fusion**:
+Backend process that combines image evidence and real NLP evidence into one early detection result using defined weights and reliability handling.
+_Avoid_: Image-always-wins, NLP-always-wins, two separate farmer-facing results
+
+**Equal-Weight Fusion**:
+Initial real fusion setting where image evidence and NLP evidence each contribute 50% before validation-based tuning.
+_Avoid_: Image-heavy default, NLP-heavy default, no-weight fusion
 
 **Early Detection Result**:
-Scan outcome containing either a disease-class prediction with confidence and handling advice or an insufficient-visual-evidence outcome, used only as early indication rather than veterinary diagnosis.
-_Avoid_: Diagnosis, verdict
+Farmer-facing scan outcome containing evidence state, likely class, confidence band, handling advice, and non-diagnostic wording.
+_Avoid_: Diagnosis, clinical verdict, outbreak confirmation
 
-**Core Screen Set**:
-Production navigation set containing Splash, Onboarding, Home, Camera, Result, History, Guide, About, and Settings screens.
-_Avoid_: Role-based navigation, scan-only app
-
-**Cattle-First Detection Flow**:
-Mobile workflow where the farmer normally registers or selects a cattle profile before early detection, while an emergency quick-scan path may create an unattached detection result that can later be linked to a cattle record.
-_Avoid_: Scan-only app flow, mandatory profile before emergency scan, unattached results forever
-
-**Guide Content**:
-In-app educational content covering PMK symptoms and actions, LSD symptoms and actions, healthy cattle care, photo capture tips, and app usage.
-_Avoid_: Veterinary encyclopedia, treatment protocol
-
-**Capture Checklist**:
-Pre-capture guidance with symptom-area examples, enough-light reminder, close-up instruction, blur avoidance, and retake prompt.
-_Avoid_: Unguided camera, text-only warning
-
-**Image Quality Gate**:
-Basic pre-inference check that rejects images that are too blurry, too dark, or too small and asks user to retake.
-_Avoid_: Advanced quality classifier, post-inference-only warning
+**Confidence Level**:
+Interpretation band: high at 80% or above, medium at 60–79%, low below 60%.
+_Avoid_: Binary certainty, uncalibrated certainty
 
 **Insufficient Visual Evidence**:
-Early detection outcome used when image quality, model confidence, or visible symptoms are not enough to support a disease-class result.
-_Avoid_: Unknown disease, negative diagnosis, model failure
+Result state when image quality, confidence, or visible symptom evidence is not enough to support a disease-class result.
+_Avoid_: Unknown disease diagnosis, forced healthy result, silent model failure
 
-**Basic Accessibility**:
-Farmer-facing usability baseline with large touch targets, readable text, high contrast, and content descriptions.
-_Avoid_: Visual-only controls, tiny text, low contrast
+**Stored Scan Image**:
+Detection scan image retained by backend after inference as part of detection record and agency follow-up data.
+_Avoid_: Temporary inference-only upload, unstored scan image, non-detection camera photo
 
-**Production App**:
-Released Android system with full reliability, security, crash-rate monitoring, and broad device validation.
-_Avoid_: Prototype, demo app
+**Scan Image Storage Notice**:
+Blocking first-scan acknowledgement that every detection scan image is stored by backend for monitoring and follow-up.
+_Avoid_: Hidden storage, silent upload, optional storage consent
+
+**Farmer Archive Action**:
+Farmer action that hides a detection record from mobile view without deleting backend record, stored scan image, or agency follow-up copy.
+_Avoid_: Backend delete, agency record deletion, permanent purge
+
+**Agency Monitoring Dashboard**:
+Web view combining jurisdiction summary cards, review-item table, cluster risk signals, and map or area summary for agency follow-up.
+_Avoid_: Farmer cattle-management screen, map-only dashboard, analytics-only dashboard
+
+**Agency Review Item**:
+Single risky early detection submission visible to authorized agency users for review and possible follow-up.
+_Avoid_: Outbreak alert, confirmed case, automatic diagnosis
+
+**Agency Follow-Up Status**:
+Agency workflow state for review item: New, In Review, Followed Up, or Closed.
+_Avoid_: Farmer record status, diagnosis status, unlimited custom workflow
+
+**Farmer Follow-Up Status**:
+Farmer-visible simplified lifecycle for submitted detection: Submitted, Under Review, Followed Up, or Closed.
+_Avoid_: Agency internal notes, diagnosis status, hidden-only state
+
+**Cluster Risk Signal**:
+Area-level dashboard signal created when multiple related risky submissions indicate possible infectious-disease spread within jurisdiction and time window.
+_Avoid_: Single-case alert, confirmed outbreak, diagnosis cluster
+
+**Hybrid Alert Threshold**:
+Policy where one risky submission becomes an **Agency Review Item**, while a jurisdiction/time cluster becomes a **Cluster Risk Signal**.
+_Avoid_: Single-case public alert, cluster-only review, manual-only alerting
+
+**Cluster Trigger Rule**:
+First-release rule where 3 risky results for same disease in same district within 7 days escalate to **Cluster Risk Signal**.
+_Avoid_: 1-case area alert, cross-district mixing, open-ended threshold
+
+**Farmer Area Risk Advisory**:
+Generic farmer-facing notice shown only when **Cluster Risk Signal** exists in farmer district, with safe prevention wording and no other farmer/cattle details.
+_Avoid_: Nearby farmer details, outbreak warning, confirmed spread claim
+
+**Online-First Detection**:
+Mobile detection flow where Flutter calls FastAPI first, then uses on-device TFLite image inference only as offline fallback and syncs later.
+_Avoid_: Offline-first, server-only no fallback, local-only final storage
+
+**On-Device TFLite Fallback**:
+Offline image inference path in Flutter using bundled TFLite model when network/backend is unavailable.
+_Avoid_: Primary inference path, remote model push, NLP fallback ownership by Team 1
+
+**Full E2E Release Gate**:
+Final release validation across FastAPI, PostgreSQL, Flutter, dashboard, image model, real NLP model, equal-weight fusion, scan image storage, review items, cluster alerts, farmer advisories, follow-up status, and archive behavior.
+_Avoid_: Backend-only test, manual demo only, release without real NLP
 
 ## Relationships
 
-- **Online-first Detection** uses exactly one primary **Server Inference** attempt before fallback, with 10-second total timeout.
-- **Server Inference** returns **Prediction Response** without localizing user-facing text.
-- Failed **Server Inference** returns **Prediction Error Code** for app localization and fallback decisions.
-- Backend applies basic per-device or per-IP rate limiting and returns `RATE_LIMITED` when exceeded.
-- **On-device Inference** acts as fallback when **Server Inference** fails or network unavailable.
-- **Farmer User** is primary user for mobile UX wording, navigation, cattle registration, cattle record maintenance, and early detection flow.
-- **Agency User** is secondary user for web-dashboard monitoring of farmer data, cattle records, and early detection trends.
-- **Animal Health Advisor** may review shared **Early Detection Result** and support farmer follow-up without owning the primary app workflow.
-- **Detection Report PDF** is exportable from **Early Detection Result** for review by **Animal Health Advisor**.
-- **Detection Report PDF** device info excludes IMEI, serial number, account identifier, and precise location.
-- **Coarse Location** may appear in **Scan History** and **Detection Report PDF** only after explicit location permission, and is not uploaded by default.
-- **Guided Capture** produces image input for **Online-first Detection**.
-- Each **Early Detection Result** records one **Image Source**.
-- Training dataset combines public images with at least 20–50 **Local Field Image** entries per **Disease Class** when available.
-- Real-world retraining targets at least 50 expert-reviewed **Local Field Image** entries for each **Disease Class** plus 50 **Hard-Negative Field Image** entries before model update.
-- Two-stage model improvement uses full **Symptom Region Annotation** for field disease images instead of whole-cow-only boxes; healthy field images keep image-level healthy labels without fake symptom boxes.
-- When a two-stage model finds no symptom region, it must not automatically produce healthy; it may show healthy only when an image-level classifier confidently supports healthy, otherwise it returns **Insufficient Visual Evidence**.
-- Two-stage inference is introduced on **Server Inference** first; **On-device Inference** remains current single-stage TFLite fallback until two-stage mobile size, latency, and parity are proven.
-- The first **Symptom Region Detector** candidate is a small YOLO-family detector, even though the single-stage classifier pipeline remains TensorFlow/Keras.
-- Stage-two disease classification in the two-stage pipeline uses both the original full image and the best symptom-region crop rather than relying on crop-only classification.
-- Two-stage score fusion starts as a weighted ensemble with 40% full-image score and 60% symptom-crop score, then is tuned on validation data.
-- When multiple symptom regions are detected, stage-two classification uses the top three detector boxes after suppression and aggregates crop scores by per-class maximum before fusion.
-- When detected symptom-region types conflict, the classifier/fusion result decides the **Disease Class**, but the **Early Detection Result** is marked lower reliability or needs review.
-- Two-stage symptom-region outputs are developer/debug information by default and may become farmer-facing only after field validation proves they help users without implying lesion confirmation.
-- **Scan History** records are not training data by default; only reviewed **Local Field Image** entries may become training dataset candidates.
-- Each training dataset release must document **Label Validation** method.
-- For the initial public-dataset training run, **Label Validation** retains source labels, performs researcher review to remove corrupt/irrelevant/obviously mislabeled images, and requests veterinarian or animal-health-officer sample audit (minimum 10 images per class or 10% per class if smaller); missing expert audit must be documented as a limitation, never fabricated.
-- For field data, **Label Validation** uses mixed label tiers: expert-reviewed labels are primary, researcher-reviewed labels may filter image usability and obvious mismatch, and farmer-provided labels are weak labels unless confirmed by an expert.
-- Weak field labels may be used for training only when their tier is recorded; validation and test sets for field performance must use expert-reviewed labels.
-- Dataset split uses stratified 70/15/15 train/validation/test proportions across `healthy`, `FMD`, and `LSD` classes.
-- Training handles class imbalance with train-split class weights and per-class support reporting; validation/test splits are not oversampled, and weak minority-class performance must drive data or augmentation follow-up rather than be hidden by accuracy.
-- Training dataset preparation removes exact duplicates by file hash, detects near-duplicates by perceptual hash, and keeps duplicate/near-duplicate groups in the same split or removes extras to prevent train/test leakage.
-- Model training must create its own fixed-seed stratified 70/15/15 split from the available public dataset images instead of relying on a vendor-export split, unless a documented exception is approved.
-- Final model is selected by comparing at least three **Model Candidate** architectures on same test protocol: Custom CNN baseline, MobileNetV2, and DenseNet121.
-- Transfer-learning **Model Candidate** training uses two phases: train classification head with pretrained base frozen, then optionally fine-tune top layers with low learning rate when validation metrics improve.
-- Model training and export use fixed class index order: `0 = FMD`, `1 = LSD`, `2 = healthy`; Indonesian PMK/Lato-Lato wording remains display text only.
-- The first two-stage model version keeps the same three **Disease Class** outputs and handles **Insufficient Visual Evidence** as a decision policy rather than a fourth model class.
-- Final model selection uses macro F1 as the primary metric, rejects candidates with any per-class F1 below 85% unless a documented exception is approved, then tie-breaks by test accuracy, TFLite size, and offline latency.
-- Each **Model Candidate** must produce a **Model Evaluation Report**.
-- Model training project is done only when dataset split report, label validation report, three-candidate evaluation, final model selection rationale, Keras/TFLite exports, TFLite parity report, backend metadata update, Android TFLite asset update, offline-inference smoke test, and early-detection wording check are complete.
-- Each full training run must produce dataset, label, evaluation, and deployment artifacts: `DATASET_SPLIT_REPORT.md`, `LABEL_VALIDATION.md`, `MODEL_EVALUATION_REPORT.md`, `TFLITE_PARITY_REPORT.md`, metrics JSON, confusion matrix images, `class_indices.json`, `split_manifest.csv`, server model, TFLite model, backend metadata, Android asset, and one shared model version string.
-- Model version pattern is `cattle-disease-{architecture}-vYYYYMMDD-s{seed}`; artifact filenames mirror architecture, date, seed, and conversion type, e.g. `mobilenetv2_v20260601_s42.keras` and `mobilenetv2_v20260601_s42_dynamic_range.tflite`.
-- Full model training runs on Kaggle GPU as primary environment, with Google Colab free tier as fallback; training artifacts must record runtime platform, TensorFlow version, random seed, dataset version, and training date.
-- Kaggle or Colab notebooks are wrappers only; `docs/team-1-image/model/evaluate_candidates.py` is the source-of-truth training/evaluation script and must produce a versioned `model_training_artifacts_<version>.zip` output without secret-only notebook logic.
-- Model training uses TensorFlow/Keras end-to-end for single-stage classifier candidates, server classifier export, and TensorFlow Lite conversion.
-- Initial model training protocol uses maximum 50 epochs, early stopping with patience 8 and best-weight restore, learning-rate reduction on plateau with patience 4 and factor 0.2, seed 42, batch size 32 by default, and batch size 16 for DenseNet121 if GPU memory requires it.
-- Candidate evaluation trains all **Model Candidates** once with seed 42, then reruns the winning candidate with two additional seeds if time permits; single-seed results are acceptable only when documented as a limitation.
-- Model training input uses RGB images resized to 224 × 224 × 3 with pixel rescaling to 1/255 for all candidates and exported inference models.
-- Each model export must include `preprocessing.json` documenting deterministic inference preprocessing: EXIF orientation correction before resize where available, RGB decode, 224 × 224 resize, and pixel rescale to 1/255; backend and mobile preprocessing must be checked against this artifact.
-- Final model target is test accuracy at least 88% and per-class F1-score at least 85%.
-- Real-world model updates must include a field-only evaluation using expert-reviewed labels and reporting macro F1, per-class recall, disease recall for FMD and LSD, confusion matrix, insufficient-evidence rate, and **False Confident Result** rate.
-- Two-stage model success requires lower **False Confident Result** rate than the current single-stage baseline, field macro F1 equal or better, FMD/LSD recall not worse by more than 5 percentage points, and field **Insufficient Visual Evidence** rate at or below 35%.
-- If no **Model Candidate** reaches model targets, the best candidate may be used only as an experimental/demo model with a documented exception, follow-up issue recommendations, and no clinical/production-validity claim.
-- TFLite model target is accuracy drop at most 2% compared with server model and file size under 10 MB.
-- TFLite conversion ladder exports Float32 TFLite first for parity baseline, then dynamic-range quantized TFLite for app candidate, and only attempts full int8 quantization with representative data if size or latency targets fail.
-- TFLite parity passes only when Keras server model and TFLite model are evaluated on the same test split with accuracy drop ≤2 percentage points, macro F1 drop ≤2 percentage points, per-class F1 drop ≤3 percentage points, no class-index mismatch, confusion matrices recorded, probability drift summarized, model size recorded, and offline latency measured or explicitly marked as an unmeasured limitation.
-- **Training Augmentation** is separate from **Inference Preprocessing**; random transformations never run during user prediction.
-- Allowed **Training Augmentation** for the initial model run is mild and lesion-preserving: rotation up to ±15°, mild brightness/contrast changes, zoom up to ±10%, and horizontal flip; vertical flip, heavy blur, aggressive crop, and extreme color shift are avoided.
-- **Early Detection Result** contains either exactly one predicted **Disease Class** or **Insufficient Visual Evidence**.
-- **Early Detection Result** includes **Handling Advice** based on predicted **Disease Class** and **Confidence Level**, or retake/advisor guidance for **Insufficient Visual Evidence**, not claimed lesion localization.
-- Thesis, app, and report wording should frame outputs as image classification, early detection, prediction results, confidence, and initial handling advice; they must avoid claiming final diagnosis, veterinarian replacement, or clinical disease determination.
-- Medium **Confidence Level** suggests retaking photo; low **Confidence Level** marks result unreliable and requires retaking photo.
-- **Insufficient Visual Evidence** avoids forcing an **Early Detection Result** into FMD, LSD, or healthy when confidence is below 70%, top-class margin is below 15 percentage points, or image quality is not enough.
-- Real-world tuning prioritizes reducing **False Confident Result** cases over maximizing disease-class coverage.
-- **Hard-Negative Field Image** entries are used first for threshold tuning and error analysis; they become an explicit unknown/other training class only after enough reviewed examples exist.
-- **Disease Class** has one **Localized Display Label** per supported app language.
-- **Early Detection Result** may come from **Server Inference** or **On-device Inference** with same domain fields for history, result UI, and PDF export.
-- **Early Detection Result** stores model version so backend and APK model version mismatch remains visible in result, history, and PDF.
-- Backend deploys the selected Keras/SavedModel server artifact and Android deploys the matching selected TFLite artifact; both must share class index order, preprocessing, model version, and evaluation report, and release is blocked if parity thresholds fail.
-- **Scan History** stores **Early Detection Result** data locally, including **Insufficient Visual Evidence** outcomes, timestamp, image source, confidence, and inference mode.
-- Deleted **Scan History** items are hidden as soft-deleted records and automatically purged with local image/PDF cache after 30 days.
-- Server upload in the legacy image-only flow required **Upload Consent**, EXIF metadata removal, local-only **Scan History**, user-controlled record deletion, and **No-retention Server Inference**; the platform flow uses **Consent Tier** and **Full Platform Data Retention** instead.
-- Crash-free metric uses **Crash Reporting Consent** or limited field-test logs when consent is unavailable.
-- If platform consent is `private`, backend may process detections and store farmer-owned detection metadata with **Private Media Escrow**; routine agency visibility is blocked except through the **Risk-Signal Follow-Up Exception**.
-- Production readiness includes **Limited Field Validation** but not lab-confirmed clinical validation.
-- Production readiness requires **Acceptance Test Suite** before release candidate.
-- Production app targets online inference under 3 seconds, offline inference under 1 second, crash-free sessions at least 99%, fallback success at least 95%, and APK size under 50 MB.
-- Production platform app requires a **Farmer User Account** with verified phone before cattle registration or detection submission.
-- **Backend Deployment Phase** starts with HTTP LAN backend for current TA/demo, then scales to HTTPS institutional or VPS server for production pilot.
-- Proposal-based PRD is written in English and includes explicit deviation section for online-first architecture and production-scope expansion.
-- **Production App** includes **Core Screen Set** and **Basic Accessibility** for complete farmer-facing workflow.
-- Home screen acts as action dashboard with primary scan action, recent result, connection status, and quick guide entry.
-- Guide screen provides **Guide Content** for farmer decision support without replacing veterinarian advice.
-- Camera screen presents **Capture Checklist** before or during image capture.
-- **Image Quality Gate** runs before **Online-first Detection** for both camera and gallery images to avoid unreliable input.
+- **Farmer User** uses **Flutter Farmer App** only; there is no farmer web dashboard in first release.
+- **Agency User** uses **Next.js TanStack Dashboard** only.
+- **Farmer Account** supports email/password and Google login.
+- Farmer email/password registration does not require email verification in first release.
+- **Agency Account** supports email/password only and is admin-seeded.
+- Agency password reset is manual/admin reset only in first release.
+- **Surface-Specific Account** allows same email on mobile and web only as separate records; permissions do not merge.
+- **Flutter Farmer App** uses **FastAPI Platform Backend** online-first.
+- **On-Device TFLite Fallback** produces offline image-only result and syncs later.
+- **Legacy Android App** remains reference only after repo move.
+- **FastAPI Platform Backend** uses **Platform PostgreSQL Database** for final first-release storage.
+- **Stored Scan Image** is created for every detection scan after **Scan Image Storage Notice** acknowledgement.
+- EXIF metadata should be removed before storing detection images.
+- Non-detection camera/gallery photos are not part of **Stored Scan Image** scope.
+- **Farmer Archive Action** hides records in mobile view but preserves backend data and agency follow-up copy.
+- **Farmer-Owned Cattle Record** is created/maintained by farmer; agency users do not edit farmer-owned cattle fields.
+- **Jurisdiction-Limited Visibility** controls exact farmer/cattle identity visibility on dashboard.
+- **Image-Only Evidence Result** may create image-only **Agency Review Item** and image-only risk signal during early development.
+- **NLP Placeholder** has no effect on **Weighted Evidence Fusion**, **Agency Review Item**, or **Cluster Risk Signal**.
+- Real **NLP Evidence** integration is required before release completion.
+- **Weighted Evidence Fusion** is owned by **FastAPI Platform Backend**.
+- **Equal-Weight Fusion** is initial setting when real image and NLP evidence are both available.
+- Healthy results do not create **Agency Review Item**; they may appear in aggregate statistics.
+- Low-confidence or conflicting fusion lowers reliability and may mark result needs review.
+- One risky **Early Detection Result** creates **Agency Review Item**.
+- Multiple related review items matching **Cluster Trigger Rule** create **Cluster Risk Signal**.
+- **Agency User** may update **Agency Follow-Up Status** and notes only.
+- **Farmer User** sees **Farmer Follow-Up Status** only, not agency internal notes.
+- **Farmer Area Risk Advisory** appears only when **Cluster Risk Signal** exists in farmer district.
+- Advisory wording must avoid outbreak declaration and identity leakage.
 
-## Example dialogue
+## Milestone Language
 
-> **Dev:** "If cattle image is captured in village with unstable signal, does app still produce Detection Result?"
-> **Domain expert:** "Yes — Online-first Detection tries Server Inference first, then falls back to On-device Inference when server cannot respond."
+1. **Backend Foundation**: FastAPI auth, PostgreSQL, farmer/agency accounts, cattle records, stored scan images, image-only detection records, dashboard-ready APIs.
+2. **Mobile Migration and Flutter Foundation**: move Android legacy app, create Flutter app, implement farmer auth, cattle records, scan upload, history, offline TFLite fallback, sync.
+3. **NLP Placeholder and Agency Dashboard**: add unavailable NLP contract, build Next.js dashboard with jurisdiction-scoped review flow and image-only labels.
+4. **PostgreSQL Hardening**: constraints, indexes, agency seeds, migration discipline, backup/export basics.
+5. **Alerting and Farmer Advisory**: cluster trigger, dashboard cluster risk signals, farmer area advisory.
+6. **Real Team 2 NLP Fusion Before Release**: replace placeholder with real NLP, generate real fusion, keep historical image-only records unchanged.
+7. **Full E2E Release Gate**: validate all core backend, mobile, dashboard, fusion, alert, follow-up, archive, and storage flows.
 
-## Flagged ambiguities
+## Flagged Ambiguities Resolved
 
-- Final TA report title and Bab I follow the approved proposal framing; online-first architecture and production-scope additions are documented as implementation realization and discussion in later chapters, not as replacements for the proposal premise.
-- Final TA report Bab I may revise proposal limitations to reflect the implemented Android system, model evaluation, functional testing, and limited field validation, while still excluding clinical/veterinary diagnostic validation.
-- Final TA report Bab III uses a staged rancang-bangun method; the machine-learning pipeline is presented as one implementation activity within system development rather than as the only research method.
-- Final TA report Bab IV analyzes implemented Android/backend behavior, model evaluation, TFLite parity, functional testing, limited field validation, and explicit non-clinical limitations.
-- Final TA report Bab II uses the proposal references as an audited base, then maps them into related cattle-disease image-classification studies and project technologies such as CNN, transfer learning, MobileNetV2, TensorFlow/Keras, TensorFlow Lite, Android, backend API, and validation methods.
-- Proposal language implies offline Android as primary path, while chosen PRD direction is **Online-first Detection**. PRD must explicitly justify this deviation from proposal.
-- Proposal limits Android work to prototype/conceptual field testing, while chosen PRD direction is **Production App**. PRD must explicitly state scope expansion and add production-grade requirements.
-- App language must support Indonesian and English display without changing canonical **Disease Class** values.
-- App language follows Android system language when Indonesian or English is available, otherwise falls back to Indonesian.
-- App must guide image capture toward visible symptom areas instead of accepting unrestricted cattle photos as equally valid.
+- "mobile stack" means **Flutter Farmer App** for Android first release; native Android/Kotlin becomes **Legacy Android App**.
+- "backend architecture" means **FastAPI Platform Backend**, not Go gateway.
+- "farmer login" means **Farmer Account** with email/password and Google login; phone is optional contact.
+- "same email on mobile and dashboard" means **Surface-Specific Account**; no automatic cross-surface access.
+- "combine Team 1 and Team 2 models" means **Weighted Evidence Fusion** with real **NLP Evidence** before release.
+- "Team 2 NLP not ready" means **Image-Only Evidence Result** plus **NLP Placeholder** temporarily; no fake NLP scores.
+- "scan image storage" means every detection scan image is stored after blocking notice; storage is not optional consent.
+- "delete detection record" means **Farmer Archive Action**, not backend deletion.
+- "dashboard alert" means single case = **Agency Review Item**, cluster = **Cluster Risk Signal**.
+- "cluster rule" means 3 risky results for same disease in same district within 7 days.
+- "farmer area alert" means **Farmer Area Risk Advisory**, not outbreak warning or nearby-case detail.
+- "agency dashboard edits" means agency follow-up status/notes only, not farmer cattle CRUD.
+- "farmer follow-up visibility" means simplified status only, no internal agency notes.
