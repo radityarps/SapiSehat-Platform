@@ -1,0 +1,24 @@
+info:
+  name: GET farmers by farmer_id scan-image-storage-notice
+  type: http
+  seq: 3
+  tags:
+    - Farmers
+
+http:
+  method: GET
+  url: "{{base_url}}/api/farmers/{{farmer_id}}/scan-image-storage-notice"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Get Scan Image Storage Notice
+
+  `GET /api/farmers/{farmer_id}/scan-image-storage-notice`
+
+  Source: `apps/backend/api/routes.py:399`

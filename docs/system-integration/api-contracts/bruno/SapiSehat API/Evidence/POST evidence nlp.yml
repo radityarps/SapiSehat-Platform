@@ -1,0 +1,28 @@
+info:
+  name: POST evidence nlp
+  type: http
+  seq: 2
+  tags:
+    - Evidence
+
+http:
+  method: POST
+  url: "{{base_url}}/api/evidence/nlp"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"evidence_id":"nlp-evidence-1","farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","risk_terms":["drooling"],"confidence":0.5,"model_version":"team-2-demo"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Validate Nlp Evidence
+
+  `POST /api/evidence/nlp`
+
+  Source: `apps/backend/api/routes.py:570`

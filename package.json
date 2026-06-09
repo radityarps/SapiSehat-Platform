@@ -1,7 +1,7 @@
 {
   "name": "sapisehat",
   "version": "1.0.0",
-  "description": "SapiSehat monorepo â€” cattle disease detection app",
+  "description": "SapiSehat monorepo — cattle disease detection app",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "engines": {
@@ -9,12 +9,12 @@
     "pnpm": ">=10"
   },
   "scripts": {
-    "backend:build": "cd apps/backend && docker-compose build",
-    "backend:dev": "cd apps/backend && docker compose down -v && docker-compose up -d",
-    "backend:test": "cd apps/backend && docker-compose run --rm backend python -m pytest tests/ -v",
-    "backend:up": "cd apps/backend && docker-compose up --build -d",
-    "backend:down": "cd apps/backend && docker-compose down",
-    "backend:logs": "cd apps/backend && docker-compose logs -f",
+    "backend:build": "cd apps/backend && docker compose build",
+    "backend:dev": "cd apps/backend && docker compose down -v && docker compose up --build -d",
+    "backend:test": "cd apps/backend && docker compose run --rm backend python -m pytest tests/ -v",
+    "backend:up": "cd apps/backend && docker compose up --build -d",
+    "backend:down": "cd apps/backend && docker compose down",
+    "backend:logs": "cd apps/backend && docker compose logs -f",
     "dashboard:dev": "pnpm --dir apps/dashboard dev",
     "dashboard:build": "pnpm --dir apps/dashboard build",
     "dashboard:start": "pnpm --dir apps/dashboard start",

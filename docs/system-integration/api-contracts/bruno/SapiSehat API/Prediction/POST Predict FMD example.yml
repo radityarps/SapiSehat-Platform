@@ -1,0 +1,32 @@
+info:
+  name: POST Predict FMD example
+  type: http
+  seq: 1
+  tags:
+    - Prediction
+
+http:
+  method: POST
+  url: "{{base_url}}/api/predict"
+  auth: inherit
+  body:
+    type: multipart-form
+    multipart-form:
+      - name: image
+        type: file
+        value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Predict
+
+  `POST /api/predict`
+
+  Source: `apps/backend/api/routes.py:279`
+
+  Safe wording: model output is not veterinary diagnosis or outbreak declaration.

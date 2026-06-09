@@ -1,7 +1,7 @@
 info:
-  name: Health
+  name: Detections
   type: folder
-  seq: 5
+  seq: 7
 
 request:
   auth: inherit

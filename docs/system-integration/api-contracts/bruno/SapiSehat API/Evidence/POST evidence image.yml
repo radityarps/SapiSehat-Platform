@@ -1,0 +1,28 @@
+info:
+  name: POST evidence image
+  type: http
+  seq: 1
+  tags:
+    - Evidence
+
+http:
+  method: POST
+  url: "{{base_url}}/api/evidence/image"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"evidence_id":"image-evidence-1","farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","predicted_class":"FMD","confidence":0.72,"model_version":"demo"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Validate Image Evidence
+
+  `POST /api/evidence/image`
+
+  Source: `apps/backend/api/routes.py:561`

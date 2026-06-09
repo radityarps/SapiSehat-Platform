@@ -1,0 +1,27 @@
+info:
+  name: GET agency farmers
+  type: http
+  seq: 2
+  tags:
+    - Agency
+
+http:
+  method: GET
+  url: "{{base_url}}/api/agency/farmers"
+  auth: inherit
+  headers:
+    - name: X-Agency-User-Id
+      value: "{{agency_user_id}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### List Agency Visible Farmers
+
+  `GET /api/agency/farmers`
+
+  Source: `apps/backend/api/routes.py:357`

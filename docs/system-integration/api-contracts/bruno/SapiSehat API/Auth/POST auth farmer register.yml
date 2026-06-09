@@ -1,0 +1,28 @@
+info:
+  name: POST auth farmer register
+  type: http
+  seq: 1
+  tags:
+    - Auth
+
+http:
+  method: POST
+  url: "{{base_url}}/api/auth/farmer/register"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"email":"farmer@example.test","password":"farmer-password","name":"Demo Farmer","jurisdiction_id":"semarang-city"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Register Farmer Surface Account
+
+  `POST /api/auth/farmer/register`
+
+  Source: `apps/backend/api/routes.py:116`

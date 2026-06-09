@@ -1,0 +1,28 @@
+info:
+  name: POST farmers by farmer_id scan-image-storage-notice
+  type: http
+  seq: 2
+  tags:
+    - Farmers
+
+http:
+  method: POST
+  url: "{{base_url}}/api/farmers/{{farmer_id}}/scan-image-storage-notice"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"accepted":true}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Accept Scan Image Storage Notice
+
+  `POST /api/farmers/{farmer_id}/scan-image-storage-notice`
+
+  Source: `apps/backend/api/routes.py:388`

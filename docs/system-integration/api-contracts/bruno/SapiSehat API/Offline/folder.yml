@@ -1,7 +1,7 @@
 info:
-  name: Health
+  name: Offline
   type: folder
-  seq: 5
+  seq: 10
 
 request:
   auth: inherit

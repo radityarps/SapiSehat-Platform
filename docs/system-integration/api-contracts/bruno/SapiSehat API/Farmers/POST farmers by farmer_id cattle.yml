@@ -1,0 +1,28 @@
+info:
+  name: POST farmers by farmer_id cattle
+  type: http
+  seq: 4
+  tags:
+    - Farmers
+
+http:
+  method: POST
+  url: "{{base_url}}/api/farmers/{{farmer_id}}/cattle"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"name":"Sapi Demo","breed":"Bali","sex":"female","birth_date":"2024-01-01","jurisdiction_id":"semarang-city"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Create Cattle Profile
+
+  `POST /api/farmers/{farmer_id}/cattle`
+
+  Source: `apps/backend/api/routes.py:411`

@@ -1,0 +1,27 @@
+info:
+  name: GET agency detections
+  type: http
+  seq: 5
+  tags:
+    - Agency
+
+http:
+  method: GET
+  url: "{{base_url}}/api/agency/detections"
+  auth: inherit
+  headers:
+    - name: X-Agency-User-Id
+      value: "{{agency_user_id}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### List Agency Visible Attached Detections
+
+  `GET /api/agency/detections`
+
+  Source: `apps/backend/api/routes.py:546`

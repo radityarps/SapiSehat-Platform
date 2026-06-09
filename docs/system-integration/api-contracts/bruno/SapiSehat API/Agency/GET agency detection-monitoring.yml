@@ -1,0 +1,29 @@
+info:
+  name: GET agency detection-monitoring
+  type: http
+  seq: 10
+  tags:
+    - Agency
+
+http:
+  method: GET
+  url: "{{base_url}}/api/agency/detection-monitoring"
+  auth: inherit
+  headers:
+    - name: X-Agency-User-Id
+      value: "{{agency_user_id}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Get Agency Detection Monitoring
+
+  `GET /api/agency/detection-monitoring`
+
+  Source: `apps/backend/api/routes.py:848`
+
+  Safe wording: model output is not veterinary diagnosis or outbreak declaration.
