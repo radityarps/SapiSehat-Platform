@@ -5,11 +5,13 @@ from fastapi.testclient import TestClient
 from main import app
 from api.farmer_accounts import farmer_account_store
 from api.cattle_profiles import cattle_profile_store
+from api.follow_ups import follow_up_store
 
 
 def setup_function():
     farmer_account_store.clear()
     cattle_profile_store.clear()
+    follow_up_store.clear()
 
 
 def test_agency_internal_notes_hidden_from_farmer_follow_up_status():

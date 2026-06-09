@@ -24,6 +24,23 @@ def resolve_backend_path(path_value: str) -> str:
         return str(backend_relative)
     return path_value
 
+UNSAFE_JWT_SECRETS = {"", "sapisehat-dev-token-secret", "change-me", "dev-secret"}
+
+def validate_production_settings(settings: "Settings") -> None:
+    """Fail fast when production uses unsafe defaults."""
+    if settings.fastapi_env != "production":
+        return
+    if settings.jwt_secret in UNSAFE_JWT_SECRETS or len(settings.jwt_secret) < 32:
+        raise ValueError("JWT_SECRET must be set to a strong production secret")
+    if not settings.s3_bucket:
+        raise ValueError("S3_BUCKET must be set in production")
+    if not settings.s3_access_key_id or settings.s3_access_key_id == "minioadmin":
+        raise ValueError("S3_ACCESS_KEY_ID must be set to a production value")
+    if not settings.s3_secret_access_key or settings.s3_secret_access_key == "minioadmin":
+        raise ValueError("S3_SECRET_ACCESS_KEY must be set to a production value")
+    if settings.google_auth_enabled and not settings.google_client_id:
+        raise ValueError("GOOGLE_CLIENT_ID must be set when Google auth is enabled")
+
 
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
@@ -45,6 +62,7 @@ class Settings(BaseSettings):
     workers: int = int(os.getenv("WORKERS", "4"))
     request_timeout: int = int(os.getenv("REQUEST_TIMEOUT", "60"))
     cors_origins: str = os.getenv("CORS_ORIGINS", "")
+    jwt_secret: str = os.getenv("JWT_SECRET", "sapisehat-dev-token-secret")
     media_max_upload_bytes: int = int(os.getenv("MEDIA_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024)))
     s3_endpoint_url: str = os.getenv("S3_ENDPOINT_URL", "http://localhost:9000")
     s3_bucket: str = os.getenv("S3_BUCKET", "sapisehat-scan-images")
@@ -52,6 +70,8 @@ class Settings(BaseSettings):
     s3_access_key_id: str = os.getenv("S3_ACCESS_KEY_ID", "minioadmin")
     s3_secret_access_key: str = os.getenv("S3_SECRET_ACCESS_KEY", "minioadmin")
     s3_force_path_style: bool = os.getenv("S3_FORCE_PATH_STYLE", "true").lower() == "true"
+    google_auth_enabled: bool = os.getenv("GOOGLE_AUTH_ENABLED", "false").lower() == "true"
+    google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")
 
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "info")
@@ -75,3 +95,4 @@ class Settings(BaseSettings):
         return resolve_cors_origins(fastapi_env=self.fastapi_env, cors_origins=self.cors_origins)
 
 settings = Settings()
+validate_production_settings(settings)

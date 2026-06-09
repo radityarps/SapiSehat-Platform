@@ -11,9 +11,9 @@ from sqlalchemy import func, select
 
 from api.database import SessionLocal, create_all_tables
 from api.db_models import AccountModel
+from config import settings
 
 
-TOKEN_SECRET = "sapisehat-dev-token-secret"
 TOKEN_ALGORITHM = "HS256"
 password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
@@ -163,12 +163,12 @@ def issue_token(account: SurfaceAccount) -> str:
         "email": account.email,
         "iat": int(time.time()),
     }
-    return jwt.encode(payload, TOKEN_SECRET, algorithm=TOKEN_ALGORITHM)
+    return jwt.encode(payload, settings.jwt_secret, algorithm=TOKEN_ALGORITHM)
 
 
 def read_token(token: str) -> dict[str, object]:
     try:
-        return jwt.decode(token, TOKEN_SECRET, algorithms=[TOKEN_ALGORITHM])
+        return jwt.decode(token, settings.jwt_secret, algorithms=[TOKEN_ALGORITHM])
     except JWTError as exc:
         raise ValueError("invalid token") from exc
 

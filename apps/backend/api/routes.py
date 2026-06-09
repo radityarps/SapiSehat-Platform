@@ -62,6 +62,7 @@ from api.fusion_results import fusion_result_store
 from api.offline_sync import offline_detection_sync_store
 from api.media_governance import media_store
 from api.object_storage import media_storage_client
+from api.audit_logs import audit_log_store
 from api.follow_ups import follow_up_store
 from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
 from api.authorization import ConsentTier, FarmerRecord, DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, can_agency_access_farmer, filter_visible_farmers
@@ -287,6 +288,14 @@ async def predict(
 
     if result["status"] == "error":
         raise HTTPException(status_code=500, detail=result.get("message", "Inference failed"))
+    audit_log_store.record(
+        actor_type="system",
+        actor_id="predict-endpoint",
+        action="prediction.created",
+        resource_type="prediction",
+        resource_id=result["prediction"]["disease_class"],
+        metadata_json={"content_type": image.content_type, "two_stage": use_two_stage},
+    )
     return result
 
 
@@ -665,6 +674,14 @@ async def upload_scan_image_media(
         retention_policy=retention_policy,
         media_id=media_id,
     )
+    audit_log_store.record(
+        actor_type="farmer",
+        actor_id=farmer_id,
+        action="media.uploaded",
+        resource_type="media",
+        resource_id=media.id,
+        metadata_json={"object_key": object_key, "content_type": content_type, "byte_size": len(content)},
+    )
     return _serialize_media(media)
 
 @router.get("/agency/media/{media_id}", response_model=StoredMediaResponse)
@@ -695,9 +712,18 @@ async def get_agency_media_download_url(media_id: str = Path(...), agency_user_i
     if not media.object_key:
         raise HTTPException(status_code=404, detail="Media object not stored")
     expires_seconds = 900
+    url = media_storage_client.presigned_get_url(object_key=media.object_key, expires_seconds=expires_seconds)
+    audit_log_store.record(
+        actor_type="agency",
+        actor_id=agency_user_id,
+        action="media.download_url_issued",
+        resource_type="media",
+        resource_id=media.id,
+        metadata_json={"expires_seconds": expires_seconds},
+    )
     return {
         "media_id": media.id,
-        "url": media_storage_client.presigned_get_url(object_key=media.object_key, expires_seconds=expires_seconds),
+        "url": url,
         "expires_seconds": expires_seconds,
     }
 
@@ -722,6 +748,14 @@ async def create_agency_follow_up(request: FollowUpCreateRequest, agency_user_id
         status=request.status,
         public_message=request.public_message,
         internal_notes=request.internal_notes,
+    )
+    audit_log_store.record(
+        actor_type="agency",
+        actor_id=agency_user_id,
+        action="follow_up.created",
+        resource_type="follow_up",
+        resource_id=follow_up.id,
+        metadata_json={"farmer_id": request.farmer_id, "cattle_id": request.cattle_id, "status": request.status},
     )
     return _serialize_agency_follow_up(follow_up)
 

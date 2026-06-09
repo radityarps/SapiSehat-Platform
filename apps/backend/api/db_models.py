@@ -159,3 +159,15 @@ class RateLimitRequestModel(Base):
     client_key: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     path: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     requested_at: Mapped[float] = mapped_column(nullable=False, index=True)
+
+class AuditLogModel(Base):
+    __tablename__ = "audit_logs"
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    actor_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    actor_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    resource_type: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    resource_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
