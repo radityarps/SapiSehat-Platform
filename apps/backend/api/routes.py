@@ -37,6 +37,8 @@ from api.schemas import (
     ImageEvidenceResponse,
     NlpEvidenceRequest,
     NlpEvidenceResponse,
+    NlpPlaceholderRequest,
+    NlpPlaceholderResponse,
     FusionRequest,
     FusionResultResponse,
     FusionResultListResponse,
@@ -49,6 +51,7 @@ from api.schemas import (
     AgencyRegistryResponse,
     AgencyDetectionMonitoringResponse,
     AgencyRiskSignalSummaryResponse,
+    FarmerAreaAdvisoryResponse,
     FollowUpCreateRequest,
     AgencyFollowUpResponse,
     FarmerFollowUpListResponse,
@@ -572,6 +575,22 @@ async def validate_nlp_evidence(request: NlpEvidenceRequest):
         "accepted_for_fusion": True,
     }
 
+@router.post("/evidence/nlp/placeholder", response_model=NlpPlaceholderResponse, tags=["prediction"])
+async def create_nlp_placeholder(request: NlpPlaceholderRequest):
+    """Return explicit NLP-unavailable state without scores, fusion, review, or risk side effects."""
+    if farmer_account_store.get_by_id(request.farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    return {
+        "status": "unavailable",
+        "evidence_state": "nlp_unavailable",
+        "accepted_for_fusion": False,
+        "creates_review_item": False,
+        "creates_risk_signal": False,
+        "message": "Team 2 NLP evidence is not available yet. This placeholder does not produce scores or affect fusion, review items, or risk signals.",
+    }
+
 
 @router.post("/fusion/results", response_model=FusionResultResponse)
 async def create_backend_primary_fusion_result(request: FusionRequest):
@@ -879,5 +898,26 @@ async def get_agency_risk_signal_summary(agency_user_id: str = Header(..., alias
         "safe_language": {
             "title": "Disease risk signal summary",
             "description": "Possible increased risk signals for follow-up prioritization. Not confirmed outbreak. Not veterinary diagnosis.",
+        },
+    }
+
+@router.get("/farmers/{farmer_id}/area-advisory", response_model=FarmerAreaAdvisoryResponse, tags=["farmer"])
+async def get_farmer_area_advisory(farmer_id: str = Path(...)):
+    """Return farmer-safe district advisory when cluster risk signal exists in farmer jurisdiction."""
+    farmer = farmer_account_store.get_by_id(farmer_id)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    signals = [signal for signal in cluster_risk_signal_store.list_all() if signal.jurisdiction_id == farmer.jurisdiction_id and signal.risk_level == "possible_increased_risk"]
+    return {
+        "farmer_id": farmer.id,
+        "jurisdiction_id": farmer.jurisdiction_id,
+        "advisory_active": bool(signals),
+        "title": "Area disease-risk advisory" if signals else "No area advisory",
+        "message": "Increased disease-risk reports in your district. Monitor cattle, improve biosecurity, and contact animal health officers if symptoms appear." if signals else "No increased district-level disease-risk reports are active for your area.",
+        "signals": [signal.__dict__ for signal in signals],
+        "safe_language": {
+            "scope": "district-level advisory only",
+            "privacy": "does not expose other farmers, cattle identities, or exact scan details",
+            "disclaimer": "not confirmed diagnosis or outbreak declaration",
         },
     }

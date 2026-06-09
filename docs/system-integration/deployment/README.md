@@ -54,6 +54,24 @@ cd apps/backend
 RUN_MINIO_SMOKE=1 DATABASE_URL=sqlite:///./sapisehat_smoke.db FASTAPI_ENV=test RATE_LIMIT_MAX_REQUESTS=1000 bash scripts/release_smoke.sh
 ```
 
+## Backup / Export
+
+Development SQLite backup:
+
+```bash
+cd apps/backend
+DATABASE_URL=sqlite:///./sapisehat_dev.db BACKUP_DIR=./backups bash scripts/backup_export.sh
+```
+
+PostgreSQL backup:
+
+```bash
+cd apps/backend
+DATABASE_URL=postgresql+psycopg://user:password@host:5432/database BACKUP_DIR=./backups bash scripts/backup_export.sh
+```
+
+The PostgreSQL path uses `pg_dump`; ensure it is installed in the runtime/container that performs backup.
+
 ## Production Config Guard
 
 Production must not use development defaults:

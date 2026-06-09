@@ -340,6 +340,22 @@ class NlpEvidenceResponse(NlpEvidenceRequest):
     """Validated Team 2 NLP evidence response."""
     accepted_for_fusion: bool
 
+class NlpPlaceholderRequest(BaseModel):
+    """Temporary NLP placeholder input until Team 2 artifact is ready."""
+    farmer_id: str = Field(min_length=1, max_length=120)
+    cattle_id: Optional[str] = None
+    symptom_text: str = Field(default="", max_length=2000)
+    questionnaire_answers: Dict[str, object] = Field(default_factory=dict)
+
+class NlpPlaceholderResponse(BaseModel):
+    """Explicit NLP-unavailable response with no fusion side effects."""
+    status: str
+    evidence_state: str
+    accepted_for_fusion: bool
+    creates_review_item: bool
+    creates_risk_signal: bool
+    message: str
+
 class FusionRequest(BaseModel):
     """Backend-primary fusion request."""
     farmer_id: str = Field(min_length=1, max_length=120)
@@ -455,5 +471,15 @@ class AgencyRiskSignalSummaryResponse(BaseModel):
     """Agency dashboard disease risk signal summary response."""
     agency_user_id: str
     rule: Dict[str, object]
+    signals: List[JurisdictionRiskSignalResponse]
+    safe_language: Dict[str, str]
+
+class FarmerAreaAdvisoryResponse(BaseModel):
+    """Farmer-safe area advisory derived from district cluster risk signals."""
+    farmer_id: str
+    jurisdiction_id: str
+    advisory_active: bool
+    title: str
+    message: str
     signals: List[JurisdictionRiskSignalResponse]
     safe_language: Dict[str, str]

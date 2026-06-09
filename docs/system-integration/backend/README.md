@@ -20,6 +20,8 @@ Model-specific training details belong in Team 1 or Team 2 docs.
 - Local development object storage uses MinIO bucket `sapisehat-scan-images`.
 - Agency image preview/download uses backend-issued signed URLs.
 - Audit logs persist sensitive backend actions and admin-only read API is available at `GET /api/agency/audit-logs`.
+- NLP placeholder is explicit at `POST /api/evidence/nlp/placeholder`; it returns unavailable state and never creates scores, fusion, review items, or risk signals.
+- Farmer area advisory is available at `GET /api/farmers/{farmer_id}/area-advisory`; it exposes district-level safe wording only when cluster risk signal exists.
 
 ## Dashboard-Relevant APIs
 
@@ -28,8 +30,12 @@ Model-specific training details belong in Team 1 or Team 2 docs.
 - `POST /api/agency/follow-ups` — agency follow-up status and notes.
 - `GET /api/agency/media/{media_id}/download-url` — signed URL for private stored media.
 - `GET /api/agency/audit-logs` — admin-only debug/ops audit log list.
+- `POST /api/evidence/nlp/placeholder` — Team 2 NLP unavailable response with no risk/fusion side effects.
+- `GET /api/farmers/{farmer_id}/area-advisory` — farmer-safe district advisory from cluster risk signals.
 
 Dashboard wording must keep results non-diagnostic: possible risk, review item, cluster signal; never confirmed diagnosis or outbreak declaration.
+
+Farmer advisory wording must not expose other farmer names, cattle identities, exact scan details, diagnosis, or outbreak claims.
 
 ## Verification Commands
 
