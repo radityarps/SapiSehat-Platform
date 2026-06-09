@@ -1,8 +1,11 @@
 """Backend test helpers."""
 
+import os
 from pathlib import Path
 
 import pytest
+
+os.environ.setdefault("DATABASE_URL", f"sqlite:////tmp/sapisehat_backend_tests_{os.getpid()}.db")
 
 TESTS_DIR = Path(__file__).resolve().parent
 BACKEND_ROOT = TESTS_DIR.parent

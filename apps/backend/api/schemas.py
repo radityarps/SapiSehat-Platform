@@ -156,6 +156,15 @@ class FarmerAccountResponse(BaseModel):
     consent_state: str
     created: bool
 
+class ScanImageStorageNoticeRequest(BaseModel):
+    """Farmer acceptance for first-scan image storage notice."""
+    accepted: bool
+
+class ScanImageStorageNoticeResponse(BaseModel):
+    """Current scan image storage notice acceptance state."""
+    farmer_id: str
+    scan_image_storage_notice_accepted: bool
+
 
 class CattleProfileRequest(BaseModel):
     """Create cattle profile linked to farmer account."""
@@ -371,6 +380,9 @@ class StoredMediaRequest(BaseModel):
     checksum: str = Field(min_length=8, max_length=128)
     consent_scope: str = Field(min_length=1, max_length=80)
     storage_reference: str = Field(min_length=1, max_length=240)
+    content_type: str = Field(default="image/jpeg", max_length=80)
+    byte_size: int = Field(default=0, ge=0)
+    retention_policy: str = Field(default="first_release_monitoring", max_length=80)
 
 class StoredMediaResponse(BaseModel):
     """Stored media metadata response."""
@@ -381,10 +393,22 @@ class StoredMediaResponse(BaseModel):
     checksum: str
     consent_scope: str
     storage_reference: str
+    storage_backend: str
+    object_key: str
+    content_type: str
+    byte_size: int
+    retention_policy: str
+    created_at: str
 
 class StoredMediaListResponse(BaseModel):
     """Stored media list response."""
     media: List[StoredMediaResponse]
+
+class StoredMediaDownloadUrlResponse(BaseModel):
+    """Short-lived media download URL response."""
+    media_id: str
+    url: str
+    expires_seconds: int
 
 class AgencyRegistryResponse(BaseModel):
     """Agency dashboard registry response."""

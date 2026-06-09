@@ -23,6 +23,7 @@ class FarmerAccount:
     name: str
     jurisdiction_id: str
     consent_state: FarmerConsentState
+    scan_image_storage_notice_accepted: bool = False
 
 class FarmerAccountStore:
     """Farmer account store backed by platform database."""
@@ -58,10 +59,21 @@ class FarmerAccountStore:
                     name=account.name,
                     jurisdiction_id=account.jurisdiction_id,
                     consent_state=account.consent_state.value,
+                    scan_image_storage_notice_accepted=account.scan_image_storage_notice_accepted,
                 )
             )
             session.commit()
             return account, True
+
+    def set_scan_image_storage_notice(self, farmer_id: str, *, accepted: bool) -> FarmerAccount | None:
+        with SessionLocal() as session:
+            row = session.get(FarmerAccountModel, farmer_id)
+            if row is None:
+                return None
+            row.scan_image_storage_notice_accepted = accepted
+            session.commit()
+            session.refresh(row)
+            return _farmer_from_row(row)
 
     def get_by_id(self, farmer_id: str) -> FarmerAccount | None:
         with SessionLocal() as session:
@@ -86,6 +98,7 @@ def _farmer_from_row(row: FarmerAccountModel) -> FarmerAccount:
         name=row.name,
         jurisdiction_id=row.jurisdiction_id,
         consent_state=FarmerConsentState(row.consent_state),
+        scan_image_storage_notice_accepted=bool(row.scan_image_storage_notice_accepted),
     )
 
 def normalize_phone_number(phone_number: str) -> str:

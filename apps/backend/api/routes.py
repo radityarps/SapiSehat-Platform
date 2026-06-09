@@ -1,8 +1,11 @@
 """FastAPI routes - HTTP layer (replaceable by Go)."""
 
 import asyncio
+import hashlib
 import io
-from fastapi import APIRouter, UploadFile, File, HTTPException, Query, Header, Path
+from datetime import datetime, timezone
+from uuid import uuid4
+from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Header, Path
 from fastapi.responses import JSONResponse
 from PIL import Image
 from inference_server import get_inference_service, is_model_ready, get_model_status
@@ -18,6 +21,8 @@ from api.schemas import (
     AgencyFarmersResponse,
     FarmerAccountRequest,
     FarmerAccountResponse,
+    ScanImageStorageNoticeRequest,
+    ScanImageStorageNoticeResponse,
     CattleProfileRequest,
     CattleProfileResponse,
     CattleProfileListResponse,
@@ -40,6 +45,7 @@ from api.schemas import (
     StoredMediaRequest,
     StoredMediaResponse,
     StoredMediaListResponse,
+    StoredMediaDownloadUrlResponse,
     AgencyRegistryResponse,
     AgencyDetectionMonitoringResponse,
     AgencyRiskSignalSummaryResponse,
@@ -55,20 +61,21 @@ from api.detection_events import detection_event_store
 from api.fusion_results import fusion_result_store
 from api.offline_sync import offline_detection_sync_store
 from api.media_governance import media_store
+from api.object_storage import media_storage_client
 from api.follow_ups import follow_up_store
 from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
 from api.authorization import ConsentTier, FarmerRecord, DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, can_agency_access_farmer, filter_visible_farmers
 from api.surface_auth import issue_token, read_token, seed_default_agency_accounts, surface_account_store
 
 logger = get_logger(__name__)
-router = APIRouter(prefix="/api", tags=["prediction"])
+router = APIRouter(prefix="/api")
 
 
 def _serialize_auth_account(account):
     return {"id": account.id, "account_type": account.account_type, "email": account.email}
 
 
-@router.post("/auth/farmer/register", response_model=AuthResponse)
+@router.post("/auth/farmer/register", response_model=AuthResponse, tags=["auth"])
 async def register_farmer_surface_account(request: FarmerRegisterRequest):
     """Register farmer mobile account with email/password and issue token."""
     try:
@@ -83,7 +90,7 @@ async def register_farmer_surface_account(request: FarmerRegisterRequest):
     return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
 
 
-@router.post("/auth/farmer/login", response_model=AuthResponse)
+@router.post("/auth/farmer/login", response_model=AuthResponse, tags=["auth"])
 async def login_farmer_surface_account(request: FarmerLoginRequest):
     """Login farmer mobile account with email/password and issue token."""
     account = surface_account_store.authenticate(account_type="farmer", email=request.email, password=request.password)
@@ -91,7 +98,7 @@ async def login_farmer_surface_account(request: FarmerLoginRequest):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
 
-@router.post("/auth/farmer/google", response_model=AuthResponse)
+@router.post("/auth/farmer/google", response_model=AuthResponse, tags=["auth"])
 async def login_farmer_google_account(request: FarmerGoogleLoginRequest):
     """Exchange verified Google token for farmer backend JWT."""
     try:
@@ -101,7 +108,7 @@ async def login_farmer_google_account(request: FarmerGoogleLoginRequest):
     return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
 
 
-@router.post("/auth/agency/login", response_model=AuthResponse)
+@router.post("/auth/agency/login", response_model=AuthResponse, tags=["auth"])
 async def login_agency_surface_account(request: AgencyLoginRequest):
     """Login admin-seeded agency dashboard account with email/password."""
     seed_default_agency_accounts()
@@ -110,13 +117,13 @@ async def login_agency_surface_account(request: AgencyLoginRequest):
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
 
-@router.post("/auth/agency/google")
+@router.post("/auth/agency/google", tags=["auth"])
 async def reject_agency_google_login():
     """Agency Google sign-in disabled in first release."""
     raise HTTPException(status_code=404, detail="Agency Google login not available")
 
 
-@router.get("/me", response_model=AuthAccountResponse)
+@router.get("/me", response_model=AuthAccountResponse, tags=["auth"])
 async def get_current_surface_account(authorization: str = Header(..., alias="Authorization")):
     """Return current account from bearer token."""
     if not authorization.startswith("Bearer "):
@@ -175,6 +182,12 @@ def _serialize_media(media):
         "checksum": media.checksum,
         "consent_scope": media.consent_scope,
         "storage_reference": media.storage_reference,
+        "storage_backend": media.storage_backend,
+        "object_key": media.object_key,
+        "content_type": media.content_type,
+        "byte_size": media.byte_size,
+        "retention_policy": media.retention_policy,
+        "created_at": media.created_at,
     }
 
 def _serialize_agency_follow_up(follow_up):
@@ -225,7 +238,7 @@ def _serialize_detection(event):
         "attached": event.attached,
     }
 
-@router.post("/predict", response_model=PredictResponse)
+@router.post("/predict", response_model=PredictResponse, tags=["prediction"])
 async def predict(
     image: UploadFile = File(...),
     two_stage: bool = Query(False, description="Developer-only two-stage prototype path"),
@@ -326,8 +339,30 @@ async def register_or_sign_in_farmer_account(request: FarmerAccountRequest):
         "created": created,
     }
 
+@router.post("/farmers/{farmer_id}/scan-image-storage-notice", response_model=ScanImageStorageNoticeResponse)
+async def accept_scan_image_storage_notice(request: ScanImageStorageNoticeRequest, farmer_id: str = Path(...)):
+    """Store farmer acceptance for scan image storage notice."""
+    farmer = farmer_account_store.set_scan_image_storage_notice(farmer_id, accepted=request.accepted)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    return {
+        "farmer_id": farmer.id,
+        "scan_image_storage_notice_accepted": farmer.scan_image_storage_notice_accepted,
+    }
 
-@router.post("/farmers/{farmer_id}/cattle", response_model=CattleProfileResponse)
+@router.get("/farmers/{farmer_id}/scan-image-storage-notice", response_model=ScanImageStorageNoticeResponse)
+async def get_scan_image_storage_notice(farmer_id: str = Path(...)):
+    """Read farmer scan image storage notice acceptance."""
+    farmer = farmer_account_store.get_by_id(farmer_id)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    return {
+        "farmer_id": farmer.id,
+        "scan_image_storage_notice_accepted": farmer.scan_image_storage_notice_accepted,
+    }
+
+
+@router.post("/farmers/{farmer_id}/cattle", response_model=CattleProfileResponse, tags=["farmer"])
 async def create_cattle_profile(request: CattleProfileRequest, farmer_id: str = Path(...)):
     """Create cattle profile linked to farmer account before detection."""
     farmer = farmer_account_store.get_by_id(farmer_id)
@@ -546,16 +581,20 @@ async def sync_offline_detection(request: OfflineDetectionSyncRequest):
     }
 
 
-@router.post("/media", response_model=StoredMediaResponse)
+@router.post("/media", response_model=StoredMediaResponse, tags=["media"])
 async def create_stored_media_metadata(request: StoredMediaRequest):
     """Store media metadata only when farmer consent permits research/monitoring."""
     farmer = farmer_account_store.get_by_id(request.farmer_id)
     if farmer is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
+    if not farmer.scan_image_storage_notice_accepted:
+        raise HTTPException(status_code=403, detail="Scan image storage notice must be accepted before storing media")
     if farmer.consent_state != FarmerConsentState.RESEARCH_AND_MONITORING:
         raise HTTPException(status_code=403, detail="Media storage requires research_and_monitoring consent")
     if request.consent_scope != "research_and_monitoring":
         raise HTTPException(status_code=422, detail="consent_scope must be research_and_monitoring")
+    if request.content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=422, detail="content_type must be image/jpeg, image/png, or image/webp")
     if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     media = media_store.create(
@@ -565,6 +604,66 @@ async def create_stored_media_metadata(request: StoredMediaRequest):
         checksum=request.checksum,
         consent_scope=request.consent_scope,
         storage_reference=request.storage_reference,
+        content_type=request.content_type,
+        byte_size=request.byte_size,
+        retention_policy=request.retention_policy,
+    )
+    return _serialize_media(media)
+
+def _validate_media_storage_allowed(*, farmer_id: str, cattle_id: str | None, consent_scope: str, content_type: str) -> None:
+    farmer = farmer_account_store.get_by_id(farmer_id)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if not farmer.scan_image_storage_notice_accepted:
+        raise HTTPException(status_code=403, detail="Scan image storage notice must be accepted before storing media")
+    if farmer.consent_state != FarmerConsentState.RESEARCH_AND_MONITORING:
+        raise HTTPException(status_code=403, detail="Media storage requires research_and_monitoring consent")
+    if consent_scope != "research_and_monitoring":
+        raise HTTPException(status_code=422, detail="consent_scope must be research_and_monitoring")
+    if content_type not in {"image/jpeg", "image/png", "image/webp"}:
+        raise HTTPException(status_code=422, detail="content_type must be image/jpeg, image/png, or image/webp")
+    if cattle_id is not None and cattle_profile_store.get_owned(farmer_id=farmer_id, cattle_id=cattle_id) is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+
+
+def _media_object_key(*, farmer_id: str, media_id: str, filename: str, content_type: str) -> str:
+    extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[content_type]
+    now = datetime.now(timezone.utc)
+    return f"scan-images/{farmer_id}/{now:%Y}/{now:%m}/{media_id}.{extension}"
+
+
+@router.post("/media/uploads", response_model=StoredMediaResponse, tags=["media"])
+async def upload_scan_image_media(
+    farmer_id: str = Form(...),
+    cattle_id: str | None = Form(default=None),
+    detection_id: str | None = Form(default=None),
+    consent_scope: str = Form(default="research_and_monitoring"),
+    retention_policy: str = Form(default="first_release_monitoring"),
+    file: UploadFile = File(...),
+):
+    """Upload scan image bytes to MinIO/S3-compatible object storage."""
+    content_type = file.content_type or "application/octet-stream"
+    _validate_media_storage_allowed(farmer_id=farmer_id, cattle_id=cattle_id, consent_scope=consent_scope, content_type=content_type)
+    content = await file.read()
+    if len(content) > settings.media_max_upload_bytes:
+        raise HTTPException(status_code=413, detail="Media upload too large")
+    media_id = f"media-{uuid4().hex}"
+    object_key = _media_object_key(farmer_id=farmer_id, media_id=media_id, filename=file.filename or "scan", content_type=content_type)
+    media_storage_client.put_object(object_key=object_key, content=content, content_type=content_type)
+    checksum = hashlib.sha256(content).hexdigest()
+    media = media_store.create(
+        farmer_id=farmer_id,
+        cattle_id=cattle_id,
+        detection_id=detection_id,
+        checksum=checksum,
+        consent_scope=consent_scope,
+        storage_reference=object_key,
+        storage_backend=media_storage_client.backend,
+        object_key=object_key,
+        content_type=content_type,
+        byte_size=len(content),
+        retention_policy=retention_policy,
+        media_id=media_id,
     )
     return _serialize_media(media)
 
@@ -584,6 +683,23 @@ async def get_agency_visible_media(media_id: str = Path(...), agency_user_id: st
     if not can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
         raise HTTPException(status_code=403, detail="Media not visible to agency")
     return _serialize_media(media)
+
+
+@router.get("/agency/media/{media_id}/download-url", response_model=StoredMediaDownloadUrlResponse, tags=["media"])
+async def get_agency_media_download_url(media_id: str = Path(...), agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Issue short-lived URL for agency-visible scan image."""
+    media = media_store.get(media_id)
+    if media is None:
+        raise HTTPException(status_code=404, detail="Media not found")
+    await get_agency_visible_media(media_id=media_id, agency_user_id=agency_user_id)
+    if not media.object_key:
+        raise HTTPException(status_code=404, detail="Media object not stored")
+    expires_seconds = 900
+    return {
+        "media_id": media.id,
+        "url": media_storage_client.presigned_get_url(object_key=media.object_key, expires_seconds=expires_seconds),
+        "expires_seconds": expires_seconds,
+    }
 
 
 @router.post("/agency/follow-ups", response_model=AgencyFollowUpResponse)
@@ -642,7 +758,7 @@ async def get_agency_dashboard_registry(agency_user_id: str = Header(..., alias=
     }
 
 
-@router.get("/agency/detection-monitoring", response_model=AgencyDetectionMonitoringResponse)
+@router.get("/agency/detection-monitoring", response_model=AgencyDetectionMonitoringResponse, tags=["agency"])
 async def get_agency_detection_monitoring(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
     """Return agency-scoped fused detection monitoring rows with safe risk language."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)

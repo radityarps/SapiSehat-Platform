@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import JSON, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, JSON, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from api.database import Base
@@ -27,6 +27,7 @@ class FarmerAccountModel(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     jurisdiction_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     consent_state: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    scan_image_storage_notice_accepted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
 class AgencyJurisdictionModel(Base):
     __tablename__ = "agency_jurisdictions"
@@ -78,6 +79,12 @@ class StoredMediaModel(Base):
     checksum: Mapped[str] = mapped_column(String(160), nullable=False)
     consent_scope: Mapped[str] = mapped_column(String(80), nullable=False)
     storage_reference: Mapped[str] = mapped_column(String(500), nullable=False)
+    storage_backend: Mapped[str] = mapped_column(String(80), nullable=False, default="metadata-only")
+    object_key: Mapped[str] = mapped_column(String(500), nullable=False, default="")
+    content_type: Mapped[str] = mapped_column(String(80), nullable=False, default="image/jpeg")
+    byte_size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    retention_policy: Mapped[str] = mapped_column(String(80), nullable=False, default="first_release_monitoring")
+    created_at: Mapped[str] = mapped_column(String(80), nullable=False, default="")
 
 
 class FusionResultModel(Base):

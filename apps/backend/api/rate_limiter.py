@@ -9,6 +9,16 @@ from starlette.requests import Request
 from starlette.responses import JSONResponse
 
 
+def cleanup_rate_limit_requests(*, now: float | None = None, ttl_seconds: float) -> int:
+    """Remove persisted rate-limit rows older than TTL."""
+    create_all_tables()
+    cutoff = (time.time() if now is None else now) - ttl_seconds
+    with SessionLocal() as session:
+        removed = session.query(RateLimitRequestModel).filter(RateLimitRequestModel.requested_at <= cutoff).delete(synchronize_session=False)
+        session.commit()
+        return int(removed)
+
+
 class RateLimiterMiddleware(BaseHTTPMiddleware):
     """Per-IP sliding window rate limiter for /api/predict only."""
 
@@ -31,6 +41,9 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         with self._lock:
             window_start = now - self.window_seconds
             with SessionLocal() as session:
+                session.query(RateLimitRequestModel).filter(
+                    RateLimitRequestModel.requested_at <= window_start,
+                ).delete(synchronize_session=False)
                 session.query(RateLimitRequestModel).filter(
                     RateLimitRequestModel.client_key == client_key,
                     RateLimitRequestModel.path == request.url.path,
