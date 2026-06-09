@@ -56,6 +56,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **FastAPI platform backend foundation**: Added surface-specific farmer and agency auth, PostgreSQL-backed accounts, farmer-owned cattle records, detection records, follow-up workflow, cluster risk signals, scan image storage notice gate, archive-only behavior, and dashboard-ready agency APIs.
+- **Private scan image object storage**: Added S3-compatible media upload path (`POST /api/media/uploads`), local MinIO development bucket, private object keys, media metadata persistence, and backend-issued signed URL endpoint for authorized agency image preview/download.
+- **Production backend hardening**: Added production config guards for JWT secret, CORS origins, S3 bucket/credentials, and Google client ID when Google auth is enabled.
+- **Backend audit logs**: Added persistent audit events for predictions, media uploads, signed media URL issuance, and follow-up creation, plus admin-only `GET /api/agency/audit-logs` read API.
+- **Backend release smoke and root test entrypoint**: Added `apps/backend/scripts/release_smoke.sh`, optional real MinIO smoke test, and root `tests/test_backend_suite.py` so `python -m pytest tests -q` from repo root runs backend checks.
 - **Retake/repeat scan feature**: Users can now press "Retake" on a scan result to re-scan and update the existing history entry instead of creating a duplicate. When retaking from history detail, the new scan replaces the old entry in the database. Implementation uses `NavigationViewModel` with StateFlow-based navigation triggers and `DetectionRepository.saveDetection(updateDetectionId)` to perform UPDATE (via Room's `OnConflictStrategy.REPLACE`) instead of INSERT.
 - **Postman API collection**: Created `docs/Postman/SapiSehat API.postman_collection.json` with pre-built requests for `/api/health` and `/api/predict`, automated test scripts, and example responses (200 FMD, 200 Healthy, 422, 503).
 - **Diagnostic logging**: Added structured `android.util.Log` tracing with tag `SapiSehat` across 4 files (`CameraRoute`, `CameraViewModel`, `InferenceRouter`, `OnlineInferenceClient`). Filterable via `adb logcat -s SapiSehat:*`. Logs cover the full pipeline: camera capture → classify trigger → isOnline decision → API request/response → final result.

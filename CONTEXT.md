@@ -42,6 +42,10 @@ _Avoid_: Active farmer app, deleted reference app, mixed Flutter module
 Single shared backend that owns authentication, PostgreSQL persistence, farmer/cattle records, stored scan images, dashboard APIs, image evidence handling, NLP evidence handling, and image-plus-NLP fusion.
 _Avoid_: Go gateway rewrite, microservices-first platform, team-owned backend silos
 
+**Backend Test Entry Point**:
+Repository-root `tests/test_backend_suite.py` wrapper that runs backend suite from `apps/backend/tests` so `python -m pytest tests -q` works from repo root.
+_Avoid_: Repo-root test folder with duplicated backend cases, backend-only command that fails from root
+
 **Platform PostgreSQL Database**:
 First-release source of truth for accounts, cattle records, jurisdictions, detection events, media metadata, review items, follow-up records, and dashboard reporting.
 _Avoid_: In-memory final storage, SQLite production database, team-specific separate databases
@@ -114,6 +118,18 @@ _Avoid_: Unknown disease diagnosis, forced healthy result, silent model failure
 Detection scan image retained by backend after inference as part of detection record and agency follow-up data.
 _Avoid_: Temporary inference-only upload, unstored scan image, non-detection camera photo
 
+**Private Object Storage**:
+S3-compatible storage for detection image bytes, using local MinIO in development and production S3-compatible buckets later, while metadata stays in PostgreSQL.
+_Avoid_: Public bucket images, database blob storage, local filesystem-only production storage
+
+**Signed Media URL**:
+Short-lived backend-issued URL that lets authorized agency users preview or download private stored scan images without making bucket objects public.
+_Avoid_: Public image URL, permanent shared link, direct bucket credential exposure
+
+**Agency Audit Log Read API**:
+Admin-only endpoint for recent backend audit events such as predictions, media uploads, signed media URL issuance, and follow-up creation.
+_Avoid_: Public audit feed, farmer-visible internal notes, normal agency review queue
+
 **Scan Image Storage Notice**:
 Blocking first-scan acknowledgement that every detection scan image is stored by backend for monitoring and follow-up.
 _Avoid_: Hidden storage, silent upload, optional storage consent
@@ -179,7 +195,10 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 - **On-Device TFLite Fallback** produces offline image-only result and syncs later.
 - **Legacy Android App** remains reference only after repo move.
 - **FastAPI Platform Backend** uses **Platform PostgreSQL Database** for final first-release storage.
+- Root repo `tests/test_backend_suite.py` delegates to backend suite under `apps/backend/tests` so root pytest command stays usable.
 - **Stored Scan Image** is created for every detection scan after **Scan Image Storage Notice** acknowledgement.
+- **Private Object Storage** stores scan image bytes; **Platform PostgreSQL Database** stores media metadata and object keys.
+- **Signed Media URL** is issued by backend only after agency authorization checks.
 - EXIF metadata should be removed before storing detection images.
 - Non-detection camera/gallery photos are not part of **Stored Scan Image** scope.
 - **Farmer Archive Action** hides records in mobile view but preserves backend data and agency follow-up copy.
@@ -195,6 +214,7 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 - One risky **Early Detection Result** creates **Agency Review Item**.
 - Multiple related review items matching **Cluster Trigger Rule** create **Cluster Risk Signal**.
 - **Agency User** may update **Agency Follow-Up Status** and notes only.
+- **Agency Audit Log Read API** is admin-only and exposes recent audit events for debugging and ops review.
 - **Farmer User** sees **Farmer Follow-Up Status** only, not agency internal notes.
 - **Farmer Area Risk Advisory** appears only when **Cluster Risk Signal** exists in farmer district.
 - Advisory wording must avoid outbreak declaration and identity leakage.
