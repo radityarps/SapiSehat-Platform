@@ -1,0 +1,24 @@
+info:
+  name: GET farmers by farmer_id cattle
+  type: http
+  seq: 5
+  tags:
+    - Farmers
+
+http:
+  method: GET
+  url: "{{base_url}}/api/farmers/{{farmer_id}}/cattle"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### List Farmer Cattle For Detection
+
+  `GET /api/farmers/{farmer_id}/cattle`
+
+  Source: `apps/backend/api/routes.py:433`

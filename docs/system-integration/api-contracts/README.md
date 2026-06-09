@@ -5,6 +5,7 @@ Shared API contracts used by mobile, dashboard, Go gateway, Team 1 image service
 ## Contracts
 
 - [Image + NLP Fusion Contract](FUSION_CONTRACT.md)
+- [Bruno OpenCollection YAML](bruno/SapiSehat%20API/opencollection.yml)
 
 ## Rule
 
@@ -22,3 +23,18 @@ Issue #6 adds emergency quick-scan behavior. API behavior:
 5. Agency detection visibility includes only attached detections whose cattle pass role-jurisdiction-consent authorization.
 
 The current FastAPI in-memory detection store is a tracer for the future Go gateway and PostgreSQL implementation.
+
+
+## Bruno Collection
+
+Open this folder in Bruno:
+
+```text
+docs/system-integration/api-contracts/bruno/SapiSehat API/
+```
+
+Collection root file:
+
+```text
+opencollection.yml
+```

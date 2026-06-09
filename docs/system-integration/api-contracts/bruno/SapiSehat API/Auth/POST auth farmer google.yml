@@ -1,0 +1,28 @@
+info:
+  name: POST auth farmer google
+  type: http
+  seq: 3
+  tags:
+    - Auth
+
+http:
+  method: POST
+  url: "{{base_url}}/api/auth/farmer/google"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"id_token":"google:farmer@example.test:Demo Farmer","jurisdiction_id":"semarang-city"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Login Farmer Google Account
+
+  `POST /api/auth/farmer/google`
+
+  Source: `apps/backend/api/routes.py:139`

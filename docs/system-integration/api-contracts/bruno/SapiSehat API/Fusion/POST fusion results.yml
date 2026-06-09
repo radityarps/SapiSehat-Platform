@@ -1,0 +1,28 @@
+info:
+  name: POST fusion results
+  type: http
+  seq: 1
+  tags:
+    - Fusion
+
+http:
+  method: POST
+  url: "{{base_url}}/api/fusion/results"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","image_evidence_id":"image-evidence-1","nlp_evidence_id":"nlp-evidence-1","image_score":0.72,"nlp_score":0.5,"fused_score":0.61,"fused_class":"FMD"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Create Backend Primary Fusion Result
+
+  `POST /api/fusion/results`
+
+  Source: `apps/backend/api/routes.py:595`

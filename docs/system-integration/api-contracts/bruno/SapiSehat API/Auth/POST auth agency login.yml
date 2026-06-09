@@ -1,0 +1,28 @@
+info:
+  name: POST auth agency login
+  type: http
+  seq: 4
+  tags:
+    - Auth
+
+http:
+  method: POST
+  url: "{{base_url}}/api/auth/agency/login"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"email":"semarang-officer@sapisehat.test","password":"agency-password"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Login Agency Surface Account
+
+  `POST /api/auth/agency/login`
+
+  Source: `apps/backend/api/routes.py:149`

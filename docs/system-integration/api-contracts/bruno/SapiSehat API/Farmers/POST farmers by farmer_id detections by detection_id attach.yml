@@ -1,0 +1,28 @@
+info:
+  name: POST farmers by farmer_id detections by detection_id attach
+  type: http
+  seq: 9
+  tags:
+    - Farmers
+
+http:
+  method: POST
+  url: "{{base_url}}/api/farmers/{{farmer_id}}/detections/{{detection_id}}/attach"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"cattle_id":"{{cattle_id}}"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Attach Quick Scan Detection
+
+  `POST /api/farmers/{farmer_id}/detections/{detection_id}/attach`
+
+  Source: `apps/backend/api/routes.py:528`

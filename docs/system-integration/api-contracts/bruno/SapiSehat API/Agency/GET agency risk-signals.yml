@@ -1,0 +1,29 @@
+info:
+  name: GET agency risk-signals
+  type: http
+  seq: 11
+  tags:
+    - Agency
+
+http:
+  method: GET
+  url: "{{base_url}}/api/agency/risk-signals"
+  auth: inherit
+  headers:
+    - name: X-Agency-User-Id
+      value: "{{agency_user_id}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Get Agency Risk Signal Summary
+
+  `GET /api/agency/risk-signals`
+
+  Source: `apps/backend/api/routes.py:871`
+
+  Safe wording: model output is not veterinary diagnosis or outbreak declaration.

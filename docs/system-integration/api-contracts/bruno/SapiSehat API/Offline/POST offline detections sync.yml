@@ -1,0 +1,28 @@
+info:
+  name: POST offline detections sync
+  type: http
+  seq: 1
+  tags:
+    - Offline
+
+http:
+  method: POST
+  url: "{{base_url}}/api/offline/detections/sync"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"client_detection_id":"mobile-local-1","farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","created_at":"2026-06-09T00:00:00Z","evidence_state":"image_only"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Sync Offline Detection
+
+  `POST /api/offline/detections/sync`
+
+  Source: `apps/backend/api/routes.py:619`

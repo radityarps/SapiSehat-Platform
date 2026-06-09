@@ -1,0 +1,28 @@
+info:
+  name: POST auth farmer login
+  type: http
+  seq: 2
+  tags:
+    - Auth
+
+http:
+  method: POST
+  url: "{{base_url}}/api/auth/farmer/login"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"email":"farmer@example.test","password":"farmer-password"}
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Login Farmer Surface Account
+
+  `POST /api/auth/farmer/login`
+
+  Source: `apps/backend/api/routes.py:131`
