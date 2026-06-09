@@ -42,6 +42,11 @@ class FollowUpStore:
             rows = session.query(FollowUpModel).filter_by(farmer_id=farmer_id).order_by(FollowUpModel.id).all()
             return [_follow_up_from_row(row) for row in rows]
 
+    def list_all(self) -> list[FollowUp]:
+        with SessionLocal() as session:
+            rows = session.query(FollowUpModel).order_by(FollowUpModel.id).all()
+            return [_follow_up_from_row(row) for row in rows]
+
     def clear(self) -> None:
         with SessionLocal() as session:
             session.query(FollowUpModel).delete()

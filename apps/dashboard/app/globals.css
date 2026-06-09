@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 1 0 0;
+  --foreground: 0.22 0.025 255;
+  --card: 0.98 0.004 250;
+  --card-foreground: 0.22 0.025 255;
+  --popover: 1 0 0;
+  --popover-foreground: 0.22 0.025 255;
+  --primary: 0.48 0.09 178;
+  --primary-foreground: 1 0 0;
+  --secondary: 0.94 0.006 250;
+  --secondary-foreground: 0.22 0.025 255;
+  --muted: 0.94 0.006 250;
+  --muted-foreground: 0.44 0.016 255;
+  --accent: 0.62 0.08 188;
+  --accent-foreground: 1 0 0;
+  --destructive: 0.55 0.20 28;
+  --destructive-foreground: 1 0 0;
+  --border: 0.88 0.008 250;
+  --input: 0.88 0.008 250;
+  --ring: 0.48 0.09 178;
+  --radius: 0.75rem;
+}
+
+* {
+  border-color: oklch(var(--border));
+}
+
+html {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+  background: oklch(var(--background));
+  color: oklch(var(--foreground));
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

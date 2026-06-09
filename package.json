@@ -15,6 +15,11 @@
     "backend:up": "cd apps/backend && docker-compose up --build -d",
     "backend:down": "cd apps/backend && docker-compose down",
     "backend:logs": "cd apps/backend && docker-compose logs -f",
+    "dashboard:dev": "pnpm --dir apps/dashboard dev",
+    "dashboard:build": "pnpm --dir apps/dashboard build",
+    "dashboard:start": "pnpm --dir apps/dashboard start",
+    "dashboard:lint": "pnpm --dir apps/dashboard lint",
+    "dashboard:typecheck": "pnpm --dir apps/dashboard exec tsc --noEmit",
     "mobile:build": "cd apps/mobile && .\\gradlew assembleDebug",
     "mobile:deploy": "cd apps/mobile && .\\gradlew assembleDebug && cd ../.. && node scripts/run-adb.mjs install -r apps/mobile/app/build/outputs/apk/debug/app-debug.apk",
     "mobile:run": "cd apps/mobile && .\\gradlew assembleDebug && cd ../.. && node scripts/run-adb.mjs install -r apps/mobile/app/build/outputs/apk/debug/app-debug.apk && node scripts/run-adb.mjs shell am start -n com.sapisehat.app/.MainActivity",
@@ -24,7 +29,7 @@
     "mobile:clean": "cd apps/mobile && .\\gradlew clean",
     "dev": "pnpm run backend:dev",
     "test": "pnpm run backend:test",
-    "build": "pnpm run backend:build",
+    "build": "pnpm run backend:build && pnpm run dashboard:build",
     "install:all": "pnpm run backend:build"
   }
 }

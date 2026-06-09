@@ -1,0 +1,4 @@
+name: Android Emulator
+variables:
+  - name: baseUrl
+    value: http://10.0.2.2:8000
