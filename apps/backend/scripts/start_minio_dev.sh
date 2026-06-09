@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Git Bash rewrites /bin/sh to a Windows path unless disabled for Docker CLI.
+export MSYS_NO_PATHCONV=1
+
 NETWORK_NAME="${NETWORK_NAME:-sapisehat-minio-net}"
 MINIO_CONTAINER="${MINIO_CONTAINER:-sapisehat-minio-dev}"
 BUCKET="${S3_BUCKET:-sapisehat-scan-images}"
