@@ -19,15 +19,15 @@ docker run -d --name "$MINIO_CONTAINER" --network "$NETWORK_NAME" \
   server /data --console-address ":9001" >/dev/null
 
 for _ in $(seq 1 30); do
-  if docker run --rm --network "$NETWORK_NAME" minio/mc:RELEASE.2025-08-13T08-35-41Z \
-    sh -c "mc alias set local http://$MINIO_CONTAINER:9000 '$ROOT_USER' '$ROOT_PASSWORD' >/dev/null && mc ready local >/dev/null"; then
+  if docker run --rm --network "$NETWORK_NAME" --entrypoint /bin/sh minio/mc:RELEASE.2025-08-13T08-35-41Z \
+    -c "mc alias set local http://$MINIO_CONTAINER:9000 '$ROOT_USER' '$ROOT_PASSWORD' >/dev/null && mc ready local >/dev/null"; then
     break
   fi
   sleep 1
 done
 
-docker run --rm --network "$NETWORK_NAME" minio/mc:RELEASE.2025-08-13T08-35-41Z \
-  sh -c "mc alias set local http://$MINIO_CONTAINER:9000 '$ROOT_USER' '$ROOT_PASSWORD' >/dev/null && mc mb --ignore-existing local/$BUCKET"
+docker run --rm --network "$NETWORK_NAME" --entrypoint /bin/sh minio/mc:RELEASE.2025-08-13T08-35-41Z \
+  -c "mc alias set local http://$MINIO_CONTAINER:9000 '$ROOT_USER' '$ROOT_PASSWORD' >/dev/null && mc mb --ignore-existing local/$BUCKET"
 
 cat <<EOF
 MinIO ready.
