@@ -3,7 +3,7 @@
 from pathlib import Path
 
 def test_release_smoke_script_covers_core_backend_checks():
-    script = Path("apps/backend/scripts/release_smoke.sh")
+    script = Path(__file__).resolve().parents[1] / "scripts" / "release_smoke.sh"
 
     text = script.read_text(encoding="utf-8")
 
