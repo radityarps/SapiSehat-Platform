@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     s3_force_path_style: bool = os.getenv("S3_FORCE_PATH_STYLE", "true").lower() == "true"
     google_auth_enabled: bool = os.getenv("GOOGLE_AUTH_ENABLED", "false").lower() == "true"
     google_client_id: str = os.getenv("GOOGLE_CLIENT_ID", "")
+    google_id_token_issuers: str = os.getenv("GOOGLE_ID_TOKEN_ISSUERS", "https://accounts.google.com,accounts.google.com")
 
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "info")
@@ -93,6 +94,10 @@ class Settings(BaseSettings):
     @property
     def allowed_cors_origins(self) -> list[str]:
         return resolve_cors_origins(fastapi_env=self.fastapi_env, cors_origins=self.cors_origins)
+
+    @property
+    def allowed_google_id_token_issuers(self) -> list[str]:
+        return [issuer.strip() for issuer in self.google_id_token_issuers.split(",") if issuer.strip()]
 
 settings = Settings()
 validate_production_settings(settings)

@@ -1,9 +1,11 @@
 """Surface-specific account auth behavior."""
 
 from fastapi.testclient import TestClient
+import pytest
 
 from main import app
 from api.surface_auth import surface_account_store
+from api import surface_auth
 
 
 def setup_function():
@@ -141,3 +143,53 @@ def test_farmer_google_login_creates_farmer_account_but_agency_google_rejected()
     assert farmer.json()["account"]["account_type"] == "farmer"
     assert farmer.json()["account"]["email"] == "google-farmer@example.com"
     assert agency.status_code == 404
+
+def test_farmer_google_login_verifies_real_google_claims_when_enabled(monkeypatch):
+    client = TestClient(app)
+
+    monkeypatch.setattr(surface_auth.settings, "fastapi_env", "production")
+    monkeypatch.setattr(surface_auth.settings, "google_auth_enabled", True)
+    monkeypatch.setattr(surface_auth.settings, "google_client_id", "sapisehat-client-id")
+    monkeypatch.setattr(
+        surface_auth.settings,
+        "google_id_token_issuers",
+        "https://accounts.google.com,accounts.google.com",
+    )
+
+    def fake_verify_google_id_token_claims(token):
+        assert token == "signed-google-id-token"
+        return {
+            "iss": "https://accounts.google.com",
+            "aud": "sapisehat-client-id",
+            "email": "Verified-Farmer@Example.COM",
+            "email_verified": True,
+            "name": "Verified Farmer",
+            "sub": "google-subject-1",
+        }
+
+    monkeypatch.setattr(surface_auth, "verify_google_id_token_claims", fake_verify_google_id_token_claims)
+
+    response = client.post(
+        "/api/auth/farmer/google",
+        json={"id_token": "signed-google-id-token", "jurisdiction_id": "tembalang"},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["account"]["account_type"] == "farmer"
+    assert response.json()["account"]["email"] == "verified-farmer@example.com"
+
+def test_farmer_google_login_rejects_unverified_google_email(monkeypatch):
+    monkeypatch.setattr(surface_auth.settings, "fastapi_env", "production")
+    monkeypatch.setattr(surface_auth.settings, "google_auth_enabled", True)
+    monkeypatch.setattr(surface_auth.settings, "google_client_id", "sapisehat-client-id")
+
+    monkeypatch.setattr(surface_auth, "verify_google_id_token_claims", lambda token: {
+        "iss": "https://accounts.google.com",
+        "aud": "sapisehat-client-id",
+        "email": "unverified@example.com",
+        "email_verified": False,
+        "sub": "google-subject-2",
+    })
+
+    with pytest.raises(ValueError, match="not verified"):
+        surface_auth.parse_google_id_token("signed-google-id-token")
