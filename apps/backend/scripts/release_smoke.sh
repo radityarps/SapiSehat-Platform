@@ -13,5 +13,6 @@ python -m pytest \
   tests/test_surface_specific_auth.py \
   tests/test_media_object_storage.py \
   tests/test_audit_logs.py \
+  tests/test_minio_media_smoke.py \
   tests/test_inference.py \
   -q

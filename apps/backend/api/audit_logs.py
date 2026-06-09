@@ -43,6 +43,16 @@ class AuditLogStore:
             rows = session.query(AuditLogModel).filter(AuditLogModel.action == action).order_by(AuditLogModel.created_at).all()
             return [_from_row(row) for row in rows]
 
+    def list_recent(self, *, action: str | None = None, resource_type: str | None = None, limit: int = 50) -> list[AuditLog]:
+        with SessionLocal() as session:
+            query = session.query(AuditLogModel)
+            if action is not None:
+                query = query.filter(AuditLogModel.action == action)
+            if resource_type is not None:
+                query = query.filter(AuditLogModel.resource_type == resource_type)
+            rows = query.order_by(AuditLogModel.created_at.desc()).limit(limit).all()
+            return [_from_row(row) for row in rows]
+
     def clear(self) -> None:
         with SessionLocal() as session:
             session.query(AuditLogModel).delete()

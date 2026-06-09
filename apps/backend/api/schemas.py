@@ -126,6 +126,21 @@ class FarmerFollowUpListResponse(BaseModel):
     """Farmer follow-up status list."""
     follow_ups: List[FarmerFollowUpResponse]
 
+class AuditLogResponse(BaseModel):
+    """Audit log entry."""
+    id: str
+    actor_type: str
+    actor_id: str
+    action: str
+    resource_type: str
+    resource_id: str
+    metadata_json: Dict[str, object]
+    created_at: str
+
+class AuditLogListResponse(BaseModel):
+    """Audit log list."""
+    audit_logs: List[AuditLogResponse]
+
 
 class AgencyVisibleFarmer(BaseModel):
     """Farmer record visible to an agency user after authorization filtering."""

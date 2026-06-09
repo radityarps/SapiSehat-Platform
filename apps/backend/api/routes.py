@@ -52,6 +52,7 @@ from api.schemas import (
     FollowUpCreateRequest,
     AgencyFollowUpResponse,
     FarmerFollowUpListResponse,
+    AuditLogListResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -75,6 +76,39 @@ router = APIRouter(prefix="/api")
 def _serialize_auth_account(account):
     return {"id": account.id, "account_type": account.account_type, "email": account.email}
 
+def _serialize_audit_log(event):
+    return {
+        "id": event.id,
+        "actor_type": event.actor_type,
+        "actor_id": event.actor_id,
+        "action": event.action,
+        "resource_type": event.resource_type,
+        "resource_id": event.resource_id,
+        "metadata_json": event.metadata_json,
+        "created_at": event.created_at,
+    }
+
+def _require_admin_agency(agency_user_id: str):
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    if agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Audit logs require admin agency role")
+    return agency
+
+
+
+@router.get("/agency/audit-logs", response_model=AuditLogListResponse, tags=["agency"])
+async def list_agency_audit_logs(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    action: str | None = Query(default=None),
+    resource_type: str | None = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=100),
+):
+    """List recent audit logs for admin agency users only."""
+    _require_admin_agency(agency_user_id)
+    events = audit_log_store.list_recent(action=action, resource_type=resource_type, limit=limit)
+    return {"audit_logs": [_serialize_audit_log(event) for event in events]}
 
 @router.post("/auth/farmer/register", response_model=AuthResponse, tags=["auth"])
 async def register_farmer_surface_account(request: FarmerRegisterRequest):

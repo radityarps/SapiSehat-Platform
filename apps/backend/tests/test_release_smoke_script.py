@@ -12,4 +12,5 @@ def test_release_smoke_script_covers_core_backend_checks():
     assert "tests/test_surface_specific_auth.py" in text
     assert "tests/test_media_object_storage.py" in text
     assert "tests/test_audit_logs.py" in text
+    assert "tests/test_minio_media_smoke.py" in text
     assert "tests/test_inference.py" in text
