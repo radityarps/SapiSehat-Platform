@@ -63,6 +63,24 @@ def test_farmer_logs_in_with_email_password_after_registration():
     assert current.json()["email"] == "login-farmer@example.com"
 
 
+
+def test_default_farmer_seeded_account_logs_in_with_email_password():
+    client = TestClient(app)
+
+    login = client.post(
+        "/api/auth/farmer/login",
+        json={"email": "farmer@example.com", "password": "strong-password"},
+    )
+
+    assert login.status_code == 200
+    body = login.json()
+    assert body["account"]["account_type"] == "farmer"
+    assert body["account"]["email"] == "farmer@example.com"
+    seeded = surface_account_store.get(account_type="farmer", email="farmer@example.com")
+    assert seeded is not None
+    assert seeded.name == "Demo Farmer"
+    assert seeded.jurisdiction_id == "tembalang"
+
 def test_agency_seeded_account_logs_in_with_email_password():
     client = TestClient(app)
 

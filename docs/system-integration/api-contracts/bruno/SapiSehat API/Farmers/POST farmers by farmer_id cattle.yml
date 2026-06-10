@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"name":"Sapi Demo","breed":"Bali","sex":"female","birth_date":"2024-01-01","jurisdiction_id":"semarang-city"}
-
+      {"tag":"SAPI-001","sex":"female","breed":"Sapi Bali","age_months":24,"status":"active","jurisdiction_id":"tembalang"}
 settings:
   encodeUrl: true
   timeout: 0

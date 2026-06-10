@@ -15,8 +15,7 @@ http:
   body:
     type: json
     json: |-
-      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","detection_id":"{{detection_id}}","status":"pending","public_message":"Agency review is queued.","internal_notes":"Internal triage note."}
-
+      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","detection_id":"{{detection_id}}","status":"pending","public_message":"Petugas akan meninjau risk signal ini. Ini bukan diagnosis.","internal_notes":"Internal triage note for agency follow-up."}
 settings:
   encodeUrl: true
   timeout: 0

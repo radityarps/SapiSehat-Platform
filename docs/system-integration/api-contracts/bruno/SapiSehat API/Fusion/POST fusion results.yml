@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","image_evidence_id":"image-evidence-1","nlp_evidence_id":"nlp-evidence-1","image_score":0.72,"nlp_score":0.5,"fused_score":0.61,"fused_class":"FMD"}
-
+      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","image_evidence":{"source":"image","model_version":"image-online-1.0.0","inference_mode":"online","disease_scores":{"healthy":0.12,"FMD":0.72,"LSD":0.16},"top_class":"FMD","confidence":0.72,"quality_status":"accepted","rejection_reasons":[],"debug":{"device":"bruno-example"}},"nlp_evidence":{"source":"nlp","model_version":"nlp-online-1.0.0","inference_mode":"online","questionnaire_answers":{"drooling":true,"reduced_appetite":true},"notes_present":true,"disease_scores":{"healthy":0.2,"FMD":0.65,"LSD":0.15},"top_class":"FMD","confidence":0.65,"evidence_terms":["drooling"],"debug":{"source":"bruno-example"}}}
 settings:
   encodeUrl: true
   timeout: 0

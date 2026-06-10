@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"event_type":"note","title":"Routine check","description":"No urgent signs reported."}
-
+      {"event_type":"vaccination","event_date":"2026-06-10","title":"Routine vaccination","description":"Scheduled preventive care recorded by field team.","payload":{"vaccine":"FMD booster","dose":"2 ml"},"creator_id":"mobile-farmer"}
 settings:
   encodeUrl: true
   timeout: 0

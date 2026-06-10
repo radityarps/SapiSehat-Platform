@@ -12,7 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {}
+      {"id_token":"google:agency@example.com:Agency User"}
 
 settings:
   encodeUrl: true

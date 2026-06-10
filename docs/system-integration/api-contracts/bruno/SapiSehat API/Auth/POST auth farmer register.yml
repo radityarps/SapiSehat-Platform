@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"email":"farmer@example.test","password":"farmer-password","name":"Demo Farmer","jurisdiction_id":"semarang-city"}
-
+      {"email":"new-farmer@example.com","password":"strong-password","name":"Demo Farmer","jurisdiction_id":"tembalang"}
 settings:
   encodeUrl: true
   timeout: 0

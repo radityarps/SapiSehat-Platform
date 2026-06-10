@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"evidence_id":"image-evidence-1","farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","predicted_class":"FMD","confidence":0.72,"model_version":"demo"}
-
+      {"source":"image","model_version":"image-online-1.0.0","inference_mode":"online","disease_scores":{"healthy":0.12,"FMD":0.72,"LSD":0.16},"top_class":"FMD","confidence":0.72,"quality_status":"accepted","rejection_reasons":[],"debug":{"device":"bruno-example"}}
 settings:
   encodeUrl: true
   timeout: 0

@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"client_detection_id":"mobile-local-1","farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","created_at":"2026-06-09T00:00:00Z","evidence_state":"image_only"}
-
+      {"local_detection_id":"mobile-local-1","farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","local_created_at":"2026-06-10T09:00:00Z","image_evidence":{"source":"image","model_version":"image-offline-1.0.0","inference_mode":"offline","disease_scores":{"healthy":0.2,"FMD":0.6,"LSD":0.2},"top_class":"FMD","confidence":0.6,"quality_status":"accepted","rejection_reasons":[],"debug":{"runtime":"tflite"}},"nlp_evidence":{"source":"nlp","model_version":"nlp-offline-1.0.0","inference_mode":"offline","questionnaire_answers":{"drooling":true},"notes_present":false,"disease_scores":{"healthy":0.25,"FMD":0.55,"LSD":0.2},"top_class":"FMD","confidence":0.55,"evidence_terms":["drooling"],"debug":{"runtime":"offline-rules"}},"offline_fused_result":{"disease_class":"FMD","confidence":0.58,"handling_advice_key":"isolate_and_monitor"}}
 settings:
   encodeUrl: true
   timeout: 0

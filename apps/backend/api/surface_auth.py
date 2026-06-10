@@ -43,6 +43,18 @@ class SurfaceAccountStore:
             jurisdiction_id=jurisdiction_id,
         )
 
+    def seed_farmer(self, *, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+        existing = self.get(account_type="farmer", email=email)
+        if existing is not None:
+            return existing
+        return self._create(
+            account_type="farmer",
+            email=email,
+            password=password,
+            name=name,
+            jurisdiction_id=jurisdiction_id,
+        )
+
     def seed_agency(self, *, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
         existing = self.get(account_type="agency", email=email)
         if existing is not None:
@@ -116,6 +128,14 @@ class SurfaceAccountStore:
             session.query(AccountModel).delete()
             session.commit()
 
+
+def seed_default_farmer_accounts() -> None:
+    surface_account_store.seed_farmer(
+        email="farmer@example.com",
+        password="strong-password",
+        name="Demo Farmer",
+        jurisdiction_id="tembalang",
+    )
 
 def seed_default_agency_accounts() -> None:
     surface_account_store.seed_agency(

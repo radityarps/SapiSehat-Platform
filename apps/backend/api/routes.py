@@ -70,7 +70,7 @@ from api.audit_logs import audit_log_store
 from api.follow_ups import follow_up_store
 from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
 from api.authorization import ConsentTier, FarmerRecord, DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, can_agency_access_farmer, filter_visible_farmers
-from api.surface_auth import issue_token, read_token, seed_default_agency_accounts, surface_account_store
+from api.surface_auth import issue_token, read_token, seed_default_agency_accounts, seed_default_farmer_accounts, surface_account_store
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api")
@@ -131,6 +131,7 @@ async def register_farmer_surface_account(request: FarmerRegisterRequest):
 @router.post("/auth/farmer/login", response_model=AuthResponse, tags=["auth"])
 async def login_farmer_surface_account(request: FarmerLoginRequest):
     """Login farmer mobile account with email/password and issue token."""
+    seed_default_farmer_accounts()
     account = surface_account_store.authenticate(account_type="farmer", email=request.email, password=request.password)
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
