@@ -11,6 +11,22 @@ Shared API contracts used by mobile, dashboard, Go gateway, Team 1 image service
 
 Shared API schemas live here. Team folders may add model-specific implementation notes, but must not define competing shared schemas.
 
+## Bruno Collection
+
+Bruno collection lives at:
+
+```text
+docs/system-integration/api-contracts/bruno/SapiSehat API/
+```
+
+Open `opencollection.yml` in Bruno. Use `.yml` request files as source of truth for manual API calls.
+
+Bruno CLI notes:
+
+- OpenCollection YAML is supported.
+- Run from collection root.
+- `bru import openapi --collection-format opencollection` produces this layout.
+
 
 ## Quick-Scan Detection Attachment Tracer
 

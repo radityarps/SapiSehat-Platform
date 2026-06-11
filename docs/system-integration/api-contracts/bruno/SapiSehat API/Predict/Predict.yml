@@ -1,0 +1,36 @@
+info:
+  name: Predict
+  type: http
+  seq: 1
+  tags:
+    - Predict
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/predict"
+  auth: inherit
+  body:
+    type: multipart-form
+    multipart-form:
+      - name: image
+        type: file
+        value: ""
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 200 Response
+    description: Successful prediction
+    request:
+      url: "{{baseUrl}}/api/predict"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""

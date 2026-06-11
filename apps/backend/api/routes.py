@@ -921,6 +921,14 @@ async def create_agency_follow_up(request: FollowUpCreateRequest, agency_user_id
     )
     return _serialize_agency_follow_up(follow_up)
 
+@router.get("/agency/follow-ups", response_model=list[AgencyFollowUpResponse], tags=["agency"])
+async def list_agency_follow_up_status(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """List agency follow-up status rows."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    return [_serialize_agency_follow_up(item) for item in follow_up_store.list_all()]
+
 @router.get("/farmers/{farmer_id}/follow-ups", response_model=FarmerFollowUpListResponse)
 async def list_farmer_follow_up_status(farmer_id: str = Path(...)):
     """List farmer-visible follow-up statuses without agency internal notes."""

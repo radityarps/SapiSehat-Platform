@@ -108,13 +108,31 @@ Set Server URL in app: **Settings → Server URL**.
 
 ### Dashboard
 
-Dashboard tracer lives in `apps/dashboard` and targets Next.js + TanStack table patterns.
+Agency dashboard lives in `apps/dashboard` and targets Next.js, TypeScript, TanStack Query/Table, shadcn-style components, and Tailwind.
+
+Run from repository root:
+
+```bash
+pnpm dashboard:dev
+```
+
+Dashboard runs at `http://localhost:3000` by default. It expects FastAPI at `http://localhost:8000` unless `NEXT_PUBLIC_API_BASE_URL` is set.
+
+Build and type-check from repository root:
+
+```bash
+pnpm dashboard:typecheck
+pnpm dashboard:build
+```
 
 Important routes:
 
-- `/agency/registry`
+- `/login`
+- `/agency/overview`
 - `/agency/detections`
 - `/agency/risk-signals`
+- `/agency/follow-ups`
+- `/agency/audit-logs`
 
 ## Current Tracer APIs
 

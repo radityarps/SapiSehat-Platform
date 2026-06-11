@@ -1,7 +1,7 @@
 {
   "name": "sapisehat",
   "version": "1.0.0",
-  "description": "SapiSehat monorepo \u00e2\u20ac\u201d cattle disease detection app",
+  "description": "SapiSehat monorepo — cattle disease detection app",
   "private": true,
   "packageManager": "pnpm@10.33.2",
   "engines": {
@@ -15,6 +15,11 @@
     "backend:up": "cd apps/backend && docker compose up --build -d",
     "backend:down": "cd apps/backend && docker compose down",
     "backend:logs": "cd apps/backend && docker compose logs -f",
+    "dashboard:dev": "pnpm --dir apps/dashboard dev",
+    "dashboard:build": "pnpm --dir apps/dashboard build",
+    "dashboard:start": "pnpm --dir apps/dashboard start",
+    "dashboard:lint": "pnpm --dir apps/dashboard lint",
+    "dashboard:typecheck": "pnpm --dir apps/dashboard exec tsc --noEmit",
     "mobile:build": "cd apps/mobile && flutter build apk --debug",
     "mobile:deploy": "pnpm run mobile:build && node scripts/run-adb.mjs install -r apps/mobile/build/app/outputs/flutter-apk/app-debug.apk",
     "mobile:run": "node scripts/run-flutter-first.mjs run",
@@ -22,10 +27,10 @@
     "mobile:log": "node scripts/run-adb.mjs logcat | findstr /i \"flutter sapisehat\"",
     "mobile:test": "cd apps/mobile && flutter test",
     "mobile:clean": "cd apps/mobile && flutter clean",
+    "mobile:pub": "cd apps/mobile && flutter pub get",
     "dev": "pnpm run backend:dev",
     "test": "pnpm run backend:test",
-    "build": "pnpm run backend:build",
-    "install:all": "pnpm run backend:build",
-    "mobile:pub": "cd apps/mobile && flutter pub get"
+    "build": "pnpm run backend:build && pnpm run dashboard:build",
+    "install:all": "pnpm run backend:build"
   }
 }
