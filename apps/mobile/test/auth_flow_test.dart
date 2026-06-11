@@ -33,13 +33,16 @@ void main() {
       sessionStore: sessionStore,
     ));
 
+    await tester.tap(find.text('Lewati'));
+    await tester.pumpAndSettle();
+
     await tester.enterText(find.bySemanticsLabel('Email'), 'farmer@example.com');
     await tester.enterText(find.bySemanticsLabel('Password'), 'strong-password');
-    await tester.tap(find.text('Masuk'));
+    await tester.tap(find.text('Masuk').last);
     await tester.pumpAndSettle();
 
     expect(find.text('Kandang Sapi'), findsOneWidget);
-    expect(find.text('Risk signal, not diagnosis'), findsOneWidget);
+    expect(find.text('Sinyal risiko, bukan diagnosis'), findsOneWidget);
     expect(sessionStore.token, 'jwt-token');
     final loginRequest = transport.requests.firstWhere((request) => request.path == '/api/auth/farmer/login');
     expect(transport.requests.where((request) => request.path == '/api/auth/farmer/login').length, 1);

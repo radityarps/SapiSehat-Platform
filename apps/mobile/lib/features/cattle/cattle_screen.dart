@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
-import '../../features/auth/auth.dart';
+import '../auth/auth.dart';
 import 'cattle.dart';
 
 class CattleScreen extends StatefulWidget {
@@ -21,15 +21,21 @@ class _CattleScreenState extends State<CattleScreen> {
     setState(() => cattleFuture = widget.apiClient.listCattle(widget.session.farmerId));
   }
 
+  Future<void> editCattle(CattleProfile cattle) async {
+    await widget.apiClient.updateCattle(widget.session.farmerId, cattle.copyWith(status: cattle.status == 'active' ? 'sold' : 'active'));
+    setState(() => cattleFuture = widget.apiClient.listCattle(widget.session.farmerId));
+  }
+
+  Future<void> archiveCattle(CattleProfile cattle) async {
+    await widget.apiClient.archiveCattle(widget.session.farmerId, cattle.id);
+    setState(() => cattleFuture = widget.apiClient.listCattle(widget.session.farmerId));
+  }
+
   @override
   Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(20), children: [
         const _SectionHeader(title: 'Kandang Sapi', subtitle: 'Create, edit, and review cattle status before scan.'),
         const SizedBox(height: 16),
-        _FieldCard(children: [
-          TextField(controller: tag, decoration: const InputDecoration(labelText: 'Tag sapi')),
-          const SizedBox(height: 12),
-          FilledButton.icon(onPressed: addCattle, icon: const Icon(Icons.add), label: const Text('Tambah sapi')),
-        ]),
+        _FieldCard(children: [TextField(controller: tag, decoration: const InputDecoration(labelText: 'Tag sapi')), const SizedBox(height: 12), FilledButton.icon(onPressed: addCattle, icon: const Icon(Icons.add), label: const Text('Tambah sapi'))]),
         const SizedBox(height: 16),
         FutureBuilder<List<CattleProfile>>(
           future: cattleFuture,
@@ -37,7 +43,7 @@ class _CattleScreenState extends State<CattleScreen> {
             if (snapshot.connectionState != ConnectionState.done) return const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()));
             final cattle = snapshot.data ?? [];
             if (cattle.isEmpty) return const _EmptyState(icon: Icons.pets, title: 'Belum ada sapi', body: 'Tambah sapi pertama untuk mulai scan terhubung.');
-            return Column(children: cattle.map((item) => _CattleCard(cattle: item)).toList());
+            return Column(children: cattle.map((item) => _CattleCard(cattle: item, onEdit: () => editCattle(item), onArchive: () => archiveCattle(item))).toList());
           },
         ),
       ]);
@@ -48,11 +54,7 @@ class _SectionHeader extends StatelessWidget {
   final String title;
   final String subtitle;
   @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Text(title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
-        const SizedBox(height: 6),
-        Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF5B645B))),
-      ]);
+  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(title, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)), const SizedBox(height: 6), Text(subtitle, style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF5B645B)))]);
 }
 
 class _FieldCard extends StatelessWidget {
@@ -63,10 +65,12 @@ class _FieldCard extends StatelessWidget {
 }
 
 class _CattleCard extends StatelessWidget {
-  const _CattleCard({required this.cattle});
+  const _CattleCard({required this.cattle, required this.onEdit, required this.onArchive});
   final CattleProfile cattle;
+  final VoidCallback onEdit;
+  final VoidCallback onArchive;
   @override
-  Widget build(BuildContext context) => Card(child: ListTile(leading: const CircleAvatar(backgroundColor: Color(0xFFE6F2EA), child: Icon(Icons.pets, color: Color(0xFF2E6B4F))), title: Text(cattle.tag, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: const Text('Ready for cattle-first scan'), trailing: Chip(label: Text(cattle.status))));
+  Widget build(BuildContext context) => Card(child: ListTile(leading: const CircleAvatar(backgroundColor: Color(0xFFE6F2EA), child: Icon(Icons.pets, color: Color(0xFF2E6B4F))), title: Text(cattle.tag, style: const TextStyle(fontWeight: FontWeight.w700)), subtitle: Text('Status: ${cattle.status}'), trailing: PopupMenuButton<String>(onSelected: (v) { if (v == 'edit') onEdit(); if (v == 'archive') onArchive(); }, itemBuilder: (context) => const [PopupMenuItem(value: 'edit', child: Text('Ubah status')), PopupMenuItem(value: 'archive', child: Text('Arsipkan'))])));
 }
 
 class _EmptyState extends StatelessWidget {

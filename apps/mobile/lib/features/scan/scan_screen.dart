@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
 import '../../features/auth/auth.dart';
+import 'offline_inference.dart';
 import 'scan.dart';
 
 class ScanScreen extends StatefulWidget {
@@ -14,6 +15,7 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen> {
+  final offlineService = OfflineInferenceService();
   ScanResult? result;
   bool loading = false;
   String? error;

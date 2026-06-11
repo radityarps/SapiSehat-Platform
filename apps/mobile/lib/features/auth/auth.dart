@@ -1,13 +1,51 @@
 class AccountSession {
-  AccountSession({required this.token, required this.farmerId, required this.email});
+  AccountSession({
+    required this.token,
+    required this.farmerId,
+    required this.email,
+    this.name = '',
+    this.jurisdictionId = 'tembalang',
+    this.isActive = true,
+  });
+
   final String token;
   final String farmerId;
   final String email;
+  final String name;
+  final String jurisdictionId;
+  final bool isActive;
+
+  AccountSession copyWith({String? name, String? jurisdictionId, bool? isActive}) => AccountSession(
+        token: token,
+        farmerId: farmerId,
+        email: email,
+        name: name ?? this.name,
+        jurisdictionId: jurisdictionId ?? this.jurisdictionId,
+        isActive: isActive ?? this.isActive,
+      );
+}
+
+class FarmerRegistrationDraft {
+  FarmerRegistrationDraft({required this.name, required this.email, required this.password, required this.jurisdictionId});
+  final String name;
+  final String email;
+  final String password;
+  final String jurisdictionId;
+
+  Map<String, dynamic> toJson() => {'name': name, 'email': email, 'password': password, 'jurisdiction_id': jurisdictionId};
+}
+
+class FarmerProfileDraft {
+  FarmerProfileDraft({required this.name, required this.jurisdictionId});
+  final String name;
+  final String jurisdictionId;
+  Map<String, dynamic> toJson() => {'name': name, 'jurisdiction_id': jurisdictionId};
 }
 
 abstract class SessionStore {
   Future<void> save(AccountSession session);
   Future<AccountSession?> load();
+  Future<void> clear();
 }
 
 class MemorySessionStore implements SessionStore {
@@ -19,4 +57,7 @@ class MemorySessionStore implements SessionStore {
 
   @override
   Future<void> save(AccountSession session) async => _session = session;
+
+  @override
+  Future<void> clear() async => _session = null;
 }

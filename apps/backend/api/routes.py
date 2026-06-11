@@ -18,6 +18,10 @@ from api.schemas import (
     AgencyLoginRequest,
     AuthResponse,
     AuthAccountResponse,
+    FarmerProfileUpdateRequest,
+    FarmerArchiveRequest,
+    FarmerPreferencesRequest,
+    FarmerPreferencesResponse,
     AgencyFarmersResponse,
     FarmerAccountRequest,
     FarmerAccountResponse,
@@ -71,13 +75,39 @@ from api.follow_ups import follow_up_store
 from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
 from api.authorization import ConsentTier, FarmerRecord, DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, can_agency_access_farmer, filter_visible_farmers
 from api.surface_auth import issue_token, read_token, seed_default_agency_accounts, seed_default_farmer_accounts, surface_account_store
+from api.db_models import FarmerPreferenceModel
+from api.database import SessionLocal
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api")
 
 
 def _serialize_auth_account(account):
-    return {"id": account.id, "account_type": account.account_type, "email": account.email}
+    return {"id": account.id, "account_type": account.account_type, "email": account.email, "is_active": account.is_active, "name": account.name, "jurisdiction_id": account.jurisdiction_id}
+
+
+def _get_farmer_preferences(farmer_id: str):
+    with SessionLocal() as session:
+        row = session.get(FarmerPreferenceModel, farmer_id)
+        if row is None:
+            row = FarmerPreferenceModel(farmer_id=farmer_id)
+            session.add(row)
+            session.commit()
+            session.refresh(row)
+        return row
+
+
+def _serialize_farmer_preferences(row):
+    return {
+        "farmer_id": row.farmer_id,
+        "scan_result_notifications": row.scan_result_notifications,
+        "sync_notifications": row.sync_notifications,
+        "area_risk_advisory_notifications": row.area_risk_advisory_notifications,
+        "follow_up_status_notifications": row.follow_up_status_notifications,
+        "quiet_hours_enabled": row.quiet_hours_enabled,
+        "quiet_hours_start": row.quiet_hours_start,
+        "quiet_hours_end": row.quiet_hours_end,
+    }
 
 def _serialize_audit_log(event):
     return {
@@ -132,7 +162,10 @@ async def register_farmer_surface_account(request: FarmerRegisterRequest):
 async def login_farmer_surface_account(request: FarmerLoginRequest):
     """Login farmer mobile account with email/password and issue token."""
     seed_default_farmer_accounts()
-    account = surface_account_store.authenticate(account_type="farmer", email=request.email, password=request.password)
+    try:
+        account = surface_account_store.authenticate(account_type="farmer", email=request.email, password=request.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
@@ -151,7 +184,10 @@ async def login_farmer_google_account(request: FarmerGoogleLoginRequest):
 async def login_agency_surface_account(request: AgencyLoginRequest):
     """Login admin-seeded agency dashboard account with email/password."""
     seed_default_agency_accounts()
-    account = surface_account_store.authenticate(account_type="agency", email=request.email, password=request.password)
+    try:
+        account = surface_account_store.authenticate(account_type="agency", email=request.email, password=request.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
@@ -174,6 +210,78 @@ async def get_current_surface_account(authorization: str = Header(..., alias="Au
     account = surface_account_store.get_by_id(account_type=str(claims["account_type"]), account_id=str(claims["sub"]))
     if account is None:
         raise HTTPException(status_code=401, detail="Account not found")
+    return _serialize_auth_account(account)
+
+
+@router.put("/farmers/{farmer_id}/profile", response_model=AuthAccountResponse, tags=["farmer"])
+async def update_farmer_profile(farmer_id: str, request: FarmerProfileUpdateRequest, authorization: str = Header(..., alias="Authorization")):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
+        raise HTTPException(status_code=403, detail="Farmer profile update requires same farmer account")
+    try:
+        account = surface_account_store.update_farmer_profile(account_id=farmer_id, name=request.name, jurisdiction_id=request.jurisdiction_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+    return _serialize_auth_account(account)
+
+
+@router.get("/farmers/{farmer_id}/preferences", response_model=FarmerPreferencesResponse, tags=["farmer"])
+async def get_farmer_preferences(farmer_id: str, authorization: str = Header(..., alias="Authorization")):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    if str(claims["sub"]) != farmer_id:
+        raise HTTPException(status_code=403, detail="Preferences require same farmer account")
+    return _serialize_farmer_preferences(_get_farmer_preferences(farmer_id))
+
+
+@router.put("/farmers/{farmer_id}/preferences", response_model=FarmerPreferencesResponse, tags=["farmer"])
+async def put_farmer_preferences(farmer_id: str, request: FarmerPreferencesRequest, authorization: str = Header(..., alias="Authorization")):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    if str(claims["sub"]) != farmer_id:
+        raise HTTPException(status_code=403, detail="Preferences require same farmer account")
+    with SessionLocal() as session:
+        row = session.get(FarmerPreferenceModel, farmer_id) or FarmerPreferenceModel(farmer_id=farmer_id)
+        row.scan_result_notifications = request.scan_result_notifications
+        row.sync_notifications = request.sync_notifications
+        row.area_risk_advisory_notifications = request.area_risk_advisory_notifications
+        row.follow_up_status_notifications = request.follow_up_status_notifications
+        row.quiet_hours_enabled = request.quiet_hours_enabled
+        row.quiet_hours_start = request.quiet_hours_start
+        row.quiet_hours_end = request.quiet_hours_end
+        session.add(row)
+        session.commit()
+        session.refresh(row)
+        return _serialize_farmer_preferences(row)
+
+
+@router.post("/farmers/{farmer_id}/account/archive", response_model=AuthAccountResponse, tags=["farmer"])
+async def archive_farmer_account(farmer_id: str, request: FarmerArchiveRequest, authorization: str = Header(..., alias="Authorization")):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc))
+    if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
+        raise HTTPException(status_code=403, detail="Farmer archive requires same farmer account")
+    try:
+        account = surface_account_store.archive_farmer(account_id=farmer_id, password=request.password)
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc))
     return _serialize_auth_account(account)
 
 

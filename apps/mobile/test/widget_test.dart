@@ -2,14 +2,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:sapisehat_mobile/main.dart';
 
 void main() {
-  testWidgets('app boots to login shell', (tester) async {
+  testWidgets('app boots to onboarding shell', (tester) async {
     await tester.pumpWidget(SapiSehatApp(
       apiClient: SapiSehatApiClient(transport: _NoopTransport()),
       sessionStore: MemorySessionStore(),
     ));
 
     expect(find.text('SapiSehat'), findsOneWidget);
-    expect(find.text('Masuk'), findsOneWidget);
+    expect(find.text('Lewati'), findsOneWidget);
+    expect(find.text('Kelola kesehatan sapi'), findsOneWidget);
   });
 }
 

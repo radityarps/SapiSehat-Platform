@@ -31,11 +31,12 @@ def test_farmer_registers_with_email_password_and_reads_current_account():
     current = client.get("/api/me", headers={"Authorization": f"Bearer {token}"})
 
     assert current.status_code == 200
-    assert current.json() == {
-        "account_type": "farmer",
-        "email": "farmer@example.com",
-        "id": register.json()["account"]["id"],
-    }
+    assert current.json()["account_type"] == "farmer"
+    assert current.json()["email"] == "farmer@example.com"
+    assert current.json()["id"] == register.json()["account"]["id"]
+    assert current.json()["name"] == "Pak Tono"
+    assert current.json()["jurisdiction_id"] == "tembalang"
+    assert current.json()["is_active"] is True
 
 
 def test_farmer_logs_in_with_email_password_after_registration():
@@ -211,3 +212,85 @@ def test_farmer_google_login_rejects_unverified_google_email(monkeypatch):
 
     with pytest.raises(ValueError, match="not verified"):
         surface_auth.parse_google_id_token("signed-google-id-token")
+
+def test_farmer_updates_profile_and_jurisdiction_with_same_account_token():
+    client = TestClient(app)
+    register = client.post(
+        "/api/auth/farmer/register",
+        json={"email": "profile@example.com", "password": "strong-password", "name": "Old Name", "jurisdiction_id": "tembalang"},
+    )
+    token = register.json()["access_token"]
+    farmer_id = register.json()["account"]["id"]
+
+    update = client.put(
+        f"/api/farmers/{farmer_id}/profile",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"name": "New Name", "jurisdiction_id": "banyumanik"},
+    )
+
+    assert update.status_code == 200
+    assert update.json()["name"] == "New Name"
+    assert update.json()["jurisdiction_id"] == "banyumanik"
+
+
+def test_farmer_preferences_are_backend_backed():
+    client = TestClient(app)
+    register = client.post(
+        "/api/auth/farmer/register",
+        json={"email": "prefs@example.com", "password": "strong-password", "name": "Prefs Farmer", "jurisdiction_id": "tembalang"},
+    )
+    token = register.json()["access_token"]
+    farmer_id = register.json()["account"]["id"]
+
+    initial = client.get(f"/api/farmers/{farmer_id}/preferences", headers={"Authorization": f"Bearer {token}"})
+    assert initial.status_code == 200
+    assert initial.json()["scan_result_notifications"] is True
+
+    updated = client.put(
+        f"/api/farmers/{farmer_id}/preferences",
+        headers={"Authorization": f"Bearer {token}"},
+        json={
+            "scan_result_notifications": False,
+            "sync_notifications": True,
+            "area_risk_advisory_notifications": True,
+            "follow_up_status_notifications": False,
+            "quiet_hours_enabled": True,
+            "quiet_hours_start": "20:00",
+            "quiet_hours_end": "05:30",
+        },
+    )
+
+    assert updated.status_code == 200
+    assert updated.json()["scan_result_notifications"] is False
+    assert updated.json()["area_risk_advisory_notifications"] is True
+    assert updated.json()["quiet_hours_enabled"] is True
+    assert updated.json()["quiet_hours_start"] == "20:00"
+
+
+def test_farmer_archive_requires_password_and_disables_future_login():
+    client = TestClient(app)
+    register = client.post(
+        "/api/auth/farmer/register",
+        json={"email": "archive@example.com", "password": "strong-password", "name": "Archive Farmer", "jurisdiction_id": "tembalang"},
+    )
+    token = register.json()["access_token"]
+    farmer_id = register.json()["account"]["id"]
+
+    wrong = client.post(
+        f"/api/farmers/{farmer_id}/account/archive",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"password": "wrong-password"},
+    )
+    assert wrong.status_code == 403
+
+    archive = client.post(
+        f"/api/farmers/{farmer_id}/account/archive",
+        headers={"Authorization": f"Bearer {token}"},
+        json={"password": "strong-password"},
+    )
+    assert archive.status_code == 200
+    assert archive.json()["is_active"] is False
+
+    login = client.post("/api/auth/farmer/login", json={"email": "archive@example.com", "password": "strong-password"})
+    assert login.status_code == 403
+    assert "archived" in str(login.json()).lower()

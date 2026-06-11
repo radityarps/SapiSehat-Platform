@@ -244,3 +244,31 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 - "farmer area alert" means **Farmer Area Risk Advisory**, not outbreak warning or nearby-case detail.
 - "agency dashboard edits" means agency follow-up status/notes only, not farmer cattle CRUD.
 - "farmer follow-up visibility" means simplified status only, no internal agency notes.
+
+**Foundation-Complete Farmer App**:
+Milestone 2 target for Flutter mobile: onboarding, terms/privacy/storage acknowledgement, login/register, farmer home shell, cattle CRUD/status/archive, camera/gallery scan upload, offline fallback with sync queue, detection history, profile, settings, configurable backend URL, and safe wording. It excludes real Team 2 NLP, cluster risk advisory, agency follow-up workflow, and final E2E release gate.
+_Avoid_: Tracer-only shell, final release app, dashboard scope, real NLP fusion scope
+
+**Terms & Privacy Checklist**:
+Mobile farmer app checklist shown from registration and settings so farmer can review terms, privacy, non-diagnostic product boundaries, and scan-image storage expectations. It does not replace the blocking first-scan **Scan Image Storage Notice** acknowledgement.
+_Avoid_: Hidden legal copy, scan consent replacement, diagnosis disclaimer buried only in settings
+
+**Farmer Mobile Registration**:
+Flutter farmer app email/password account creation flow with name, email, password, optional phone, jurisdiction fields, and visible **Terms & Privacy Checklist** before submit. Email verification is not required for first release. Native Google sign-in may be deferred behind a clear unavailable state until the mobile SDK path is wired.
+_Avoid_: Agency registration, email-verification blocker, hidden terms, fake Google success
+
+**Jurisdiction Autofill from GPS**:
+Registration/profile helper that proposes a district/subdistrict jurisdiction from device location and lets the farmer confirm or edit it. It is a convenience input aid, not a precise geofence truth source.
+_Avoid_: Silent auto-override, hard GPS lock, exact coordinate storage as profile identity
+
+**Farmer Account Archive**:
+Backend-supported soft delete for farmer account that disables future login while preserving existing records, scan images, and follow-up history. It is reversible only by admin policy, not by farmer self-service in first release.
+_Avoid_: Permanent deletion, cascade purge, hidden local-only logout
+
+**Feature Tour Onboarding**:
+First-launch farmer mobile onboarding with two or three Indonesian-language feature screens for cattle management, scan risk signals, and offline sync. Privacy and storage acknowledgement are handled through registration/settings and the first-scan notice, not as onboarding screens.
+_Avoid_: Legal-only onboarding, alarmist disease promises, diagnosis claims
+
+**Offline TFLite Model Asset**:
+Legacy Android asset `cattle_disease.tflite` under `apps/mobile-android-legacy/app/src/main/assets/` is the current offline image inference model source for Flutter migration.
+_Avoid_: Missing-model assumption, hardcoded fake offline scores

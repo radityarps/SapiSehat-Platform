@@ -52,7 +52,7 @@ void main() {
       '/api/predict',
       '/api/media/uploads',
     ]);
-    expect(transport.requests.first.body, contains('image-bytes'));
-    expect(transport.requests.last.body, contains('multipart-image'));
+    expect(transport.requests.first.body, contains('multipart:file:4'));
+    expect(transport.requests.last.body, contains('multipart:file:4'));
   });
 }

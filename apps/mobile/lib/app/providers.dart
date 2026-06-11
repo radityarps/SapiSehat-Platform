@@ -19,6 +19,11 @@ class SessionController extends StateNotifier<AccountSession?> {
     await store.save(session);
     state = session;
   }
+
+  Future<void> clear() async {
+    await store.clear();
+    state = null;
+  }
 }
 
 final localHistoryProvider = StateNotifierProvider<LocalHistoryController, List<ScanResult>>((ref) => LocalHistoryController());

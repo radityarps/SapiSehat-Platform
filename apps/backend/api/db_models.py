@@ -18,6 +18,8 @@ class AccountModel(Base):
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     jurisdiction_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
+    is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    archived_at: Mapped[str | None] = mapped_column(String(80), nullable=True)
 
 class FarmerAccountModel(Base):
     __tablename__ = "farmer_accounts"
@@ -171,3 +173,16 @@ class AuditLogModel(Base):
     resource_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     metadata_json: Mapped[dict] = mapped_column(JSON, nullable=False)
     created_at: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+
+
+class FarmerPreferenceModel(Base):
+    __tablename__ = "farmer_preferences"
+
+    farmer_id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    scan_result_notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    sync_notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    area_risk_advisory_notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    follow_up_status_notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    quiet_hours_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    quiet_hours_start: Mapped[str] = mapped_column(String(8), nullable=False, default="21:00")
+    quiet_hours_end: Mapped[str] = mapped_column(String(8), nullable=False, default="06:00")
