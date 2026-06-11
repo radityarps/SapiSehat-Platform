@@ -72,23 +72,39 @@ List of devices attached
 
 ## Running the App
 
-Once connected, use the existing project scripts:
+Once connected, run from the repository root. The scripts automatically target the first online ADB device. Set `ANDROID_SERIAL` only if you want to override the chosen device.
 
 ```bash
-# Build + install + launch
+# Hot-run Flutter on the first connected device
 pnpm mobile:run
 
-# Just build and install
+# Build debug APK, then install it on the first connected device
 pnpm mobile:deploy
 
-# Restart without rebuilding
+# Restart the installed Flutter app without rebuilding
 pnpm mobile:restart
 
-# View logs
+# View app/Flutter logs
 pnpm mobile:log
+
+# Flutter checks
+pnpm mobile:test
 ```
 
-These commands use `adb` under the hood, so they work identically over WiFi as over USB.
+`pnpm mobile:run` uses `flutter -d <first-device> run` through `scripts/run-flutter-first.mjs`.
+`pnpm mobile:deploy`, `pnpm mobile:restart`, and `pnpm mobile:log` use `scripts/run-adb.mjs`, so they work over WiFi and USB.
+
+If several devices are connected and you need a specific one:
+
+```bash
+# Git Bash
+export ANDROID_SERIAL=<device-id>
+pnpm mobile:run
+
+# PowerShell
+$env:ANDROID_SERIAL='<device-id>'
+pnpm mobile:run
+```
 
 ## Reconnecting
 

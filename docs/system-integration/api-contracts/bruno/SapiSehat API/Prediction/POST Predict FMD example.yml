@@ -12,9 +12,9 @@ http:
   body:
     type: multipart-form
     multipart-form:
-      - name: image
+      - name: file
         type: file
-        value: ""
+        value: "./sample-cow.jpg"
 
 settings:
   encodeUrl: true

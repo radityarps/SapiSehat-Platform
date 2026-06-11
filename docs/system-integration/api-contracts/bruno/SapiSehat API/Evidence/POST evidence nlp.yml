@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"evidence_id":"nlp-evidence-1","farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","risk_terms":["drooling"],"confidence":0.5,"model_version":"team-2-demo"}
-
+      {"source":"nlp","model_version":"nlp-online-1.0.0","inference_mode":"online","questionnaire_answers":{"drooling":true,"reduced_appetite":true,"lameness":false},"notes_present":true,"disease_scores":{"healthy":0.2,"FMD":0.65,"LSD":0.15},"top_class":"FMD","confidence":0.65,"evidence_terms":["drooling","reduced appetite"],"debug":{"source":"bruno-example"}}
 settings:
   encodeUrl: true
   timeout: 0

@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","reason":"Team 2 NLP artifact unavailable"}
-
+      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","symptom_text":"Farmer notes drooling and reduced appetite.","questionnaire_answers":{"drooling":true,"reduced_appetite":true}}
 settings:
   encodeUrl: true
   timeout: 0

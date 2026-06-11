@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import time
+from datetime import datetime, timezone
 
 from jose import JWTError, jwt
 from passlib.context import CryptContext
@@ -26,6 +27,8 @@ class SurfaceAccount:
     name: str
     jurisdiction_id: str
     password_hash: str
+    is_active: bool = True
+    archived_at: str | None = None
 
 
 class SurfaceAccountStore:
@@ -35,6 +38,18 @@ class SurfaceAccountStore:
         create_all_tables()
 
     def register_farmer(self, *, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+        return self._create(
+            account_type="farmer",
+            email=email,
+            password=password,
+            name=name,
+            jurisdiction_id=jurisdiction_id,
+        )
+
+    def seed_farmer(self, *, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+        existing = self.get(account_type="farmer", email=email)
+        if existing is not None:
+            return existing
         return self._create(
             account_type="farmer",
             email=email,
@@ -94,9 +109,35 @@ class SurfaceAccountStore:
         account = self.get(account_type=account_type, email=email)
         if account is None:
             return None
+        if not account.is_active:
+            raise ValueError(f"{account_type} account is archived")
         if not verify_password(password, account.password_hash):
             return None
         return account
+
+    def update_farmer_profile(self, *, account_id: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+        with SessionLocal() as session:
+            row = session.get(AccountModel, account_id)
+            if row is None or row.account_type != "farmer" or not row.is_active:
+                raise ValueError("farmer account not found")
+            row.name = name
+            row.jurisdiction_id = jurisdiction_id
+            session.commit()
+            session.refresh(row)
+            return _account_from_row(row)
+
+    def archive_farmer(self, *, account_id: str, password: str | None = None) -> SurfaceAccount:
+        with SessionLocal() as session:
+            row = session.get(AccountModel, account_id)
+            if row is None or row.account_type != "farmer" or not row.is_active:
+                raise ValueError("farmer account not found")
+            if password is None or not verify_password(password, row.password_hash):
+                raise ValueError("password confirmation failed")
+            row.is_active = False
+            row.archived_at = datetime.now(timezone.utc).isoformat()
+            session.commit()
+            session.refresh(row)
+            return _account_from_row(row)
 
     def register_farmer_google(self, *, id_token: str, jurisdiction_id: str) -> SurfaceAccount:
         email, name = parse_google_id_token(id_token)
@@ -117,6 +158,14 @@ class SurfaceAccountStore:
             session.commit()
 
 
+def seed_default_farmer_accounts() -> None:
+    surface_account_store.seed_farmer(
+        email="farmer@example.com",
+        password="strong-password",
+        name="Demo Farmer",
+        jurisdiction_id="tembalang",
+    )
+
 def seed_default_agency_accounts() -> None:
     surface_account_store.seed_agency(
         email="semarang-officer@sapisehat.test",
@@ -134,6 +183,8 @@ def _account_from_row(row: AccountModel) -> SurfaceAccount:
         name=row.name,
         jurisdiction_id=row.jurisdiction_id,
         password_hash=row.password_hash,
+        is_active=getattr(row, "is_active", True),
+        archived_at=getattr(row, "archived_at", None),
     )
 
 

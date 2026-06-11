@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"phone_number":"+6281234567890","display_name":"Demo Farmer","jurisdiction_id":"semarang-city","consent_status":"granted"}
-
+      {"phone_number":"+6281234567890","name":"Demo Farmer","jurisdiction_id":"tembalang","consent_state":"research_and_monitoring"}
 settings:
   encodeUrl: true
   timeout: 0

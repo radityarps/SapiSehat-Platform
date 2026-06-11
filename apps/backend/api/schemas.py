@@ -85,6 +85,39 @@ class AuthAccountResponse(BaseModel):
     id: str
     account_type: str
     email: str
+    is_active: bool = True
+    name: str = ""
+    jurisdiction_id: str = ""
+
+
+class FarmerProfileUpdateRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=120)
+    jurisdiction_id: str = Field(min_length=1, max_length=120)
+
+
+class FarmerArchiveRequest(BaseModel):
+    password: Optional[str] = Field(default=None, min_length=8, max_length=128)
+
+
+class FarmerPreferencesResponse(BaseModel):
+    farmer_id: str
+    scan_result_notifications: bool
+    sync_notifications: bool
+    area_risk_advisory_notifications: bool
+    follow_up_status_notifications: bool
+    quiet_hours_enabled: bool
+    quiet_hours_start: str
+    quiet_hours_end: str
+
+
+class FarmerPreferencesRequest(BaseModel):
+    scan_result_notifications: bool = True
+    sync_notifications: bool = True
+    area_risk_advisory_notifications: bool = False
+    follow_up_status_notifications: bool = True
+    quiet_hours_enabled: bool = False
+    quiet_hours_start: str = "21:00"
+    quiet_hours_end: str = "06:00"
 
 class AuthResponse(BaseModel):
     """Access token response for surface auth."""

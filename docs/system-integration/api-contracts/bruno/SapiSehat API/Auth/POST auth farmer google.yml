@@ -12,8 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"id_token":"google:farmer@example.test:Demo Farmer","jurisdiction_id":"semarang-city"}
-
+      {"id_token":"google:google-farmer@example.com:Google Farmer","jurisdiction_id":"tembalang"}
 settings:
   encodeUrl: true
   timeout: 0
