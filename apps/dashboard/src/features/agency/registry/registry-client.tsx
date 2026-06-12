@@ -2,17 +2,16 @@
 
 import { Badge } from '@/src/shared/ui/badge';
 import { Button } from '@/src/shared/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/src/shared/ui/dialog';
 import { Input } from '@/src/shared/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/src/shared/ui/select';
 import { Skeleton } from '@/src/shared/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/src/shared/ui/tabs';
 import { getAgencyRegistry } from '@/src/shared/api/client';
 import { useAgencySession } from '@/src/features/auth/session-context';
-import type { AgencyRegistryCattle, AgencyRegistryFarmer } from '@/src/shared/types/api';
+import type { AgencyRegistryFarmer } from '@/src/shared/types/api';
 import { useQuery } from '@tanstack/react-query';
-import { Eye, Pencil, Search, Trash2 } from 'lucide-react';
+import { Eye, Search } from 'lucide-react';
 import { useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import {
   useReactTable,
   getCoreRowModel,
@@ -26,10 +25,10 @@ import {
 
 export function RegistryClient() {
   const { token, agencyUserId } = useAgencySession();
+  const router = useRouter();
   const [sorting, setSorting] = useState<SortingState>([]);
   const [globalFilter, setGlobalFilter] = useState('');
   const [jurisdictionFilter, setJurisdictionFilter] = useState('all');
-  const [selectedFarmer, setSelectedFarmer] = useState<AgencyRegistryFarmer | null>(null);
 
   const query = useQuery({
     queryKey: ['registry'],
@@ -48,11 +47,6 @@ export function RegistryClient() {
     return [...new Set(all.map((f) => f.jurisdiction_id))].sort();
   }, [query.data?.farmers]);
 
-  const farmerCattle = useMemo(() => {
-    if (!selectedFarmer) return [];
-    return (query.data?.cattle ?? []).filter((c) => c.farmer_id === selectedFarmer.id);
-  }, [selectedFarmer, query.data?.cattle]);
-
   const columns: ColumnDef<AgencyRegistryFarmer>[] = useMemo(() => [
     { accessorKey: 'id', header: 'ID', cell: ({ row }) => <span className="font-mono text-xs">{row.original.id}</span> },
     { accessorKey: 'name', header: 'Name', cell: ({ row }) => <span className="font-medium">{row.original.name}</span> },
@@ -70,21 +64,21 @@ export function RegistryClient() {
       id: 'actions',
       header: () => <span className="sr-only">Actions</span>,
       cell: ({ row }) => (
-        <div className="flex items-center justify-end gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="View detail" onClick={() => setSelectedFarmer(row.original)}>
+        <div className="flex items-center justify-end">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            aria-label={`View ${row.original.name}`}
+            onClick={() => router.push(`/agency/farmers/${row.original.id}`)}
+          >
             <Eye className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Edit">
-            <Pencil className="h-3.5 w-3.5" />
-          </Button>
-          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" aria-label="Delete">
-            <Trash2 className="h-3.5 w-3.5" />
           </Button>
         </div>
       ),
       enableSorting: false,
     },
-  ], []);
+  ], [router]);
 
   const table = useReactTable({
     data: farmers,
@@ -117,186 +111,94 @@ export function RegistryClient() {
   }
 
   return (
-    <>
-      <div className="space-y-4">
-        {/* Filter bar */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-          <div className="relative flex-1 sm:max-w-xs">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search farmers..."
-              value={globalFilter}
-              onChange={(e) => setGlobalFilter(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Select value={jurisdictionFilter} onValueChange={setJurisdictionFilter}>
-            <SelectTrigger className="w-[180px]">
-              <SelectValue placeholder="All jurisdictions" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All jurisdictions</SelectItem>
-              {jurisdictions.map((j) => (
-                <SelectItem key={j} value={j}>{j}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          <span className="text-sm text-muted-foreground ml-auto">
-            {table.getFilteredRowModel().rows.length} farmers
-          </span>
+    <div className="space-y-4">
+      {/* Filter bar */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1 sm:max-w-xs">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search farmers..."
+            value={globalFilter}
+            onChange={(e) => setGlobalFilter(e.target.value)}
+            className="pl-9"
+          />
         </div>
-
-        {/* Table */}
-        <div className="rounded-md border">
-          <table className="w-full text-sm">
-            <thead>
-              {table.getHeaderGroups().map((headerGroup) => (
-                <tr key={headerGroup.id} className="border-b bg-muted/40">
-                  {headerGroup.headers.map((header) => (
-                    <th
-                      key={header.id}
-                      className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground cursor-pointer select-none"
-                      onClick={header.column.getToggleSortingHandler()}
-                    >
-                      <div className="flex items-center gap-1">
-                        {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
-                        {header.column.getIsSorted() === 'asc' && ' ↑'}
-                        {header.column.getIsSorted() === 'desc' && ' ↓'}
-                      </div>
-                    </th>
-                  ))}
-                </tr>
-              ))}
-            </thead>
-            <tbody>
-              {table.getRowModel().rows.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length} className="px-4 py-8 text-center text-muted-foreground">
-                    No farmers in current agency scope.
-                  </td>
-                </tr>
-              ) : (
-                table.getRowModel().rows.map((row, i) => (
-                  <tr key={row.id} className={`border-b last:border-0 transition-colors hover:bg-muted/20 ${i % 2 === 1 ? 'bg-muted/5' : ''}`}>
-                    {row.getVisibleCells().map((cell) => (
-                      <td key={cell.id} className="px-4 py-2.5">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </td>
-                    ))}
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Pagination */}
-        {table.getPageCount() > 1 && (
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">
-              Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
-            </p>
-            <div className="flex items-center gap-1">
-              <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
-                Previous
-              </Button>
-              <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
-                Next
-              </Button>
-            </div>
-          </div>
-        )}
+        <Select value={jurisdictionFilter} onValueChange={setJurisdictionFilter}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="All jurisdictions" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All jurisdictions</SelectItem>
+            {jurisdictions.map((j) => (
+              <SelectItem key={j} value={j}>{j}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <span className="text-sm text-muted-foreground ml-auto">
+          {table.getFilteredRowModel().rows.length} farmers
+        </span>
       </div>
 
-      {/* Detail modal */}
-      <FarmerDetailDialog
-        farmer={selectedFarmer}
-        cattle={farmerCattle}
-        open={!!selectedFarmer}
-        onClose={() => setSelectedFarmer(null)}
-      />
-    </>
-  );
-}
-
-function FarmerDetailDialog({
-  farmer,
-  cattle,
-  open,
-  onClose,
-}: {
-  farmer: AgencyRegistryFarmer | null;
-  cattle: AgencyRegistryCattle[];
-  open: boolean;
-  onClose: () => void;
-}) {
-  if (!farmer) return null;
-
-  return (
-    <Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-      <DialogContent className="sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>{farmer.name}</DialogTitle>
-        </DialogHeader>
-
-        <Tabs defaultValue="details" className="mt-2">
-          <TabsList className="w-full">
-            <TabsTrigger value="details" className="flex-1">Details</TabsTrigger>
-            <TabsTrigger value="cattle" className="flex-1">Cattle ({cattle.length})</TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="details" className="mt-4 space-y-3">
-            <DetailRow label="Farmer ID" value={farmer.id} mono />
-            <DetailRow label="Name" value={farmer.name} />
-            <DetailRow label="Jurisdiction" value={farmer.jurisdiction_id} />
-            <DetailRow label="Consent Tier">
-              <Badge variant={farmer.consent_tier === 'private' ? 'outline' : 'default'}>
-                {farmer.consent_tier.replace(/_/g, ' ')}
-              </Badge>
-            </DetailRow>
-          </TabsContent>
-
-          <TabsContent value="cattle" className="mt-4">
-            {cattle.length === 0 ? (
-              <p className="text-sm text-muted-foreground text-center py-6">No cattle registered for this farmer.</p>
+      {/* Table */}
+      <div className="rounded-md border">
+        <table className="w-full text-sm">
+          <thead>
+            {table.getHeaderGroups().map((headerGroup) => (
+              <tr key={headerGroup.id} className="border-b bg-muted/40">
+                {headerGroup.headers.map((header) => (
+                  <th
+                    key={header.id}
+                    className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground cursor-pointer select-none"
+                    onClick={header.column.getToggleSortingHandler()}
+                  >
+                    <div className="flex items-center gap-1">
+                      {header.isPlaceholder ? null : flexRender(header.column.columnDef.header, header.getContext())}
+                      {header.column.getIsSorted() === 'asc' && ' ↑'}
+                      {header.column.getIsSorted() === 'desc' && ' ↓'}
+                    </div>
+                  </th>
+                ))}
+              </tr>
+            ))}
+          </thead>
+          <tbody>
+            {table.getRowModel().rows.length === 0 ? (
+              <tr>
+                <td colSpan={columns.length} className="px-4 py-8 text-center text-muted-foreground">
+                  No farmers in current agency scope.
+                </td>
+              </tr>
             ) : (
-              <div className="rounded-md border">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b bg-muted/40">
-                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Tag</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Breed</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Sex</th>
-                      <th className="px-3 py-2 text-left text-xs font-medium text-muted-foreground">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {cattle.map((c) => (
-                      <tr key={c.id} className="border-b last:border-0 hover:bg-muted/20">
-                        <td className="px-3 py-2 font-mono text-xs">{c.tag}</td>
-                        <td className="px-3 py-2">{c.breed}</td>
-                        <td className="px-3 py-2 capitalize">{c.sex}</td>
-                        <td className="px-3 py-2">
-                          <Badge variant={c.status === 'active' ? 'default' : 'secondary'}>{c.status}</Badge>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              table.getRowModel().rows.map((row, i) => (
+                <tr key={row.id} className={`border-b last:border-0 transition-colors hover:bg-muted/20 ${i % 2 === 1 ? 'bg-muted/5' : ''}`}>
+                  {row.getVisibleCells().map((cell) => (
+                    <td key={cell.id} className="px-4 py-2.5">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </td>
+                  ))}
+                </tr>
+              ))
             )}
-          </TabsContent>
-        </Tabs>
-      </DialogContent>
-    </Dialog>
-  );
-}
+          </tbody>
+        </table>
+      </div>
 
-function DetailRow({ label, value, mono, children }: { label: string; value?: string; mono?: boolean; children?: React.ReactNode }) {
-  return (
-    <div className="flex items-center justify-between py-1.5 border-b last:border-0">
-      <span className="text-sm text-muted-foreground">{label}</span>
-      {children ?? <span className={`text-sm font-medium ${mono ? 'font-mono text-xs' : ''}`}>{value}</span>}
+      {/* Pagination */}
+      {table.getPageCount() > 1 && (
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-muted-foreground">
+            Page {table.getState().pagination.pageIndex + 1} of {table.getPageCount()}
+          </p>
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="sm" onClick={() => table.previousPage()} disabled={!table.getCanPreviousPage()}>
+              Previous
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => table.nextPage()} disabled={!table.getCanNextPage()}>
+              Next
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
