@@ -11,8 +11,8 @@ function evidence(item: DetectionMonitoringItem, key: 'image' | 'nlp'): Evidence
 export function EvidenceLabel({ item }: { item: DetectionMonitoringItem }) {
   const image = evidence(item, 'image');
   const nlp = evidence(item, 'nlp');
-  if (image && !nlp) return <Badge variant="warning">Image-only evidence</Badge>;
-  if (!image && nlp) return <Badge variant="warning">NLP-only evidence</Badge>;
+  if (image && !nlp) return <Badge variant="secondary">Image-only evidence</Badge>;
+  if (!image && nlp) return <Badge variant="secondary">NLP-only evidence</Badge>;
   if (image && nlp) return <Badge variant="secondary">Image + NLP</Badge>;
   return <Badge variant="outline">Evidence missing</Badge>;
 }

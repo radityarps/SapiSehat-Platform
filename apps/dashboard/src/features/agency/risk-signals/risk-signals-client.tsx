@@ -15,7 +15,7 @@ const columns: ColumnDef<RiskSignalItem>[] = [
   { accessorKey: 'jurisdiction_id', header: 'District' },
   { accessorKey: 'disease_class', header: 'Class' },
   { accessorKey: 'signal_count', header: 'Signals' },
-  { accessorKey: 'risk_level', header: 'Risk level', cell: ({ row }) => <Badge variant="warning">{row.original.risk_level}</Badge> },
+  { accessorKey: 'risk_level', header: 'Risk level', cell: ({ row }) => <Badge variant="secondary">{row.original.risk_level}</Badge> },
   { accessorKey: 'priority', header: 'Priority' },
   { accessorKey: 'source_result_ids', header: 'Sources', cell: ({ row }) => row.original.source_result_ids.length }
 ];
