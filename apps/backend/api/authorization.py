@@ -168,7 +168,9 @@ class AgencyUserStore:
             rows = session.query(AgencyUserModel).all()
             return [_agency_from_row(row) for row in rows]
 
-    def update_role(self, user_id: str, role: str, jurisdiction_id: str | None = None) -> AgencyUser | None:
+    def update_role(
+        self, user_id: str, role: str, jurisdiction_id: str | None = None
+    ) -> AgencyUser | None:
         """Update an agency user's role and optionally jurisdiction."""
         with SessionLocal() as session:
             row = session.get(AgencyUserModel, user_id)

@@ -41,7 +41,7 @@ import {
 } from "@/src/shared/ui/dropdown-menu";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import type { AgencyRole } from '@/src/shared/types/api';
+import type { AgencyRole } from "@/src/shared/types/api";
 
 const navItems = [
 	{
@@ -49,49 +49,55 @@ const navItems = [
 		label: "Overview",
 		icon: LayoutDashboard,
 		keywords: ["home", "dashboard", "triage", "summary"],
-		roles: ['admin', 'province_officer', 'district_officer', 'village_officer', 'viewer'] as AgencyRole[],
+		roles: [
+			"admin",
+			"province_officer",
+			"district_officer",
+			"village_officer",
+			"viewer",
+		] as AgencyRole[],
 	},
 	{
 		href: "/agency/registry",
 		label: "Registry",
 		icon: Users,
 		keywords: ["farmers", "cattle", "list", "search"],
-		roles: ['admin', 'province_officer', 'district_officer'] as AgencyRole[],
+		roles: ["admin", "province_officer", "district_officer"] as AgencyRole[],
 	},
 	{
 		href: "/agency/detections",
 		label: "Detections",
 		icon: ClipboardList,
 		keywords: ["disease", "scan", "evidence", "monitoring"],
-		roles: ['admin', 'province_officer', 'district_officer'] as AgencyRole[],
+		roles: ["admin", "province_officer", "district_officer"] as AgencyRole[],
 	},
 	{
 		href: "/agency/risk-signals",
 		label: "Risk Signals",
 		icon: ShieldAlert,
 		keywords: ["risk", "signal", "jurisdiction", "priority"],
-		roles: ['admin', 'province_officer', 'district_officer'] as AgencyRole[],
+		roles: ["admin", "province_officer", "district_officer"] as AgencyRole[],
 	},
 	{
 		href: "/agency/follow-ups",
 		label: "Follow-ups",
 		icon: Bell,
 		keywords: ["follow", "action", "status", "record"],
-		roles: ['admin', 'province_officer', 'district_officer'] as AgencyRole[],
+		roles: ["admin", "province_officer", "district_officer"] as AgencyRole[],
 	},
 	{
 		href: "/agency/audit-logs",
 		label: "Audit Logs",
 		icon: FileClock,
 		keywords: ["audit", "log", "history", "activity"],
-		roles: ['admin'] as AgencyRole[],
+		roles: ["admin"] as AgencyRole[],
 	},
 	{
 		href: "/agency/users",
 		label: "User Management",
 		icon: Users,
 		keywords: ["users", "roles", "permissions", "manage"],
-		roles: ['admin'] as AgencyRole[],
+		roles: ["admin"] as AgencyRole[],
 	},
 ];
 
@@ -286,7 +292,9 @@ function AppSidebar() {
 					<SidebarGroupContent>
 						<SidebarMenu>
 							{navItems
-								.filter((item) => !agency?.role || item.roles.includes(agency.role))
+								.filter(
+									(item) => !agency?.role || item.roles.includes(agency.role),
+								)
 								.map((item) => {
 									const active = pathname === item.href;
 									return (
@@ -328,8 +336,13 @@ function AppSidebar() {
 							</DropdownMenuTrigger>
 							<DropdownMenuContent side="right" align="end" className="w-56">
 								<div className="px-2 py-1.5">
-									<p className="text-sm font-medium">{agency?.name ?? 'Agency Officer'}</p>
-									<p className="text-xs text-muted-foreground">{agency?.role ?? 'officer'} · {agency?.jurisdiction_id ?? 'unknown'}</p>
+									<p className="text-sm font-medium">
+										{agency?.name ?? "Agency Officer"}
+									</p>
+									<p className="text-xs text-muted-foreground">
+										{agency?.role ?? "officer"} ·{" "}
+										{agency?.jurisdiction_id ?? "unknown"}
+									</p>
 								</div>
 								<DropdownMenuSeparator />
 								<DropdownMenuItem

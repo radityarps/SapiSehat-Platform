@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import io
+from pydantic import BaseModel as BaseModel
 from datetime import datetime, timezone
 from uuid import uuid4
 from fastapi import (
@@ -124,7 +125,7 @@ def _serialize_auth_account(account):
         "jurisdiction_id": account.jurisdiction_id,
     }
     if account.account_type == "agency":
-        agency_user = DEMO_AGENCY_USERS.get(account.id)
+        agency_user = _agency_user_store.get(account.id)
         if agency_user:
             result["role"] = agency_user.role.value
     return result
@@ -261,10 +262,16 @@ async def login_agency_surface_account(request: AgencyLoginRequest):
         raise HTTPException(status_code=403, detail=str(exc))
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    result = _serialize_auth_account(account)
+    # Ensure role is always included for agency accounts
+    if "role" not in result:
+        agency_user = _agency_user_store.get(account.id)
+        if agency_user:
+            result["role"] = agency_user.role.value
     return {
         "access_token": issue_token(account),
         "token_type": "bearer",
-        "account": _serialize_auth_account(account),
+        "account": result,
     }
 
 
@@ -1417,54 +1424,90 @@ async def get_farmer_area_advisory(farmer_id: str = Path(...)):
 
 # --- User Management (admin-only) ---
 
+
 class AgencyUserCreateRequest(BaseModel):
     id: str
     role: str
     jurisdiction_id: str
 
+
 class AgencyUserUpdateRequest(BaseModel):
     role: str
     jurisdiction_id: str | None = None
 
+
 @router.get("/agency/users", tags=["agency"])
-async def list_agency_users(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def list_agency_users(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """List all agency users. Admin only."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None or agency.role.value != "admin":
         raise HTTPException(status_code=403, detail="Admin role required")
     users = _agency_user_store.list_all()
-    return {"users": [{"id": u.id, "role": u.role.value, "jurisdiction_id": u.jurisdiction_id} for u in users]}
+    return {
+        "users": [
+            {"id": u.id, "role": u.role.value, "jurisdiction_id": u.jurisdiction_id}
+            for u in users
+        ]
+    }
+
 
 @router.post("/agency/users", tags=["agency"], status_code=201)
-async def create_agency_user(request: AgencyUserCreateRequest, agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def create_agency_user(
+    request: AgencyUserCreateRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Create a new agency user. Admin only."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None or agency.role.value != "admin":
         raise HTTPException(status_code=403, detail="Admin role required")
     valid_roles = [r.value for r in AgencyRole]
     if request.role not in valid_roles:
-        raise HTTPException(status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}")
+        raise HTTPException(
+            status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}"
+        )
     _agency_user_store.ensure_exists(request.id, request.role, request.jurisdiction_id)
     refresh_agency_users()
-    return {"id": request.id, "role": request.role, "jurisdiction_id": request.jurisdiction_id}
+    return {
+        "id": request.id,
+        "role": request.role,
+        "jurisdiction_id": request.jurisdiction_id,
+    }
+
 
 @router.put("/agency/users/{user_id}", tags=["agency"])
-async def update_agency_user(user_id: str, request: AgencyUserUpdateRequest, agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def update_agency_user(
+    user_id: str,
+    request: AgencyUserUpdateRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Update an agency user's role/jurisdiction. Admin only."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None or agency.role.value != "admin":
         raise HTTPException(status_code=403, detail="Admin role required")
     valid_roles = [r.value for r in AgencyRole]
     if request.role not in valid_roles:
-        raise HTTPException(status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}")
-    updated = _agency_user_store.update_role(user_id, request.role, request.jurisdiction_id)
+        raise HTTPException(
+            status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}"
+        )
+    updated = _agency_user_store.update_role(
+        user_id, request.role, request.jurisdiction_id
+    )
     if updated is None:
         raise HTTPException(status_code=404, detail="User not found")
     refresh_agency_users()
-    return {"id": updated.id, "role": updated.role.value, "jurisdiction_id": updated.jurisdiction_id}
+    return {
+        "id": updated.id,
+        "role": updated.role.value,
+        "jurisdiction_id": updated.jurisdiction_id,
+    }
+
 
 @router.delete("/agency/users/{user_id}", tags=["agency"])
-async def delete_agency_user(user_id: str, agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def delete_agency_user(
+    user_id: str, agency_user_id: str = Header(..., alias="X-Agency-User-Id")
+):
     """Delete an agency user. Admin only."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None or agency.role.value != "admin":
@@ -1475,11 +1518,19 @@ async def delete_agency_user(user_id: str, agency_user_id: str = Header(..., ali
     refresh_agency_users()
     return {"deleted": True}
 
+
 @router.get("/agency/jurisdictions", tags=["agency"])
-async def list_jurisdictions(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def list_jurisdictions(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """List all available jurisdictions."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
     jurisdictions = _jurisdiction_store.all_by_id()
-    return {"jurisdictions": [{"id": j.id, "name": j.name, "level": j.level, "parent_id": j.parent_id} for j in jurisdictions.values()]}
+    return {
+        "jurisdictions": [
+            {"id": j.id, "name": j.name, "level": j.level, "parent_id": j.parent_id}
+            for j in jurisdictions.values()
+        ]
+    }

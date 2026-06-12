@@ -88,6 +88,7 @@ class AuthAccountResponse(BaseModel):
     is_active: bool = True
     name: str = ""
     jurisdiction_id: str = ""
+    role: Optional[str] = None
 
 
 class FarmerProfileUpdateRequest(BaseModel):
