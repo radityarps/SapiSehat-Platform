@@ -8,11 +8,14 @@ info:
 http:
   method: POST
   url: "{{base_url}}/api/auth/agency/login"
-  auth: inherit
   body:
     type: json
-    json: |-
-      {"email":"semarang-officer@sapisehat.test","password":"agency-password"}
+    data: |-
+      {
+              "email": "semarang-officer@sapisehat.test",
+              "password": "agency-password"
+            }
+  auth: inherit
 
 settings:
   encodeUrl: true

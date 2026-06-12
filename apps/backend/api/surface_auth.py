@@ -168,6 +168,12 @@ def seed_default_farmer_accounts() -> None:
 
 def seed_default_agency_accounts() -> None:
     surface_account_store.seed_agency(
+        email="admin@sapisehat.id",
+        password="admin123",
+        name="Admin Agency",
+        jurisdiction_id="central-java",
+    )
+    surface_account_store.seed_agency(
         email="semarang-officer@sapisehat.test",
         password="agency-password",
         name="Semarang Officer",

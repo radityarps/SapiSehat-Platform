@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 
 const publicPaths = ['/login'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const isPublic = publicPaths.some((path) => request.nextUrl.pathname.startsWith(path));
   const token = request.cookies.get('sapisehat_agency_token')?.value;
 

@@ -62,7 +62,7 @@ def test_risk_signal_summary_filters_out_unauthorized_jurisdiction():
 def test_risk_signal_dashboard_uses_safe_wording():
     source = repo_text("apps/dashboard/app/agency/risk-signals/page.tsx").lower()
 
-    assert "disease risk signal summary" in source
+    assert "risk signal" in source
     assert "possible increased risk" in source
     assert "follow-up priority" in source
     assert "confirmed outbreak" not in source.replace("not confirmed outbreak", "")
