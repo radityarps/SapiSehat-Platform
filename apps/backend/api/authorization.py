@@ -162,6 +162,35 @@ class AgencyUserStore:
                 )
                 session.commit()
 
+    def list_all(self) -> list[AgencyUser]:
+        """List all agency users."""
+        with SessionLocal() as session:
+            rows = session.query(AgencyUserModel).all()
+            return [_agency_from_row(row) for row in rows]
+
+    def update_role(self, user_id: str, role: str, jurisdiction_id: str | None = None) -> AgencyUser | None:
+        """Update an agency user's role and optionally jurisdiction."""
+        with SessionLocal() as session:
+            row = session.get(AgencyUserModel, user_id)
+            if row is None:
+                return None
+            row.role = role
+            if jurisdiction_id is not None:
+                row.jurisdiction_id = jurisdiction_id
+            session.commit()
+            session.refresh(row)
+            return _agency_from_row(row)
+
+    def delete(self, user_id: str) -> bool:
+        """Delete an agency user."""
+        with SessionLocal() as session:
+            row = session.get(AgencyUserModel, user_id)
+            if row is None:
+                return False
+            session.delete(row)
+            session.commit()
+            return True
+
 
 _jurisdiction_store = JurisdictionStore()
 _agency_user_store = AgencyUserStore()

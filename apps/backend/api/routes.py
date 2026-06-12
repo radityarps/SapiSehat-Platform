@@ -88,13 +88,17 @@ from api.audit_logs import audit_log_store
 from api.follow_ups import follow_up_store
 from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
 from api.authorization import (
+    AgencyRole,
     ConsentTier,
     FarmerRecord,
     DEMO_AGENCY_USERS,
     DEMO_FARMERS,
     DEMO_JURISDICTIONS,
+    _agency_user_store,
+    _jurisdiction_store,
     can_agency_access_farmer,
     filter_visible_farmers,
+    refresh_agency_users,
 )
 from api.surface_auth import (
     issue_token,
@@ -1409,3 +1413,73 @@ async def get_farmer_area_advisory(farmer_id: str = Path(...)):
             "disclaimer": "not confirmed diagnosis or outbreak declaration",
         },
     }
+
+
+# --- User Management (admin-only) ---
+
+class AgencyUserCreateRequest(BaseModel):
+    id: str
+    role: str
+    jurisdiction_id: str
+
+class AgencyUserUpdateRequest(BaseModel):
+    role: str
+    jurisdiction_id: str | None = None
+
+@router.get("/agency/users", tags=["agency"])
+async def list_agency_users(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """List all agency users. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    users = _agency_user_store.list_all()
+    return {"users": [{"id": u.id, "role": u.role.value, "jurisdiction_id": u.jurisdiction_id} for u in users]}
+
+@router.post("/agency/users", tags=["agency"], status_code=201)
+async def create_agency_user(request: AgencyUserCreateRequest, agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Create a new agency user. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    valid_roles = [r.value for r in AgencyRole]
+    if request.role not in valid_roles:
+        raise HTTPException(status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}")
+    _agency_user_store.ensure_exists(request.id, request.role, request.jurisdiction_id)
+    refresh_agency_users()
+    return {"id": request.id, "role": request.role, "jurisdiction_id": request.jurisdiction_id}
+
+@router.put("/agency/users/{user_id}", tags=["agency"])
+async def update_agency_user(user_id: str, request: AgencyUserUpdateRequest, agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Update an agency user's role/jurisdiction. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    valid_roles = [r.value for r in AgencyRole]
+    if request.role not in valid_roles:
+        raise HTTPException(status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}")
+    updated = _agency_user_store.update_role(user_id, request.role, request.jurisdiction_id)
+    if updated is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    refresh_agency_users()
+    return {"id": updated.id, "role": updated.role.value, "jurisdiction_id": updated.jurisdiction_id}
+
+@router.delete("/agency/users/{user_id}", tags=["agency"])
+async def delete_agency_user(user_id: str, agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """Delete an agency user. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    deleted = _agency_user_store.delete(user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found")
+    refresh_agency_users()
+    return {"deleted": True}
+
+@router.get("/agency/jurisdictions", tags=["agency"])
+async def list_jurisdictions(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+    """List all available jurisdictions."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    jurisdictions = _jurisdiction_store.all_by_id()
+    return {"jurisdictions": [{"id": j.id, "name": j.name, "level": j.level, "parent_id": j.parent_id} for j in jurisdictions.values()]}
