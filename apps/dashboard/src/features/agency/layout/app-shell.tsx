@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from '@/src/shared/lib/utils';
 import {
   Sidebar,
   SidebarContent,
@@ -13,21 +12,21 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
-  useSidebar,
 } from '@/src/shared/ui/sidebar';
-import { Activity, Bell, ClipboardList, FileClock, LayoutDashboard, ShieldAlert, Users } from 'lucide-react';
+import { Activity, Bell, ClipboardList, FileClock, LayoutDashboard, Moon, Search, ShieldAlert, Sun, Users } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAgencySession } from '@/src/features/auth/session-context';
-import { LogoutButton } from './logout-button';
+import { Button } from '@/src/shared/ui/button';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 const navItems = [
-  { href: '/agency/overview', label: 'Overview', icon: LayoutDashboard },
-  { href: '/agency/registry', label: 'Registry', icon: Users },
-  { href: '/agency/detections', label: 'Detections', icon: ClipboardList },
-  { href: '/agency/risk-signals', label: 'Risk Signals', icon: ShieldAlert },
-  { href: '/agency/follow-ups', label: 'Follow-ups', icon: Bell },
-  { href: '/agency/audit-logs', label: 'Audit Logs', icon: FileClock },
+  { href: '/agency/overview', label: 'Overview', icon: LayoutDashboard, keywords: ['home', 'dashboard', 'triage', 'summary'] },
+  { href: '/agency/registry', label: 'Registry', icon: Users, keywords: ['farmers', 'cattle', 'list', 'search'] },
+  { href: '/agency/detections', label: 'Detections', icon: ClipboardList, keywords: ['disease', 'scan', 'evidence', 'monitoring'] },
+  { href: '/agency/risk-signals', label: 'Risk Signals', icon: ShieldAlert, keywords: ['risk', 'signal', 'jurisdiction', 'priority'] },
+  { href: '/agency/follow-ups', label: 'Follow-ups', icon: Bell, keywords: ['follow', 'action', 'status', 'record'] },
+  { href: '/agency/audit-logs', label: 'Audit Logs', icon: FileClock, keywords: ['audit', 'log', 'history', 'activity'] },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {
@@ -35,14 +34,144 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <main className="flex-1 overflow-auto">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-2 border-b bg-background px-4">
-          <SidebarTrigger />
-          <div className="flex-1" />
-          <LogoutButton />
-        </header>
+        <TopBar />
         <div className="p-6">{children}</div>
       </main>
     </SidebarProvider>
+  );
+}
+
+function TopBar() {
+  const [dark, setDark] = useState(false);
+
+  useEffect(() => {
+    const isDark = document.documentElement.classList.contains('dark');
+    setDark(isDark);
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    const next = !dark;
+    setDark(next);
+    document.documentElement.classList.toggle('dark', next);
+  }, [dark]);
+
+  return (
+    <header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background px-4">
+      <SidebarTrigger />
+      <div className="flex-1 flex justify-center">
+        <CommandSearch />
+      </div>
+      <div className="flex items-center gap-1">
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Notifications">
+          <Bell className="h-4 w-4" />
+        </Button>
+        <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Toggle theme" onClick={toggleTheme}>
+          {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+        </Button>
+      </div>
+    </header>
+  );
+}
+
+function CommandSearch() {
+  const router = useRouter();
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const filtered = navItems.filter((item) => {
+    if (!query) return true;
+    const q = query.toLowerCase();
+    return (
+      item.label.toLowerCase().includes(q) ||
+      item.keywords.some((k) => k.includes(q))
+    );
+  });
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        setOpen(true);
+        setTimeout(() => inputRef.current?.focus(), 0);
+      }
+      if (e.key === 'Escape') {
+        setOpen(false);
+        setQuery('');
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, []);
+
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+        setQuery('');
+      }
+    }
+    if (open) document.addEventListener('mousedown', onClickOutside);
+    return () => document.removeEventListener('mousedown', onClickOutside);
+  }, [open]);
+
+  function navigate(href: string) {
+    router.push(href);
+    setOpen(false);
+    setQuery('');
+  }
+
+  return (
+    <div ref={containerRef} className="relative w-full max-w-sm">
+      <button
+        type="button"
+        onClick={() => { setOpen(true); setTimeout(() => inputRef.current?.focus(), 0); }}
+        className="flex h-8 w-full items-center gap-2 rounded-md border bg-muted/40 px-3 text-sm text-muted-foreground transition-colors hover:bg-muted/60"
+      >
+        <Search className="h-3.5 w-3.5" />
+        <span className="flex-1 text-left">Search menu...</span>
+        <kbd className="pointer-events-none hidden rounded border bg-background px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground sm:inline-block">
+          ⌘K
+        </kbd>
+      </button>
+
+      {open && (
+        <div className="absolute top-full left-0 z-50 mt-1 w-full rounded-md border bg-popover p-1 shadow-md">
+          <div className="flex items-center gap-2 border-b px-2 pb-1.5">
+            <Search className="h-3.5 w-3.5 text-muted-foreground" />
+            <input
+              ref={inputRef}
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && filtered.length > 0) {
+                  navigate(filtered[0].href);
+                }
+              }}
+              placeholder="Search pages..."
+              className="flex-1 bg-transparent py-1.5 text-sm outline-none placeholder:text-muted-foreground"
+            />
+          </div>
+          <div className="mt-1 max-h-48 overflow-auto">
+            {filtered.length === 0 && (
+              <p className="px-2 py-3 text-center text-xs text-muted-foreground">No results found.</p>
+            )}
+            {filtered.map((item) => (
+              <button
+                key={item.href}
+                type="button"
+                onClick={() => navigate(item.href)}
+                className="flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground"
+              >
+                <item.icon className="h-4 w-4 text-muted-foreground" />
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 }
 
