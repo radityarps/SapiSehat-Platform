@@ -5,7 +5,16 @@ import hashlib
 import io
 from datetime import datetime, timezone
 from uuid import uuid4
-from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Query, Header, Path
+from fastapi import (
+    APIRouter,
+    UploadFile,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Header,
+    Path,
+)
 from fastapi.responses import JSONResponse
 from PIL import Image
 from inference_server import get_inference_service, is_model_ready, get_model_status
@@ -64,7 +73,12 @@ from api.schemas import (
 from config import settings
 from utils.logger import get_logger
 from api.farmer_accounts import FarmerConsentState, farmer_account_store
-from api.cattle_profiles import CattleEventType, CattleSex, CattleStatus, cattle_profile_store
+from api.cattle_profiles import (
+    CattleEventType,
+    CattleSex,
+    CattleStatus,
+    cattle_profile_store,
+)
 from api.detection_events import detection_event_store
 from api.fusion_results import fusion_result_store
 from api.offline_sync import offline_detection_sync_store
@@ -73,8 +87,22 @@ from api.object_storage import media_storage_client
 from api.audit_logs import audit_log_store
 from api.follow_ups import follow_up_store
 from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
-from api.authorization import ConsentTier, FarmerRecord, DEMO_AGENCY_USERS, DEMO_FARMERS, DEMO_JURISDICTIONS, can_agency_access_farmer, filter_visible_farmers
-from api.surface_auth import issue_token, read_token, seed_default_agency_accounts, seed_default_farmer_accounts, surface_account_store
+from api.authorization import (
+    ConsentTier,
+    FarmerRecord,
+    DEMO_AGENCY_USERS,
+    DEMO_FARMERS,
+    DEMO_JURISDICTIONS,
+    can_agency_access_farmer,
+    filter_visible_farmers,
+)
+from api.surface_auth import (
+    issue_token,
+    read_token,
+    seed_default_agency_accounts,
+    seed_default_farmer_accounts,
+    surface_account_store,
+)
 from api.db_models import FarmerPreferenceModel
 from api.database import SessionLocal
 
@@ -83,7 +111,14 @@ router = APIRouter(prefix="/api")
 
 
 def _serialize_auth_account(account):
-    return {"id": account.id, "account_type": account.account_type, "email": account.email, "is_active": account.is_active, "name": account.name, "jurisdiction_id": account.jurisdiction_id}
+    return {
+        "id": account.id,
+        "account_type": account.account_type,
+        "email": account.email,
+        "is_active": account.is_active,
+        "name": account.name,
+        "jurisdiction_id": account.jurisdiction_id,
+    }
 
 
 def _get_farmer_preferences(farmer_id: str):
@@ -109,6 +144,7 @@ def _serialize_farmer_preferences(row):
         "quiet_hours_end": row.quiet_hours_end,
     }
 
+
 def _serialize_audit_log(event):
     return {
         "id": event.id,
@@ -121,14 +157,16 @@ def _serialize_audit_log(event):
         "created_at": event.created_at,
     }
 
+
 def _require_admin_agency(agency_user_id: str):
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
     if agency.role.value != "admin":
-        raise HTTPException(status_code=403, detail="Audit logs require admin agency role")
+        raise HTTPException(
+            status_code=403, detail="Audit logs require admin agency role"
+        )
     return agency
-
 
 
 @router.get("/agency/audit-logs", response_model=AuditLogListResponse, tags=["agency"])
@@ -142,8 +180,11 @@ async def list_agency_audit_logs(
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
-    events = audit_log_store.list_recent(action=action, resource_type=resource_type, limit=limit)
+    events = audit_log_store.list_recent(
+        action=action, resource_type=resource_type, limit=limit
+    )
     return {"audit_logs": [_serialize_audit_log(event) for event in events]}
+
 
 @router.post("/auth/farmer/register", response_model=AuthResponse, tags=["auth"])
 async def register_farmer_surface_account(request: FarmerRegisterRequest):
@@ -157,7 +198,11 @@ async def register_farmer_surface_account(request: FarmerRegisterRequest):
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
+    return {
+        "access_token": issue_token(account),
+        "token_type": "bearer",
+        "account": _serialize_auth_account(account),
+    }
 
 
 @router.post("/auth/farmer/login", response_model=AuthResponse, tags=["auth"])
@@ -165,21 +210,34 @@ async def login_farmer_surface_account(request: FarmerLoginRequest):
     """Login farmer mobile account with email/password and issue token."""
     seed_default_farmer_accounts()
     try:
-        account = surface_account_store.authenticate(account_type="farmer", email=request.email, password=request.password)
+        account = surface_account_store.authenticate(
+            account_type="farmer", email=request.email, password=request.password
+        )
     except ValueError as exc:
         raise HTTPException(status_code=403, detail=str(exc))
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
+    return {
+        "access_token": issue_token(account),
+        "token_type": "bearer",
+        "account": _serialize_auth_account(account),
+    }
+
 
 @router.post("/auth/farmer/google", response_model=AuthResponse, tags=["auth"])
 async def login_farmer_google_account(request: FarmerGoogleLoginRequest):
     """Exchange verified Google token for farmer backend JWT."""
     try:
-        account = surface_account_store.register_farmer_google(id_token=request.id_token, jurisdiction_id=request.jurisdiction_id)
+        account = surface_account_store.register_farmer_google(
+            id_token=request.id_token, jurisdiction_id=request.jurisdiction_id
+        )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
-    return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
+    return {
+        "access_token": issue_token(account),
+        "token_type": "bearer",
+        "account": _serialize_auth_account(account),
+    }
 
 
 @router.post("/auth/agency/login", response_model=AuthResponse, tags=["auth"])
@@ -187,12 +245,19 @@ async def login_agency_surface_account(request: AgencyLoginRequest):
     """Login admin-seeded agency dashboard account with email/password."""
     seed_default_agency_accounts()
     try:
-        account = surface_account_store.authenticate(account_type="agency", email=request.email, password=request.password)
+        account = surface_account_store.authenticate(
+            account_type="agency", email=request.email, password=request.password
+        )
     except ValueError as exc:
         raise HTTPException(status_code=403, detail=str(exc))
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
-    return {"access_token": issue_token(account), "token_type": "bearer", "account": _serialize_auth_account(account)}
+    return {
+        "access_token": issue_token(account),
+        "token_type": "bearer",
+        "account": _serialize_auth_account(account),
+    }
+
 
 @router.post("/auth/agency/google", tags=["auth"])
 async def reject_agency_google_login():
@@ -201,7 +266,9 @@ async def reject_agency_google_login():
 
 
 @router.get("/me", response_model=AuthAccountResponse, tags=["auth"])
-async def get_current_surface_account(authorization: str = Header(..., alias="Authorization")):
+async def get_current_surface_account(
+    authorization: str = Header(..., alias="Authorization"),
+):
     """Return current account from bearer token."""
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Bearer token required")
@@ -209,14 +276,22 @@ async def get_current_surface_account(authorization: str = Header(..., alias="Au
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc))
-    account = surface_account_store.get_by_id(account_type=str(claims["account_type"]), account_id=str(claims["sub"]))
+    account = surface_account_store.get_by_id(
+        account_type=str(claims["account_type"]), account_id=str(claims["sub"])
+    )
     if account is None:
         raise HTTPException(status_code=401, detail="Account not found")
     return _serialize_auth_account(account)
 
 
-@router.put("/farmers/{farmer_id}/profile", response_model=AuthAccountResponse, tags=["farmer"])
-async def update_farmer_profile(farmer_id: str, request: FarmerProfileUpdateRequest, authorization: str = Header(..., alias="Authorization")):
+@router.put(
+    "/farmers/{farmer_id}/profile", response_model=AuthAccountResponse, tags=["farmer"]
+)
+async def update_farmer_profile(
+    farmer_id: str,
+    request: FarmerProfileUpdateRequest,
+    authorization: str = Header(..., alias="Authorization"),
+):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Bearer token required")
     try:
@@ -224,16 +299,28 @@ async def update_farmer_profile(farmer_id: str, request: FarmerProfileUpdateRequ
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc))
     if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
-        raise HTTPException(status_code=403, detail="Farmer profile update requires same farmer account")
+        raise HTTPException(
+            status_code=403, detail="Farmer profile update requires same farmer account"
+        )
     try:
-        account = surface_account_store.update_farmer_profile(account_id=farmer_id, name=request.name, jurisdiction_id=request.jurisdiction_id)
+        account = surface_account_store.update_farmer_profile(
+            account_id=farmer_id,
+            name=request.name,
+            jurisdiction_id=request.jurisdiction_id,
+        )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     return _serialize_auth_account(account)
 
 
-@router.get("/farmers/{farmer_id}/preferences", response_model=FarmerPreferencesResponse, tags=["farmer"])
-async def get_farmer_preferences(farmer_id: str, authorization: str = Header(..., alias="Authorization")):
+@router.get(
+    "/farmers/{farmer_id}/preferences",
+    response_model=FarmerPreferencesResponse,
+    tags=["farmer"],
+)
+async def get_farmer_preferences(
+    farmer_id: str, authorization: str = Header(..., alias="Authorization")
+):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Bearer token required")
     try:
@@ -241,12 +328,22 @@ async def get_farmer_preferences(farmer_id: str, authorization: str = Header(...
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc))
     if str(claims["sub"]) != farmer_id:
-        raise HTTPException(status_code=403, detail="Preferences require same farmer account")
+        raise HTTPException(
+            status_code=403, detail="Preferences require same farmer account"
+        )
     return _serialize_farmer_preferences(_get_farmer_preferences(farmer_id))
 
 
-@router.put("/farmers/{farmer_id}/preferences", response_model=FarmerPreferencesResponse, tags=["farmer"])
-async def put_farmer_preferences(farmer_id: str, request: FarmerPreferencesRequest, authorization: str = Header(..., alias="Authorization")):
+@router.put(
+    "/farmers/{farmer_id}/preferences",
+    response_model=FarmerPreferencesResponse,
+    tags=["farmer"],
+)
+async def put_farmer_preferences(
+    farmer_id: str,
+    request: FarmerPreferencesRequest,
+    authorization: str = Header(..., alias="Authorization"),
+):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Bearer token required")
     try:
@@ -254,9 +351,13 @@ async def put_farmer_preferences(farmer_id: str, request: FarmerPreferencesReque
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc))
     if str(claims["sub"]) != farmer_id:
-        raise HTTPException(status_code=403, detail="Preferences require same farmer account")
+        raise HTTPException(
+            status_code=403, detail="Preferences require same farmer account"
+        )
     with SessionLocal() as session:
-        row = session.get(FarmerPreferenceModel, farmer_id) or FarmerPreferenceModel(farmer_id=farmer_id)
+        row = session.get(FarmerPreferenceModel, farmer_id) or FarmerPreferenceModel(
+            farmer_id=farmer_id
+        )
         row.scan_result_notifications = request.scan_result_notifications
         row.sync_notifications = request.sync_notifications
         row.area_risk_advisory_notifications = request.area_risk_advisory_notifications
@@ -270,8 +371,16 @@ async def put_farmer_preferences(farmer_id: str, request: FarmerPreferencesReque
         return _serialize_farmer_preferences(row)
 
 
-@router.post("/farmers/{farmer_id}/account/archive", response_model=AuthAccountResponse, tags=["farmer"])
-async def archive_farmer_account(farmer_id: str, request: FarmerArchiveRequest, authorization: str = Header(..., alias="Authorization")):
+@router.post(
+    "/farmers/{farmer_id}/account/archive",
+    response_model=AuthAccountResponse,
+    tags=["farmer"],
+)
+async def archive_farmer_account(
+    farmer_id: str,
+    request: FarmerArchiveRequest,
+    authorization: str = Header(..., alias="Authorization"),
+):
     if not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Bearer token required")
     try:
@@ -279,9 +388,13 @@ async def archive_farmer_account(farmer_id: str, request: FarmerArchiveRequest, 
     except ValueError as exc:
         raise HTTPException(status_code=401, detail=str(exc))
     if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
-        raise HTTPException(status_code=403, detail="Farmer archive requires same farmer account")
+        raise HTTPException(
+            status_code=403, detail="Farmer archive requires same farmer account"
+        )
     try:
-        account = surface_account_store.archive_farmer(account_id=farmer_id, password=request.password)
+        account = surface_account_store.archive_farmer(
+            account_id=farmer_id, password=request.password
+        )
     except ValueError as exc:
         raise HTTPException(status_code=403, detail=str(exc))
     return _serialize_auth_account(account)
@@ -301,7 +414,6 @@ def _serialize_cattle(profile):
     }
 
 
-
 def _serialize_cattle_event(event):
     return {
         "id": event.id,
@@ -314,12 +426,14 @@ def _serialize_cattle_event(event):
         "creator_id": event.creator_id,
     }
 
+
 def _serialize_cattle_detail(profile):
     detail = _serialize_cattle(profile)
-    detail["timeline"] = [_serialize_cattle_event(event) for event in cattle_profile_store.list_timeline_events(profile.id)]
+    detail["timeline"] = [
+        _serialize_cattle_event(event)
+        for event in cattle_profile_store.list_timeline_events(profile.id)
+    ]
     return detail
-
-
 
 
 def _serialize_media(media):
@@ -339,6 +453,7 @@ def _serialize_media(media):
         "created_at": media.created_at,
     }
 
+
 def _serialize_agency_follow_up(follow_up):
     return {
         "id": follow_up.id,
@@ -349,6 +464,7 @@ def _serialize_agency_follow_up(follow_up):
         "internal_notes": follow_up.internal_notes,
     }
 
+
 def _serialize_farmer_follow_up(follow_up):
     return {
         "id": follow_up.id,
@@ -357,6 +473,7 @@ def _serialize_farmer_follow_up(follow_up):
         "status": follow_up.status,
         "public_message": follow_up.public_message,
     }
+
 
 def _serialize_fusion_result(result):
     return {
@@ -376,6 +493,7 @@ def _serialize_fusion_result(result):
         "created_at": result.created_at,
     }
 
+
 def _serialize_detection(event):
     return {
         "id": event.id,
@@ -387,11 +505,16 @@ def _serialize_detection(event):
         "attached": event.attached,
     }
 
+
 @router.post("/predict", response_model=PredictResponse, tags=["prediction"])
 async def predict(
     image: UploadFile = File(...),
-    two_stage: bool = Query(False, description="Developer-only two-stage prototype path"),
-    debug_regions: bool = Query(False, description="Include developer-only symptom-region debug data"),
+    two_stage: bool = Query(
+        False, description="Developer-only two-stage prototype path"
+    ),
+    debug_regions: bool = Query(
+        False, description="Include developer-only symptom-region debug data"
+    ),
 ):
     """Predict cattle disease from image using no-retention request handling.
 
@@ -421,21 +544,28 @@ async def predict(
     service = get_inference_service()
     try:
         use_two_stage = two_stage and settings.two_stage_enabled
-        predict_fn = service.predict_two_stage_prototype if use_two_stage else service.predict
+        predict_fn = (
+            service.predict_two_stage_prototype if use_two_stage else service.predict
+        )
         if use_two_stage:
             threaded = asyncio.to_thread(
                 predict_fn,
                 img_pil,
-                include_debug_regions=debug_regions and settings.two_stage_debug_regions_enabled,
+                include_debug_regions=debug_regions
+                and settings.two_stage_debug_regions_enabled,
             )
         else:
             threaded = asyncio.to_thread(predict_fn, img_pil)
         result = await asyncio.wait_for(threaded, timeout=settings.request_timeout)
     except asyncio.TimeoutError:
-        raise HTTPException(status_code=408, detail="Request processing exceeded timeout")
+        raise HTTPException(
+            status_code=408, detail="Request processing exceeded timeout"
+        )
 
     if result["status"] == "error":
-        raise HTTPException(status_code=500, detail=result.get("message", "Inference failed"))
+        raise HTTPException(
+            status_code=500, detail=result.get("message", "Inference failed")
+        )
     audit_log_store.record(
         actor_type="system",
         actor_id="predict-endpoint",
@@ -461,18 +591,29 @@ async def health():
         logger.error(f"Health check failed: {str(e)}", exc_info=True)
         return JSONResponse(
             status_code=500,
-            content={"status": "degraded", "model_loaded": False, "model_version": "unknown"},
+            content={
+                "status": "degraded",
+                "model_loaded": False,
+                "model_version": "unknown",
+            },
         )
 
 
 @router.get("/agency/farmers", response_model=AgencyFarmersResponse)
-async def list_agency_visible_farmers(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def list_agency_visible_farmers(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Return farmers visible to agency user after role-jurisdiction-consent filtering."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
-    visible_farmers = filter_visible_farmers(agency=agency, farmers=DEMO_FARMERS, jurisdictions=DEMO_JURISDICTIONS)
-    return {"agency_user_id": agency_user_id, "farmers": [farmer.__dict__ for farmer in visible_farmers]}
+    visible_farmers = filter_visible_farmers(
+        agency=agency, farmers=DEMO_FARMERS, jurisdictions=DEMO_JURISDICTIONS
+    )
+    return {
+        "agency_user_id": agency_user_id,
+        "farmers": [farmer.__dict__ for farmer in visible_farmers],
+    }
 
 
 @router.post("/farmers/accounts", response_model=FarmerAccountResponse)
@@ -496,10 +637,18 @@ async def register_or_sign_in_farmer_account(request: FarmerAccountRequest):
         "created": created,
     }
 
-@router.post("/farmers/{farmer_id}/scan-image-storage-notice", response_model=ScanImageStorageNoticeResponse)
-async def accept_scan_image_storage_notice(request: ScanImageStorageNoticeRequest, farmer_id: str = Path(...)):
+
+@router.post(
+    "/farmers/{farmer_id}/scan-image-storage-notice",
+    response_model=ScanImageStorageNoticeResponse,
+)
+async def accept_scan_image_storage_notice(
+    request: ScanImageStorageNoticeRequest, farmer_id: str = Path(...)
+):
     """Store farmer acceptance for scan image storage notice."""
-    farmer = farmer_account_store.set_scan_image_storage_notice(farmer_id, accepted=request.accepted)
+    farmer = farmer_account_store.set_scan_image_storage_notice(
+        farmer_id, accepted=request.accepted
+    )
     if farmer is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
     return {
@@ -507,7 +656,11 @@ async def accept_scan_image_storage_notice(request: ScanImageStorageNoticeReques
         "scan_image_storage_notice_accepted": farmer.scan_image_storage_notice_accepted,
     }
 
-@router.get("/farmers/{farmer_id}/scan-image-storage-notice", response_model=ScanImageStorageNoticeResponse)
+
+@router.get(
+    "/farmers/{farmer_id}/scan-image-storage-notice",
+    response_model=ScanImageStorageNoticeResponse,
+)
 async def get_scan_image_storage_notice(farmer_id: str = Path(...)):
     """Read farmer scan image storage notice acceptance."""
     farmer = farmer_account_store.get_by_id(farmer_id)
@@ -519,8 +672,12 @@ async def get_scan_image_storage_notice(farmer_id: str = Path(...)):
     }
 
 
-@router.post("/farmers/{farmer_id}/cattle", response_model=CattleProfileResponse, tags=["farmer"])
-async def create_cattle_profile(request: CattleProfileRequest, farmer_id: str = Path(...)):
+@router.post(
+    "/farmers/{farmer_id}/cattle", response_model=CattleProfileResponse, tags=["farmer"]
+)
+async def create_cattle_profile(
+    request: CattleProfileRequest, farmer_id: str = Path(...)
+):
     """Create cattle profile linked to farmer account before detection."""
     farmer = farmer_account_store.get_by_id(farmer_id)
     if farmer is None:
@@ -534,7 +691,7 @@ async def create_cattle_profile(request: CattleProfileRequest, farmer_id: str = 
             age_months=request.age_months,
             birth_year_estimate=request.birth_year_estimate,
             status=CattleStatus(request.status),
-            jurisdiction_id=request.jurisdiction_id
+            jurisdiction_id=request.jurisdiction_id,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -546,18 +703,31 @@ async def list_farmer_cattle_for_detection(farmer_id: str = Path(...)):
     """List farmer-owned cattle profiles so mobile can select before detection."""
     if farmer_account_store.get_by_id(farmer_id) is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
-    return {"cattle": [_serialize_cattle(profile) for profile in cattle_profile_store.list_by_farmer(farmer_id)]}
+    return {
+        "cattle": [
+            _serialize_cattle(profile)
+            for profile in cattle_profile_store.list_by_farmer(farmer_id)
+        ]
+    }
 
 
-@router.get("/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileDetailResponse)
-async def select_farmer_cattle_for_detection(farmer_id: str = Path(...), cattle_id: str = Path(...)):
+@router.get(
+    "/farmers/{farmer_id}/cattle/{cattle_id}",
+    response_model=CattleProfileDetailResponse,
+)
+async def select_farmer_cattle_for_detection(
+    farmer_id: str = Path(...), cattle_id: str = Path(...)
+):
     """Select one farmer-owned cattle profile before detection starts."""
     profile = cattle_profile_store.get_owned(farmer_id=farmer_id, cattle_id=cattle_id)
     if profile is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     return _serialize_cattle_detail(profile)
 
-@router.delete("/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileResponse)
+
+@router.delete(
+    "/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileResponse
+)
 async def archive_farmer_cattle(farmer_id: str = Path(...), cattle_id: str = Path(...)):
     """Archive cattle instead of true deletion in first release."""
     profile = cattle_profile_store.archive(farmer_id=farmer_id, cattle_id=cattle_id)
@@ -567,7 +737,9 @@ async def archive_farmer_cattle(farmer_id: str = Path(...), cattle_id: str = Pat
 
 
 @router.get("/agency/cattle", response_model=CattleProfileListResponse)
-async def list_agency_visible_cattle(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def list_agency_visible_cattle(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """List cattle visible to agency after role-jurisdiction-consent filtering."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
@@ -579,7 +751,11 @@ async def list_agency_visible_cattle(agency_user_id: str = Header(..., alias="X-
     )
     return {"cattle": [_serialize_cattle(profile) for profile in visible]}
 
-@router.post("/farmers/{farmer_id}/cattle/{cattle_id}/timeline", response_model=CattleTimelineEventResponse)
+
+@router.post(
+    "/farmers/{farmer_id}/cattle/{cattle_id}/timeline",
+    response_model=CattleTimelineEventResponse,
+)
 async def add_farmer_cattle_timeline_event(
     request: CattleTimelineEventRequest,
     farmer_id: str = Path(...),
@@ -602,6 +778,7 @@ async def add_farmer_cattle_timeline_event(
     if event is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     return _serialize_cattle_event(event)
+
 
 @router.get("/agency/cattle/{cattle_id}", response_model=CattleProfileDetailResponse)
 async def get_agency_visible_cattle_detail(
@@ -636,14 +813,21 @@ async def create_quick_scan_detection(request: QuickScanDetectionRequest):
     )
     return _serialize_detection(event)
 
-@router.post("/farmers/{farmer_id}/detections/{detection_id}/attach", response_model=DetectionEventResponse)
+
+@router.post(
+    "/farmers/{farmer_id}/detections/{detection_id}/attach",
+    response_model=DetectionEventResponse,
+)
 async def attach_quick_scan_detection(
     request: AttachDetectionRequest,
     farmer_id: str = Path(...),
     detection_id: str = Path(...),
 ):
     """Attach unattached quick-scan result to farmer-owned cattle."""
-    if cattle_profile_store.get_owned(farmer_id=farmer_id, cattle_id=request.cattle_id) is None:
+    if (
+        cattle_profile_store.get_owned(farmer_id=farmer_id, cattle_id=request.cattle_id)
+        is None
+    ):
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     event = detection_event_store.attach_to_cattle(
         farmer_id=farmer_id,
@@ -651,11 +835,16 @@ async def attach_quick_scan_detection(
         cattle_id=request.cattle_id,
     )
     if event is None:
-        raise HTTPException(status_code=404, detail="Unattached detection not found for farmer")
+        raise HTTPException(
+            status_code=404, detail="Unattached detection not found for farmer"
+        )
     return _serialize_detection(event)
 
+
 @router.get("/agency/detections", response_model=DetectionEventListResponse)
-async def list_agency_visible_attached_detections(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def list_agency_visible_attached_detections(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """List attached detections visible to agency after cattle authorization."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
@@ -665,7 +854,9 @@ async def list_agency_visible_attached_detections(agency_user_id: str = Header(.
         farmers_by_id=farmer_account_store.all_by_id(),
         jurisdictions=DEMO_JURISDICTIONS,
     )
-    events = detection_event_store.list_by_cattle_ids({profile.id for profile in visible_cattle})
+    events = detection_event_store.list_by_cattle_ids(
+        {profile.id for profile in visible_cattle}
+    )
     return {"detections": [_serialize_detection(event) for event in events]}
 
 
@@ -686,12 +877,23 @@ async def validate_nlp_evidence(request: NlpEvidenceRequest):
         "accepted_for_fusion": True,
     }
 
-@router.post("/evidence/nlp/placeholder", response_model=NlpPlaceholderResponse, tags=["prediction"])
+
+@router.post(
+    "/evidence/nlp/placeholder",
+    response_model=NlpPlaceholderResponse,
+    tags=["prediction"],
+)
 async def create_nlp_placeholder(request: NlpPlaceholderRequest):
     """Return explicit NLP-unavailable state without scores, fusion, review, or risk side effects."""
     if farmer_account_store.get_by_id(request.farmer_id) is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
-    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+    if (
+        request.cattle_id is not None
+        and cattle_profile_store.get_owned(
+            farmer_id=request.farmer_id, cattle_id=request.cattle_id
+        )
+        is None
+    ):
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     return {
         "status": "unavailable",
@@ -708,7 +910,13 @@ async def create_backend_primary_fusion_result(request: FusionRequest):
     """Fuse Team 1 image and Team 2 NLP evidence into safe early detection result."""
     if farmer_account_store.get_by_id(request.farmer_id) is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
-    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+    if (
+        request.cattle_id is not None
+        and cattle_profile_store.get_owned(
+            farmer_id=request.farmer_id, cattle_id=request.cattle_id
+        )
+        is None
+    ):
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     try:
         result = fusion_result_store.create(
@@ -721,10 +929,16 @@ async def create_backend_primary_fusion_result(request: FusionRequest):
         raise HTTPException(status_code=422, detail=str(exc))
     return _serialize_fusion_result(result)
 
+
 @router.get("/fusion/results", response_model=FusionResultListResponse)
 async def list_fusion_results():
     """List stored backend-primary fusion tracer results."""
-    return {"results": [_serialize_fusion_result(result) for result in fusion_result_store.list_all()]}
+    return {
+        "results": [
+            _serialize_fusion_result(result)
+            for result in fusion_result_store.list_all()
+        ]
+    }
 
 
 @router.post("/offline/detections/sync", response_model=OfflineDetectionSyncResponse)
@@ -732,7 +946,13 @@ async def sync_offline_detection(request: OfflineDetectionSyncRequest):
     """Sync mobile-created offline fused detection while preserving local id and evidence versions."""
     if farmer_account_store.get_by_id(request.farmer_id) is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
-    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+    if (
+        request.cattle_id is not None
+        and cattle_profile_store.get_owned(
+            farmer_id=request.farmer_id, cattle_id=request.cattle_id
+        )
+        is None
+    ):
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     try:
         synced = offline_detection_sync_store.sync(
@@ -761,14 +981,31 @@ async def create_stored_media_metadata(request: StoredMediaRequest):
     if farmer is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
     if not farmer.scan_image_storage_notice_accepted:
-        raise HTTPException(status_code=403, detail="Scan image storage notice must be accepted before storing media")
+        raise HTTPException(
+            status_code=403,
+            detail="Scan image storage notice must be accepted before storing media",
+        )
     if farmer.consent_state != FarmerConsentState.RESEARCH_AND_MONITORING:
-        raise HTTPException(status_code=403, detail="Media storage requires research_and_monitoring consent")
+        raise HTTPException(
+            status_code=403,
+            detail="Media storage requires research_and_monitoring consent",
+        )
     if request.consent_scope != "research_and_monitoring":
-        raise HTTPException(status_code=422, detail="consent_scope must be research_and_monitoring")
+        raise HTTPException(
+            status_code=422, detail="consent_scope must be research_and_monitoring"
+        )
     if request.content_type not in {"image/jpeg", "image/png", "image/webp"}:
-        raise HTTPException(status_code=422, detail="content_type must be image/jpeg, image/png, or image/webp")
-    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+        raise HTTPException(
+            status_code=422,
+            detail="content_type must be image/jpeg, image/png, or image/webp",
+        )
+    if (
+        request.cattle_id is not None
+        and cattle_profile_store.get_owned(
+            farmer_id=request.farmer_id, cattle_id=request.cattle_id
+        )
+        is None
+    ):
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     media = media_store.create(
         farmer_id=request.farmer_id,
@@ -783,24 +1020,46 @@ async def create_stored_media_metadata(request: StoredMediaRequest):
     )
     return _serialize_media(media)
 
-def _validate_media_storage_allowed(*, farmer_id: str, cattle_id: str | None, consent_scope: str, content_type: str) -> None:
+
+def _validate_media_storage_allowed(
+    *, farmer_id: str, cattle_id: str | None, consent_scope: str, content_type: str
+) -> None:
     farmer = farmer_account_store.get_by_id(farmer_id)
     if farmer is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
     if not farmer.scan_image_storage_notice_accepted:
-        raise HTTPException(status_code=403, detail="Scan image storage notice must be accepted before storing media")
+        raise HTTPException(
+            status_code=403,
+            detail="Scan image storage notice must be accepted before storing media",
+        )
     if farmer.consent_state != FarmerConsentState.RESEARCH_AND_MONITORING:
-        raise HTTPException(status_code=403, detail="Media storage requires research_and_monitoring consent")
+        raise HTTPException(
+            status_code=403,
+            detail="Media storage requires research_and_monitoring consent",
+        )
     if consent_scope != "research_and_monitoring":
-        raise HTTPException(status_code=422, detail="consent_scope must be research_and_monitoring")
+        raise HTTPException(
+            status_code=422, detail="consent_scope must be research_and_monitoring"
+        )
     if content_type not in {"image/jpeg", "image/png", "image/webp"}:
-        raise HTTPException(status_code=422, detail="content_type must be image/jpeg, image/png, or image/webp")
-    if cattle_id is not None and cattle_profile_store.get_owned(farmer_id=farmer_id, cattle_id=cattle_id) is None:
+        raise HTTPException(
+            status_code=422,
+            detail="content_type must be image/jpeg, image/png, or image/webp",
+        )
+    if (
+        cattle_id is not None
+        and cattle_profile_store.get_owned(farmer_id=farmer_id, cattle_id=cattle_id)
+        is None
+    ):
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
 
 
-def _media_object_key(*, farmer_id: str, media_id: str, filename: str, content_type: str) -> str:
-    extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[content_type]
+def _media_object_key(
+    *, farmer_id: str, media_id: str, filename: str, content_type: str
+) -> str:
+    extension = {"image/jpeg": "jpg", "image/png": "png", "image/webp": "webp"}[
+        content_type
+    ]
     now = datetime.now(timezone.utc)
     return f"scan-images/{farmer_id}/{now:%Y}/{now:%m}/{media_id}.{extension}"
 
@@ -816,13 +1075,25 @@ async def upload_scan_image_media(
 ):
     """Upload scan image bytes to MinIO/S3-compatible object storage."""
     content_type = file.content_type or "application/octet-stream"
-    _validate_media_storage_allowed(farmer_id=farmer_id, cattle_id=cattle_id, consent_scope=consent_scope, content_type=content_type)
+    _validate_media_storage_allowed(
+        farmer_id=farmer_id,
+        cattle_id=cattle_id,
+        consent_scope=consent_scope,
+        content_type=content_type,
+    )
     content = await file.read()
     if len(content) > settings.media_max_upload_bytes:
         raise HTTPException(status_code=413, detail="Media upload too large")
     media_id = f"media-{uuid4().hex}"
-    object_key = _media_object_key(farmer_id=farmer_id, media_id=media_id, filename=file.filename or "scan", content_type=content_type)
-    media_storage_client.put_object(object_key=object_key, content=content, content_type=content_type)
+    object_key = _media_object_key(
+        farmer_id=farmer_id,
+        media_id=media_id,
+        filename=file.filename or "scan",
+        content_type=content_type,
+    )
+    media_storage_client.put_object(
+        object_key=object_key, content=content, content_type=content_type
+    )
     checksum = hashlib.sha256(content).hexdigest()
     media = media_store.create(
         farmer_id=farmer_id,
@@ -844,12 +1115,20 @@ async def upload_scan_image_media(
         action="media.uploaded",
         resource_type="media",
         resource_id=media.id,
-        metadata_json={"object_key": object_key, "content_type": content_type, "byte_size": len(content)},
+        metadata_json={
+            "object_key": object_key,
+            "content_type": content_type,
+            "byte_size": len(content),
+        },
     )
     return _serialize_media(media)
 
+
 @router.get("/agency/media/{media_id}", response_model=StoredMediaResponse)
-async def get_agency_visible_media(media_id: str = Path(...), agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def get_agency_visible_media(
+    media_id: str = Path(...),
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Read media metadata only when agency passes role-jurisdiction-consent gates."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
@@ -860,14 +1139,26 @@ async def get_agency_visible_media(media_id: str = Path(...), agency_user_id: st
     farmer = farmer_account_store.get_by_id(media.farmer_id)
     if farmer is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
-    record = FarmerRecord(farmer.id, farmer.name, farmer.jurisdiction_id, ConsentTier(farmer.consent_state.value))
+    record = FarmerRecord(
+        farmer.id,
+        farmer.name,
+        farmer.jurisdiction_id,
+        ConsentTier(farmer.consent_state.value),
+    )
     if not can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
         raise HTTPException(status_code=403, detail="Media not visible to agency")
     return _serialize_media(media)
 
 
-@router.get("/agency/media/{media_id}/download-url", response_model=StoredMediaDownloadUrlResponse, tags=["media"])
-async def get_agency_media_download_url(media_id: str = Path(...), agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+@router.get(
+    "/agency/media/{media_id}/download-url",
+    response_model=StoredMediaDownloadUrlResponse,
+    tags=["media"],
+)
+async def get_agency_media_download_url(
+    media_id: str = Path(...),
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Issue short-lived URL for agency-visible scan image."""
     media = media_store.get(media_id)
     if media is None:
@@ -876,7 +1167,9 @@ async def get_agency_media_download_url(media_id: str = Path(...), agency_user_i
     if not media.object_key:
         raise HTTPException(status_code=404, detail="Media object not stored")
     expires_seconds = 900
-    url = media_storage_client.presigned_get_url(object_key=media.object_key, expires_seconds=expires_seconds)
+    url = media_storage_client.presigned_get_url(
+        object_key=media.object_key, expires_seconds=expires_seconds
+    )
     audit_log_store.record(
         actor_type="agency",
         actor_id=agency_user_id,
@@ -893,7 +1186,10 @@ async def get_agency_media_download_url(media_id: str = Path(...), agency_user_i
 
 
 @router.post("/agency/follow-ups", response_model=AgencyFollowUpResponse)
-async def create_agency_follow_up(request: FollowUpCreateRequest, agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def create_agency_follow_up(
+    request: FollowUpCreateRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Create agency follow-up status; internal notes stay agency-only."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
@@ -901,10 +1197,21 @@ async def create_agency_follow_up(request: FollowUpCreateRequest, agency_user_id
     farmer = farmer_account_store.get_by_id(request.farmer_id)
     if farmer is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
-    record = FarmerRecord(farmer.id, farmer.name, farmer.jurisdiction_id, ConsentTier(farmer.consent_state.value))
+    record = FarmerRecord(
+        farmer.id,
+        farmer.name,
+        farmer.jurisdiction_id,
+        ConsentTier(farmer.consent_state.value),
+    )
     if not can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
         raise HTTPException(status_code=403, detail="Farmer not visible to agency")
-    if request.cattle_id is not None and cattle_profile_store.get_owned(farmer_id=request.farmer_id, cattle_id=request.cattle_id) is None:
+    if (
+        request.cattle_id is not None
+        and cattle_profile_store.get_owned(
+            farmer_id=request.farmer_id, cattle_id=request.cattle_id
+        )
+        is None
+    ):
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     follow_up = follow_up_store.create(
         farmer_id=request.farmer_id,
@@ -919,12 +1226,21 @@ async def create_agency_follow_up(request: FollowUpCreateRequest, agency_user_id
         action="follow_up.created",
         resource_type="follow_up",
         resource_id=follow_up.id,
-        metadata_json={"farmer_id": request.farmer_id, "cattle_id": request.cattle_id, "status": request.status},
+        metadata_json={
+            "farmer_id": request.farmer_id,
+            "cattle_id": request.cattle_id,
+            "status": request.status,
+        },
     )
     return _serialize_agency_follow_up(follow_up)
 
-@router.get("/agency/follow-ups", response_model=list[AgencyFollowUpResponse], tags=["agency"])
-async def list_agency_follow_up_status(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+
+@router.get(
+    "/agency/follow-ups", response_model=list[AgencyFollowUpResponse], tags=["agency"]
+)
+async def list_agency_follow_up_status(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """List agency follow-up status rows visible to the agency jurisdiction."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
@@ -935,26 +1251,43 @@ async def list_agency_follow_up_status(agency_user_id: str = Header(..., alias="
         farmer = farmers_by_id.get(item.farmer_id)
         if farmer is None:
             continue
-        record = FarmerRecord(farmer.id, farmer.name, farmer.jurisdiction_id, ConsentTier(farmer.consent_state.value))
+        record = FarmerRecord(
+            farmer.id,
+            farmer.name,
+            farmer.jurisdiction_id,
+            ConsentTier(farmer.consent_state.value),
+        )
         if can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
             visible.append(item)
     return [_serialize_agency_follow_up(item) for item in visible]
 
-@router.get("/farmers/{farmer_id}/follow-ups", response_model=FarmerFollowUpListResponse)
+
+@router.get(
+    "/farmers/{farmer_id}/follow-ups", response_model=FarmerFollowUpListResponse
+)
 async def list_farmer_follow_up_status(farmer_id: str = Path(...)):
     """List farmer-visible follow-up statuses without agency internal notes."""
     if farmer_account_store.get_by_id(farmer_id) is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
-    return {"follow_ups": [_serialize_farmer_follow_up(item) for item in follow_up_store.list_by_farmer(farmer_id)]}
+    return {
+        "follow_ups": [
+            _serialize_farmer_follow_up(item)
+            for item in follow_up_store.list_by_farmer(farmer_id)
+        ]
+    }
 
 
 @router.get("/agency/registry", response_model=AgencyRegistryResponse)
-async def get_agency_dashboard_registry(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def get_agency_dashboard_registry(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Return dashboard registry farmers and cattle scoped to agency authorization."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
-    visible_demo_farmers = filter_visible_farmers(agency=agency, farmers=DEMO_FARMERS, jurisdictions=DEMO_JURISDICTIONS)
+    visible_demo_farmers = filter_visible_farmers(
+        agency=agency, farmers=DEMO_FARMERS, jurisdictions=DEMO_JURISDICTIONS
+    )
     visible_cattle = cattle_profile_store.list_visible_to_agency(
         agency=agency,
         farmers_by_id=farmer_account_store.all_by_id(),
@@ -973,8 +1306,14 @@ async def get_agency_dashboard_registry(agency_user_id: str = Header(..., alias=
     }
 
 
-@router.get("/agency/detection-monitoring", response_model=AgencyDetectionMonitoringResponse, tags=["agency"])
-async def get_agency_detection_monitoring(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+@router.get(
+    "/agency/detection-monitoring",
+    response_model=AgencyDetectionMonitoringResponse,
+    tags=["agency"],
+)
+async def get_agency_detection_monitoring(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Return agency-scoped fused detection monitoring rows with safe risk language."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
@@ -984,7 +1323,9 @@ async def get_agency_detection_monitoring(agency_user_id: str = Header(..., alia
         farmers_by_id=farmer_account_store.all_by_id(),
         jurisdictions=DEMO_JURISDICTIONS,
     )
-    results = fusion_result_store.list_by_cattle_ids({profile.id for profile in visible_cattle})
+    results = fusion_result_store.list_by_cattle_ids(
+        {profile.id for profile in visible_cattle}
+    )
     return {
         "agency_user_id": agency_user_id,
         "detections": [_serialize_fusion_result(result) for result in results],
@@ -997,7 +1338,9 @@ async def get_agency_detection_monitoring(agency_user_id: str = Header(..., alia
 
 
 @router.get("/agency/risk-signals", response_model=AgencyRiskSignalSummaryResponse)
-async def get_agency_risk_signal_summary(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
+async def get_agency_risk_signal_summary(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
     """Return jurisdiction-level possible increased disease risk signals inside agency scope."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
@@ -1029,19 +1372,31 @@ async def get_agency_risk_signal_summary(agency_user_id: str = Header(..., alias
         },
     }
 
-@router.get("/farmers/{farmer_id}/area-advisory", response_model=FarmerAreaAdvisoryResponse, tags=["farmer"])
+
+@router.get(
+    "/farmers/{farmer_id}/area-advisory",
+    response_model=FarmerAreaAdvisoryResponse,
+    tags=["farmer"],
+)
 async def get_farmer_area_advisory(farmer_id: str = Path(...)):
     """Return farmer-safe district advisory when cluster risk signal exists in farmer jurisdiction."""
     farmer = farmer_account_store.get_by_id(farmer_id)
     if farmer is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
-    signals = [signal for signal in cluster_risk_signal_store.list_all() if signal.jurisdiction_id == farmer.jurisdiction_id and signal.risk_level == "possible_increased_risk"]
+    signals = [
+        signal
+        for signal in cluster_risk_signal_store.list_all()
+        if signal.jurisdiction_id == farmer.jurisdiction_id
+        and signal.risk_level == "possible_increased_risk"
+    ]
     return {
         "farmer_id": farmer.id,
         "jurisdiction_id": farmer.jurisdiction_id,
         "advisory_active": bool(signals),
         "title": "Area disease-risk advisory" if signals else "No area advisory",
-        "message": "Increased disease-risk reports in your district. Monitor cattle, improve biosecurity, and contact animal health officers if symptoms appear." if signals else "No increased district-level disease-risk reports are active for your area.",
+        "message": "Increased disease-risk reports in your district. Monitor cattle, improve biosecurity, and contact animal health officers if symptoms appear."
+        if signals
+        else "No increased district-level disease-risk reports are active for your area.",
         "signals": [signal.__dict__ for signal in signals],
         "safe_language": {
             "scope": "district-level advisory only",
