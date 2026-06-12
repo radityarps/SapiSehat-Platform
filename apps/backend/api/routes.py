@@ -138,8 +138,10 @@ async def list_agency_audit_logs(
     resource_type: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
 ):
-    """List recent audit logs for admin agency users only."""
-    _require_admin_agency(agency_user_id)
+    """List recent audit logs for agency users."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
     events = audit_log_store.list_recent(action=action, resource_type=resource_type, limit=limit)
     return {"audit_logs": [_serialize_audit_log(event) for event in events]}
 

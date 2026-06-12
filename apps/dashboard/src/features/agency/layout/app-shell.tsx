@@ -304,11 +304,7 @@ function AppSidebar() {
 									<ChevronsUpDown className="ml-auto h-4 w-4 text-muted-foreground" />
 								</SidebarMenuButton>
 							</DropdownMenuTrigger>
-							<DropdownMenuContent
-								side="right"
-								align="end"
-								className="w-56"
-							>
+							<DropdownMenuContent side="right" align="end" className="w-56">
 								<DropdownMenuItem
 									onClick={() => router.push("/agency/settings")}
 								>
