@@ -19,6 +19,8 @@ const agencyMeSchema = z.object({
   email: z.string().email(),
   name: z.string(),
   account_type: z.literal("agency"),
+  role: z.string().optional(),
+  jurisdiction_id: z.string().optional(),
 });
 
 const safeLanguageSchema = z.object({

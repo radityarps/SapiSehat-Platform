@@ -3,11 +3,15 @@ export type ApiError = {
   message?: string;
 };
 
+export type AgencyRole = 'admin' | 'province_officer' | 'district_officer' | 'village_officer' | 'viewer';
+
 export type AgencyMe = {
   id: string;
   email: string;
   name: string;
   account_type: 'agency';
+  role?: AgencyRole;
+  jurisdiction_id?: string;
 };
 
 export type AgencyRegistryFarmer = {

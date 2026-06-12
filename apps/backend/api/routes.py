@@ -111,7 +111,7 @@ router = APIRouter(prefix="/api")
 
 
 def _serialize_auth_account(account):
-    return {
+    result = {
         "id": account.id,
         "account_type": account.account_type,
         "email": account.email,
@@ -119,6 +119,11 @@ def _serialize_auth_account(account):
         "name": account.name,
         "jurisdiction_id": account.jurisdiction_id,
     }
+    if account.account_type == "agency":
+        agency_user = DEMO_AGENCY_USERS.get(account.id)
+        if agency_user:
+            result["role"] = agency_user.role.value
+    return result
 
 
 def _get_farmer_preferences(farmer_id: str):

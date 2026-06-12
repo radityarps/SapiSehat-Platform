@@ -41,42 +41,57 @@ import {
 } from "@/src/shared/ui/dropdown-menu";
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import type { AgencyRole } from '@/src/shared/types/api';
+
 const navItems = [
 	{
 		href: "/agency/overview",
 		label: "Overview",
 		icon: LayoutDashboard,
 		keywords: ["home", "dashboard", "triage", "summary"],
+		roles: ['admin', 'province_officer', 'district_officer', 'village_officer', 'viewer'] as AgencyRole[],
 	},
 	{
 		href: "/agency/registry",
 		label: "Registry",
 		icon: Users,
 		keywords: ["farmers", "cattle", "list", "search"],
+		roles: ['admin', 'province_officer', 'district_officer'] as AgencyRole[],
 	},
 	{
 		href: "/agency/detections",
 		label: "Detections",
 		icon: ClipboardList,
 		keywords: ["disease", "scan", "evidence", "monitoring"],
+		roles: ['admin', 'province_officer', 'district_officer'] as AgencyRole[],
 	},
 	{
 		href: "/agency/risk-signals",
 		label: "Risk Signals",
 		icon: ShieldAlert,
 		keywords: ["risk", "signal", "jurisdiction", "priority"],
+		roles: ['admin', 'province_officer', 'district_officer'] as AgencyRole[],
 	},
 	{
 		href: "/agency/follow-ups",
 		label: "Follow-ups",
 		icon: Bell,
 		keywords: ["follow", "action", "status", "record"],
+		roles: ['admin', 'province_officer', 'district_officer'] as AgencyRole[],
 	},
 	{
 		href: "/agency/audit-logs",
 		label: "Audit Logs",
 		icon: FileClock,
 		keywords: ["audit", "log", "history", "activity"],
+		roles: ['admin'] as AgencyRole[],
+	},
+	{
+		href: "/agency/users",
+		label: "User Management",
+		icon: Users,
+		keywords: ["users", "roles", "permissions", "manage"],
+		roles: ['admin'] as AgencyRole[],
 	},
 ];
 
@@ -137,12 +152,17 @@ function TopBar() {
 
 function CommandSearch() {
 	const router = useRouter();
+	const { agency } = useAgencySession();
 	const [open, setOpen] = useState(false);
 	const [query, setQuery] = useState("");
 	const inputRef = useRef<HTMLInputElement>(null);
 	const containerRef = useRef<HTMLDivElement>(null);
 
-	const filtered = navItems.filter((item) => {
+	const visibleItems = navItems.filter(
+		(item) => !agency?.role || item.roles.includes(agency.role),
+	);
+
+	const filtered = visibleItems.filter((item) => {
 		if (!query) return true;
 		const q = query.toLowerCase();
 		return (
@@ -265,23 +285,25 @@ function AppSidebar() {
 				<SidebarGroup>
 					<SidebarGroupContent>
 						<SidebarMenu>
-							{navItems.map((item) => {
-								const active = pathname === item.href;
-								return (
-									<SidebarMenuItem key={item.href}>
-										<SidebarMenuButton
-											asChild
-											isActive={active}
-											tooltip={item.label}
-										>
-											<Link href={item.href}>
-												<item.icon className="h-4 w-4" />
-												<span>{item.label}</span>
-											</Link>
-										</SidebarMenuButton>
-									</SidebarMenuItem>
-								);
-							})}
+							{navItems
+								.filter((item) => !agency?.role || item.roles.includes(agency.role))
+								.map((item) => {
+									const active = pathname === item.href;
+									return (
+										<SidebarMenuItem key={item.href}>
+											<SidebarMenuButton
+												asChild
+												isActive={active}
+												tooltip={item.label}
+											>
+												<Link href={item.href}>
+													<item.icon className="h-4 w-4" />
+													<span>{item.label}</span>
+												</Link>
+											</SidebarMenuButton>
+										</SidebarMenuItem>
+									);
+								})}
 						</SidebarMenu>
 					</SidebarGroupContent>
 				</SidebarGroup>
@@ -305,6 +327,11 @@ function AppSidebar() {
 								</SidebarMenuButton>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent side="right" align="end" className="w-56">
+								<div className="px-2 py-1.5">
+									<p className="text-sm font-medium">{agency?.name ?? 'Agency Officer'}</p>
+									<p className="text-xs text-muted-foreground">{agency?.role ?? 'officer'} · {agency?.jurisdiction_id ?? 'unknown'}</p>
+								</div>
+								<DropdownMenuSeparator />
 								<DropdownMenuItem
 									onClick={() => router.push("/agency/settings")}
 								>
