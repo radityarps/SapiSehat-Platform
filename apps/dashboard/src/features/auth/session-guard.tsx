@@ -4,15 +4,17 @@ import { Button } from '@/src/shared/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/src/shared/ui/card';
 import { Skeleton } from '@/src/shared/ui/skeleton';
 import { useAgencySession } from '@/src/features/auth/session-context';
+import { useRouteGuard } from '@/src/shared/auth/route-guard';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 
-type State = 'checking' | 'valid' | 'missing' | 'invalid';
 
 export function SessionGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { status, agency, signOut } = useAgencySession();
+
+  useRouteGuard(pathname);
 
   useEffect(() => {
     if (status === 'invalid') signOut();
