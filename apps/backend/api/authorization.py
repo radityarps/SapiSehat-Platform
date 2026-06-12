@@ -101,6 +101,14 @@ class AgencyUserStore:
             rows = session.query(AgencyUserModel).all()
             return {row.id: _agency_from_row(row) for row in rows}
 
+    def ensure_exists(self, user_id: str, role: str, jurisdiction_id: str) -> None:
+        """Ensure an agency user entry exists for a given account ID."""
+        with SessionLocal() as session:
+            existing = session.get(AgencyUserModel, user_id)
+            if existing is None:
+                session.add(AgencyUserModel(id=user_id, role=role, jurisdiction_id=jurisdiction_id))
+                session.commit()
+
 _jurisdiction_store = JurisdictionStore()
 _agency_user_store = AgencyUserStore()
 _jurisdiction_store.seed_defaults()
@@ -162,3 +170,9 @@ DEMO_FARMERS = [
     FarmerRecord("farmer-3", "Pak Asep", "west-java", ConsentTier.AGENCY_MONITORING),
 ]
 DEMO_AGENCY_USERS = _agency_user_store.all()
+
+def refresh_agency_users() -> None:
+    """Reload DEMO_AGENCY_USERS after new accounts are seeded."""
+    global DEMO_AGENCY_USERS
+    DEMO_AGENCY_USERS.clear()
+    DEMO_AGENCY_USERS.update(_agency_user_store.all())

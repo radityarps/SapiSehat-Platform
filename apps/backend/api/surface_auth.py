@@ -167,18 +167,25 @@ def seed_default_farmer_accounts() -> None:
     )
 
 def seed_default_agency_accounts() -> None:
-    surface_account_store.seed_agency(
+    from api.authorization import _agency_user_store, AgencyRole, refresh_agency_users
+
+    admin = surface_account_store.seed_agency(
         email="admin@sapisehat.id",
         password="admin123",
         name="Admin Agency",
         jurisdiction_id="central-java",
     )
-    surface_account_store.seed_agency(
+    _agency_user_store.ensure_exists(admin.id, AgencyRole.ADMIN.value, "central-java")
+
+    officer = surface_account_store.seed_agency(
         email="semarang-officer@sapisehat.test",
         password="agency-password",
         name="Semarang Officer",
         jurisdiction_id="semarang-city",
     )
+    _agency_user_store.ensure_exists(officer.id, AgencyRole.DISTRICT_OFFICER.value, "semarang-city")
+
+    refresh_agency_users()
 
 
 def _account_from_row(row: AccountModel) -> SurfaceAccount:
