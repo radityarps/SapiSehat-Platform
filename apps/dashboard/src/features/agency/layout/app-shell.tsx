@@ -23,14 +23,14 @@ const navItems = [
 
 export function AppShell({ children, agencyName }: { children: React.ReactNode; agencyName: string }) {
   const pathname = usePathname();
+  const { token } = useAgencySession();
   const [me, setMe] = useState<AgencyMe | null>(null);
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const { token, agencyUserId } = useAgencySession();
     if (!token) return;
     getMe(token).then(setMe).catch(() => setMe(null));
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     setMobileOpen(false);
