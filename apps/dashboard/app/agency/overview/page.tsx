@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/src/shared/ui/badge';
 import { OverviewClient } from './overview-client';
 
 export default function OverviewPage() {

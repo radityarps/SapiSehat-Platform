@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/src/shared/ui/badge';
 import { FollowUpsClient } from './follow-ups-client';
 
 export default function FollowUpsPage() {

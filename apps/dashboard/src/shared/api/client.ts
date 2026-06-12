@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import type { ApiError, AgencyFollowUpItem, AgencyMe, AgencyRegistryCattle, AgencyRegistryFarmer, AuditLogItem, DetectionMonitoringItem, RiskSignalItem } from './types';
+import type { ApiError, AgencyFollowUpItem, AgencyMe, AgencyRegistryCattle, AgencyRegistryFarmer, AuditLogItem, DetectionMonitoringItem, RiskSignalItem, SafeLanguage } from '@/src/shared/types/api';
 
 const baseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:8000';
 
@@ -8,6 +8,12 @@ const agencyMeSchema = z.object({
   email: z.string().email(),
   name: z.string(),
   account_type: z.literal('agency')
+});
+
+const safeLanguageSchema = z.object({
+  title: z.string().optional(),
+  description: z.string().optional(),
+  forbidden_terms: z.string().optional()
 });
 
 const detectionSchema = z.object({
@@ -92,33 +98,33 @@ export async function getMe(token: string) {
   return agencyMeSchema.parse(data) as AgencyMe;
 }
 
-export async function getDetectionMonitoring(token: string) {
-  const data = await request<{ detections: unknown[] }>('/api/agency/detection-monitoring', {
-    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': 'semarang-officer' }
+export async function getDetectionMonitoring(token: string, agencyUserId: string) {
+  const data = await request<{ detections: unknown[]; safe_language?: unknown }>('/api/agency/detection-monitoring', {
+    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': agencyUserId }
   }, token);
   const detections = z.array(detectionSchema).parse(data.detections);
-  return { detections: detections as DetectionMonitoringItem[] };
+  return { detections: detections as DetectionMonitoringItem[], safeLanguage: data.safe_language ? safeLanguageSchema.parse(data.safe_language) as SafeLanguage : undefined };
 }
 
-export async function getRiskSignals(token: string) {
+export async function getRiskSignals(token: string, agencyUserId: string) {
   const data = await request<{ signals: unknown[]; rule?: Record<string, unknown> }>('/api/agency/risk-signals', {
-    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': 'semarang-officer' }
+    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': agencyUserId }
   }, token);
   const signals = z.array(riskSignalSchema).parse(data.signals);
   return { signals: signals as RiskSignalItem[], rule: data.rule ?? {} };
 }
 
-export async function getAuditLogs(token: string) {
+export async function getAuditLogs(token: string, agencyUserId: string) {
   const data = await request<{ audit_logs: unknown[] }>('/api/agency/audit-logs', {
-    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': 'semarang-officer' }
+    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': agencyUserId }
   }, token);
   const logs = z.array(auditSchema).parse(data.audit_logs);
   return { logs: logs as AuditLogItem[] };
 }
 
-export async function getAgencyRegistry(token: string) {
+export async function getAgencyRegistry(token: string, agencyUserId: string) {
   const data = await request<{ agency_user_id: string; farmers: unknown[]; cattle: unknown[]; filters?: Record<string, unknown> }>('/api/agency/registry', {
-    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': 'semarang-officer' }
+    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': agencyUserId }
   }, token);
   return {
     agencyUserId: data.agency_user_id,
@@ -143,9 +149,53 @@ export async function getAgencyRegistry(token: string) {
   };
 }
 
-export async function getAgencyFollowUps(token: string) {
+export async function getAgencyFollowUps(token: string, agencyUserId: string) {
   const data = await request<unknown[]>('/api/agency/follow-ups', {
-    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': 'semarang-officer' }
+    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': agencyUserId }
   }, token);
   return { followUps: z.array(followUpSchema).parse(data) as AgencyFollowUpItem[] };
+}
+
+
+export type CreateFollowUpInput = {
+  farmer_id: string;
+  cattle_id?: string;
+  status: string;
+  public_message: string;
+  internal_notes?: string;
+};
+
+export async function createAgencyFollowUp(token: string, agencyUserId: string, input: CreateFollowUpInput) {
+  const data = await request<unknown>('/api/agency/follow-ups', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'X-Agency-User-Id': agencyUserId },
+    body: JSON.stringify(input)
+  }, token);
+  return followUpSchema.parse(data) as AgencyFollowUpItem;
+}
+
+
+export type NlpPlaceholderInput = {
+  farmer_id: string;
+  cattle_id?: string;
+  symptom_text?: string;
+  questionnaire_answers?: Record<string, unknown>;
+};
+
+const nlpPlaceholderSchema = z.object({
+  status: z.literal('unavailable'),
+  evidence_state: z.literal('nlp_unavailable'),
+  accepted_for_fusion: z.literal(false),
+  creates_review_item: z.literal(false),
+  creates_risk_signal: z.literal(false),
+  message: z.string()
+});
+
+export async function createNlpPlaceholder(token: string, input: NlpPlaceholderInput) {
+  const data = await request<unknown>('/api/evidence/nlp/placeholder', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: JSON.stringify(input)
+  }, token);
+  return nlpPlaceholderSchema.parse(data);
 }

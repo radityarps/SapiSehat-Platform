@@ -1,5 +1,5 @@
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/src/shared/ui/badge';
+import { Card, CardContent, CardHeader, CardTitle } from '@/src/shared/ui/card';
 import { RegistryClient } from './registry-client';
 
 export default function RegistryPage() {

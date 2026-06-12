@@ -923,11 +923,20 @@ async def create_agency_follow_up(request: FollowUpCreateRequest, agency_user_id
 
 @router.get("/agency/follow-ups", response_model=list[AgencyFollowUpResponse], tags=["agency"])
 async def list_agency_follow_up_status(agency_user_id: str = Header(..., alias="X-Agency-User-Id")):
-    """List agency follow-up status rows."""
+    """List agency follow-up status rows visible to the agency jurisdiction."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
-    return [_serialize_agency_follow_up(item) for item in follow_up_store.list_all()]
+    farmers_by_id = farmer_account_store.all_by_id()
+    visible = []
+    for item in follow_up_store.list_all():
+        farmer = farmers_by_id.get(item.farmer_id)
+        if farmer is None:
+            continue
+        record = FarmerRecord(farmer.id, farmer.name, farmer.jurisdiction_id, ConsentTier(farmer.consent_state.value))
+        if can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
+            visible.append(item)
+    return [_serialize_agency_follow_up(item) for item in visible]
 
 @router.get("/farmers/{farmer_id}/follow-ups", response_model=FarmerFollowUpListResponse)
 async def list_farmer_follow_up_status(farmer_id: str = Path(...)):

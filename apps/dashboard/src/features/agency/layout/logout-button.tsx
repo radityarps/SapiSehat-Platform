@@ -1,17 +1,18 @@
 "use client";
 
-import { Button } from '@/components/ui/button';
-import { clearAgencyToken } from '@/lib/auth';
+import { Button } from '@/src/shared/ui/button';
+import { useAgencySession } from '@/src/features/auth/session-context';
 import { useRouter } from 'next/navigation';
 
 export function LogoutButton() {
   const router = useRouter();
+  const { signOut } = useAgencySession();
 
   return (
     <Button
       variant="outline"
       onClick={() => {
-        clearAgencyToken();
+        signOut();
         router.push('/login');
       }}
     >

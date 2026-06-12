@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/src/shared/ui/badge';
 import { DetectionsClient } from './detections-client';
 
 export default function DetectionsPage() {

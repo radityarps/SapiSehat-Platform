@@ -69,3 +69,35 @@ def test_agency_follow_up_list_returns_agency_rows_with_internal_notes():
     assert created.status_code == 200, created.text
     assert listed.status_code == 200, listed.text
     assert listed.json() == [created.json()]
+
+
+def test_agency_follow_up_list_is_jurisdiction_scoped():
+    client = TestClient(app)
+    allowed = client.post(
+        "/api/farmers/accounts",
+        json={"phone_number": "08777123458", "name": "Pak Local Follow", "jurisdiction_id": "tembalang", "consent_state": "agency_monitoring"},
+    ).json()
+    outside = client.post(
+        "/api/farmers/accounts",
+        json={"phone_number": "08777123459", "name": "Pak Outside Follow", "jurisdiction_id": "west-java", "consent_state": "agency_monitoring"},
+    ).json()
+    allowed_created = client.post(
+        "/api/agency/follow-ups",
+        headers={"X-Agency-User-Id": "semarang-officer"},
+        json={"farmer_id": allowed["id"], "cattle_id": None, "status": "scheduled", "public_message": "Petugas meninjau sinyal risiko.", "internal_notes": "visible local row"},
+    )
+    assert allowed_created.status_code == 200, allowed_created.text
+    follow_up_store.create(
+        farmer_id=outside["id"],
+        cattle_id=None,
+        status="scheduled",
+        public_message="Outside agency row.",
+        internal_notes="must not leak to semarang officer",
+    )
+
+    listed = client.get("/api/agency/follow-ups", headers={"X-Agency-User-Id": "semarang-officer"})
+
+    assert listed.status_code == 200, listed.text
+    rows = listed.json()
+    assert allowed_created.json()["id"] in {row["id"] for row in rows}
+    assert all(row["farmer_id"] != outside["id"] for row in rows)

@@ -1,15 +1,15 @@
 "use client";
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
+import { Badge } from '@/src/shared/ui/badge';
+import { Button } from '@/src/shared/ui/button';
+import { cn } from '@/src/shared/lib/utils';
 import { Activity, Bell, ClipboardList, LayoutDashboard, ShieldAlert, FileClock, Menu, Users } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { getAgencyToken } from '@/lib/auth';
-import { getMe } from '@/lib/api';
-import type { AgencyMe } from '@/lib/types';
+import { useAgencySession } from '@/src/features/auth/session-context';
+import { getMe } from '@/src/shared/api/client';
+import type { AgencyMe } from '@/src/shared/types/api';
 import { LogoutButton } from './logout-button';
 
 const navItems = [
@@ -27,7 +27,7 @@ export function AppShell({ children, agencyName }: { children: React.ReactNode; 
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
-    const token = getAgencyToken();
+    const { token, agencyUserId } = useAgencySession();
     if (!token) return;
     getMe(token).then(setMe).catch(() => setMe(null));
   }, []);

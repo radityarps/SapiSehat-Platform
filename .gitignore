@@ -39,6 +39,7 @@ tmp*
 .env.*.local
 secrets.json
 local.properties
+rulesets/
 
 # =============================================================================
 # apps/backend (Python / FastAPI)

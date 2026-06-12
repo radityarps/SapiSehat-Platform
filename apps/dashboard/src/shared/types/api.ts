@@ -29,6 +29,12 @@ export type AgencyRegistryCattle = {
   jurisdiction_id: string;
 };
 
+export type SafeLanguage = {
+  title?: string;
+  description?: string;
+  forbidden_terms?: string;
+};
+
 export type DetectionMonitoringItem = {
   id: string;
   cattle_id?: string;

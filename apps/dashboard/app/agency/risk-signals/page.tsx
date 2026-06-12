@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/src/shared/ui/badge';
 import { RiskSignalsClient } from './risk-signals-client';
 
 export default function RiskSignalsPage() {

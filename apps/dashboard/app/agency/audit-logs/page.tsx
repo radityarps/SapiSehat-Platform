@@ -1,4 +1,4 @@
-import { Badge } from '@/components/ui/badge';
+import { Badge } from '@/src/shared/ui/badge';
 import { AuditLogsClient } from './audit-logs-client';
 
 export default function AuditLogsPage() {

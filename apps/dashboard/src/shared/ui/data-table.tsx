@@ -9,7 +9,7 @@ import {
   useReactTable
 } from '@tanstack/react-table';
 import { useState } from 'react';
-import { Button } from './ui/button';
+import { Button } from '@/src/shared/ui/button';
 
 export function DataTable<TData>({ columns, data, emptyLabel }: { columns: ColumnDef<TData>[]; data: TData[]; emptyLabel: string }) {
   const [sorting, setSorting] = useState<SortingState>([]);
