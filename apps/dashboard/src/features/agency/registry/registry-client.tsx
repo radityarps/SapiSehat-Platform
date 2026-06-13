@@ -11,7 +11,7 @@ import {
 	SelectValue,
 } from "@/src/shared/ui/select";
 import { Skeleton } from "@/src/shared/ui/skeleton";
-import { getAgencyRegistry } from "@/src/shared/api/client";
+import { getAgencyRegistry, getDetectionMonitoring } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
 import type { AgencyRegistryFarmer } from "@/src/shared/types/api";
 import { useQuery } from "@tanstack/react-query";
@@ -42,6 +42,28 @@ export function RegistryClient() {
 		enabled: Boolean(token && agencyUserId),
 	});
 
+	const detectionsQuery = useQuery({
+		queryKey: ["detections"],
+		queryFn: () => getDetectionMonitoring(token, agencyUserId),
+		enabled: Boolean(token && agencyUserId),
+	});
+
+	const cattleCountByFarmer = useMemo(() => {
+		const map: Record<string, number> = {};
+		(query.data?.cattle ?? []).forEach((c) => {
+			map[c.farmer_id] = (map[c.farmer_id] ?? 0) + 1;
+		});
+		return map;
+	}, [query.data?.cattle]);
+
+	const detectionCountByFarmer = useMemo(() => {
+		const map: Record<string, number> = {};
+		(detectionsQuery.data?.detections ?? []).forEach((d) => {
+			map[d.farmer_id] = (map[d.farmer_id] ?? 0) + 1;
+		});
+		return map;
+	}, [detectionsQuery.data?.detections]);
+
 	const farmers = useMemo(() => {
 		const list = query.data?.farmers ?? [];
 		if (jurisdictionFilter === "all") return list;
@@ -70,6 +92,22 @@ export function RegistryClient() {
 				),
 			},
 			{ accessorKey: "jurisdiction_id", header: "Jurisdiction" },
+			{
+				id: "cattle",
+				header: "Cattle",
+				accessorFn: (row) => cattleCountByFarmer[row.id] ?? 0,
+				cell: ({ row }) => (
+					<span className="tabular-nums">{cattleCountByFarmer[row.original.id] ?? 0}</span>
+				),
+			},
+			{
+				id: "detections",
+				header: "Detections",
+				accessorFn: (row) => detectionCountByFarmer[row.id] ?? 0,
+				cell: ({ row }) => (
+					<span className="tabular-nums">{detectionCountByFarmer[row.original.id] ?? 0}</span>
+				),
+			},
 			{
 				accessorKey: "consent_tier",
 				header: "Consent",
@@ -103,7 +141,7 @@ export function RegistryClient() {
 				enableSorting: false,
 			},
 		],
-		[router],
+		[router, cattleCountByFarmer, detectionCountByFarmer],
 	);
 
 	const table = useReactTable({
