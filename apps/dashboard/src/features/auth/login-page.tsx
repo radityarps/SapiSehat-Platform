@@ -22,8 +22,8 @@ function LoginForm() {
   const { signIn } = useAgencySession();
   const searchParams = useSearchParams();
   const next = searchParams.get('next') || '/agency/overview';
-  const [email, setEmail] = useState('semarang-officer@sapisehat.test');
-  const [password, setPassword] = useState('agency-password');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 

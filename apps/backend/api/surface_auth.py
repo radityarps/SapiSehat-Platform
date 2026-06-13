@@ -165,6 +165,12 @@ def seed_default_farmer_accounts() -> None:
         name="Demo Farmer",
         jurisdiction_id="tembalang",
     )
+    surface_account_store.seed_farmer(
+        email="farmer2@example.com",
+        password="strong-password",
+        name="Demo Farmer Two",
+        jurisdiction_id="banyumanik",
+    )
 
 def seed_default_agency_accounts() -> None:
     from api.authorization import _agency_user_store, AgencyRole, refresh_agency_users

@@ -20,7 +20,7 @@ type AgencySession = {
 const AgencySessionContext = createContext<AgencySession | null>(null);
 
 function agencyUserIdFrom(me: AgencyMe | null) {
-  return me?.id || 'semarang-officer';
+  return me?.id ?? '';
 }
 
 export function AgencySessionProvider({ children }: { children: React.ReactNode }) {
