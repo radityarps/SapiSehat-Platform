@@ -38,6 +38,22 @@ app.add_middleware(
 # Include routes
 app.include_router(router)
 
+@app.on_event("startup")
+async def _seed_on_startup() -> None:
+    """Seed environment-appropriate data once the app is ready."""
+    try:
+        from api.surface_auth import (
+            seed_default_agency_accounts,
+            seed_default_farmer_accounts,
+        )
+        from api.seeding import seed_development_sample_data
+
+        seed_default_agency_accounts()
+        seed_default_farmer_accounts()
+        seed_development_sample_data()
+    except Exception as exc:  # pragma: no cover - startup must not crash on seed
+        logger.error(f"Startup seeding failed: {exc}", exc_info=True)
+
 
 @app.get("/")
 async def root():
@@ -94,12 +110,12 @@ async def global_exception_handler(request, exc):
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     logger.info(f"Starting SapiSehat Backend (v{settings.model_version})")
     logger.info(f"Environment: {settings.fastapi_env}")
     logger.info(f"Device: {settings.device}")
     logger.info(f"Model path: {settings.model_path}")
-    
+
     uvicorn.run(
         app,
         host=settings.host,

@@ -77,6 +77,15 @@ class Settings(BaseSettings):
     # Logging
     log_level: str = os.getenv("LOG_LEVEL", "info")
 
+    # Seeding
+    # SEED_TIER: production = admin only, staging = all accounts, development = all accounts + sample data.
+    # Defaults to FASTAPI_ENV when unset.
+    seed_tier: str = os.getenv("SEED_TIER", "")
+    master_admin_email: str = os.getenv("MASTER_ADMIN_EMAIL", "admin@sapisehat.id")
+    master_admin_password: str = os.getenv("MASTER_ADMIN_PASSWORD", "admin123")
+    master_admin_name: str = os.getenv("MASTER_ADMIN_NAME", "Admin Agency")
+    master_admin_jurisdiction: str = os.getenv("MASTER_ADMIN_JURISDICTION", "central-java")
+
     # Rate limiting
     rate_limit_max_requests: int = int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "1000"))
     rate_limit_window_seconds: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
@@ -98,6 +107,16 @@ class Settings(BaseSettings):
     @property
     def allowed_google_id_token_issuers(self) -> list[str]:
         return [issuer.strip() for issuer in self.google_id_token_issuers.split(",") if issuer.strip()]
+
+    @property
+    def resolved_seed_tier(self) -> str:
+        """Seed tier, defaulting to FASTAPI_ENV when SEED_TIER is unset."""
+        tier = (self.seed_tier or self.fastapi_env or "development").lower()
+        if tier == "test":
+            tier = "development"
+        if tier not in {"production", "staging", "development"}:
+            tier = "development"
+        return tier
 
 settings = Settings()
 validate_production_settings(settings)

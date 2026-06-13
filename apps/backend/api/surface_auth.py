@@ -159,6 +159,11 @@ class SurfaceAccountStore:
 
 
 def seed_default_farmer_accounts() -> None:
+    from config import settings
+
+    # Farmers only seed in staging/development, never production.
+    if settings.resolved_seed_tier == "production":
+        return
     surface_account_store.seed_farmer(
         email="farmer@example.com",
         password="strong-password",
@@ -174,22 +179,30 @@ def seed_default_farmer_accounts() -> None:
 
 def seed_default_agency_accounts() -> None:
     from api.authorization import _agency_user_store, AgencyRole, refresh_agency_users
+    from config import settings
 
+    # Master admin is always seeded, credentials from env in every tier.
     admin = surface_account_store.seed_agency(
-        email="admin@sapisehat.id",
-        password="admin123",
-        name="Admin Agency",
-        jurisdiction_id="central-java",
+        email=settings.master_admin_email,
+        password=settings.master_admin_password,
+        name=settings.master_admin_name,
+        jurisdiction_id=settings.master_admin_jurisdiction,
     )
-    _agency_user_store.ensure_exists(admin.id, AgencyRole.ADMIN.value, "central-java")
+    _agency_user_store.ensure_exists(
+        admin.id, AgencyRole.ADMIN.value, settings.master_admin_jurisdiction
+    )
 
-    officer = surface_account_store.seed_agency(
-        email="semarang-officer@sapisehat.test",
-        password="agency-password",
-        name="Semarang Officer",
-        jurisdiction_id="semarang-city",
-    )
-    _agency_user_store.ensure_exists(officer.id, AgencyRole.DISTRICT_OFFICER.value, "semarang-city")
+    # District officer only seeds in staging/development, never production.
+    if settings.resolved_seed_tier != "production":
+        officer = surface_account_store.seed_agency(
+            email="semarang-officer@sapisehat.test",
+            password="agency-password",
+            name="Semarang Officer",
+            jurisdiction_id="semarang-city",
+        )
+        _agency_user_store.ensure_exists(
+            officer.id, AgencyRole.DISTRICT_OFFICER.value, "semarang-city"
+        )
 
     refresh_agency_users()
 
