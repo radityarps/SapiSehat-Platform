@@ -11,7 +11,10 @@ import {
 	SelectValue,
 } from "@/src/shared/ui/select";
 import { Skeleton } from "@/src/shared/ui/skeleton";
-import { getAgencyRegistry, getDetectionMonitoring } from "@/src/shared/api/client";
+import {
+	getAgencyRegistry,
+	getDetectionMonitoring,
+} from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
 import type { AgencyRegistryFarmer } from "@/src/shared/types/api";
 import { useQuery } from "@tanstack/react-query";
@@ -95,22 +98,29 @@ export function RegistryClient() {
 			{
 				id: "cattle",
 				header: "Cattle",
+				meta: { align: "center" },
 				accessorFn: (row) => cattleCountByFarmer[row.id] ?? 0,
 				cell: ({ row }) => (
-					<span className="tabular-nums">{cattleCountByFarmer[row.original.id] ?? 0}</span>
+					<div className="text-center tabular-nums">
+						{cattleCountByFarmer[row.original.id] ?? 0}
+					</div>
 				),
 			},
 			{
 				id: "detections",
 				header: "Detections",
+				meta: { align: "center" },
 				accessorFn: (row) => detectionCountByFarmer[row.id] ?? 0,
 				cell: ({ row }) => (
-					<span className="tabular-nums">{detectionCountByFarmer[row.original.id] ?? 0}</span>
+					<div className="text-center tabular-nums">
+						{detectionCountByFarmer[row.original.id] ?? 0}
+					</div>
 				),
 			},
 			{
 				accessorKey: "consent_tier",
 				header: "Consent",
+				meta: { align: "center" },
 				cell: ({ row }) => {
 					const tier = row.original.consent_tier;
 					const variant =
@@ -119,7 +129,11 @@ export function RegistryClient() {
 							: tier === "research_and_monitoring"
 								? "secondary"
 								: "outline";
-					return <Badge variant={variant}>{tier.replace(/_/g, " ")}</Badge>;
+					return (
+						<div className="text-center">
+							<Badge variant={variant}>{tier.replace(/_/g, " ")}</Badge>
+						</div>
+					);
 				},
 			},
 			{
@@ -214,13 +228,15 @@ export function RegistryClient() {
 					<thead>
 						{table.getHeaderGroups().map((headerGroup) => (
 							<tr key={headerGroup.id} className="border-b bg-muted/40">
-								{headerGroup.headers.map((header) => (
+								{headerGroup.headers.map((header) => {
+									const align = (header.column.columnDef.meta as { align?: string } | undefined)?.align;
+									return (
 									<th
 										key={header.id}
-										className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground cursor-pointer select-none"
+										className={`px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none ${align === "center" ? "text-center" : "text-left"}`}
 										onClick={header.column.getToggleSortingHandler()}
 									>
-										<div className="flex items-center gap-1">
+										<div className={`flex items-center gap-1 ${align === "center" ? "justify-center" : ""}`}>
 											{header.isPlaceholder
 												? null
 												: flexRender(
@@ -231,7 +247,8 @@ export function RegistryClient() {
 											{header.column.getIsSorted() === "desc" && " ↓"}
 										</div>
 									</th>
-								))}
+									);
+								})}
 							</tr>
 						))}
 					</thead>
