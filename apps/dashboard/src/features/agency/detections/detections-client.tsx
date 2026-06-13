@@ -342,61 +342,57 @@ function DetectionDetailDialog({
 					</DialogTitle>
 				</DialogHeader>
 
-				<div className="mt-2 rounded-md border">
-					<table className="w-full text-sm">
-						<tbody>
-							<DetailRow label="Detection ID" value={item.id} mono />
-							<DetailRow label="Farmer ID" value={item.farmer_id} mono />
-							<DetailRow
-								label="Cattle ID"
-								value={item.cattle_id ?? "not linked"}
-								mono
-							/>
-							<DetailRow label="Disease Class">
-								<span className="capitalize">
-									{item.disease_class.replace(/_/g, " ")}
-								</span>
-							</DetailRow>
-							<DetailRow
-								label="Confidence"
-								value={`${Math.round(item.confidence * 100)}%`}
-							/>
-							<DetailRow
-								label="Confidence Level"
-								value={item.confidence_level ?? "unknown"}
-							/>
-							<DetailRow label="Reliability">
-								<Badge
-									variant={item.reliability === "high" ? "default" : "secondary"}
-								>
-									{item.reliability ?? "needs review"}
-								</Badge>
-							</DetailRow>
-							<DetailRow
-								label="Review State"
-								value={item.conflict_status ?? "image only"}
-							/>
-							<DetailRow label="Evidence">
-								<div className="flex flex-col items-end gap-1">
-									<EvidenceLabel item={item} />
-									<EvidenceDetail item={item} />
-								</div>
-							</DetailRow>
-							{item.created_at && (
-								<DetailRow
-									label="Submitted"
-									value={new Date(item.created_at).toLocaleString()}
-								/>
-							)}
-						</tbody>
-					</table>
+				<div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-3">
+					<DetailCell label="Detection ID" value={item.id} mono />
+					<DetailCell label="Farmer ID" value={item.farmer_id} mono />
+					<DetailCell
+						label="Cattle ID"
+						value={item.cattle_id ?? "not linked"}
+						mono
+					/>
+					<DetailCell label="Disease Class">
+						<span className="capitalize text-sm font-medium">
+							{item.disease_class.replace(/_/g, " ")}
+						</span>
+					</DetailCell>
+					<DetailCell
+						label="Confidence"
+						value={`${Math.round(item.confidence * 100)}%`}
+					/>
+					<DetailCell
+						label="Confidence Level"
+						value={item.confidence_level ?? "unknown"}
+					/>
+					<DetailCell label="Reliability">
+						<Badge
+							variant={item.reliability === "high" ? "default" : "secondary"}
+						>
+							{item.reliability ?? "needs review"}
+						</Badge>
+					</DetailCell>
+					<DetailCell
+						label="Review State"
+						value={item.conflict_status ?? "image only"}
+					/>
+					<DetailCell label="Evidence">
+						<div className="flex flex-col gap-1">
+							<EvidenceLabel item={item} />
+							<EvidenceDetail item={item} />
+						</div>
+					</DetailCell>
+					{item.created_at && (
+						<DetailCell
+							label="Submitted"
+							value={new Date(item.created_at).toLocaleString()}
+						/>
+					)}
 				</div>
 			</DialogContent>
 		</Dialog>
 	);
 }
 
-function DetailRow({
+function DetailCell({
 	label,
 	value,
 	mono,
@@ -408,19 +404,15 @@ function DetailRow({
 	children?: React.ReactNode;
 }) {
 	return (
-		<tr className="border-b last:border-0">
-			<td className="px-4 py-2.5 text-sm text-muted-foreground bg-muted/30 w-2/5">
-				{label}
-			</td>
-			<td className="px-4 py-2.5 text-right">
-				{children ?? (
-					<span
-						className={`text-sm font-medium ${mono ? "font-mono text-xs" : ""}`}
-					>
-						{value}
-					</span>
-				)}
-			</td>
-		</tr>
+		<div className="space-y-1 overflow-hidden">
+			<p className="text-xs text-muted-foreground">{label}</p>
+			{children ?? (
+				<p
+					className={`text-sm font-medium truncate ${mono ? "font-mono text-xs" : ""}`}
+				>
+					{value}
+				</p>
+			)}
+		</div>
 	);
 }
