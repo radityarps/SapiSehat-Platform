@@ -221,7 +221,8 @@ function CattleTable({
 			},
 			{
 				id: "actions",
-				header: () => <span className="sr-only">Actions</span>,
+				header: "Actions",
+				meta: { align: "right" },
 				cell: ({ row }) => {
 					const isExpanded = expandedCattleId === row.original.id;
 					return (
@@ -301,13 +302,15 @@ function CattleTable({
 					<thead>
 						{table.getHeaderGroups().map((headerGroup) => (
 							<tr key={headerGroup.id} className="border-b bg-muted/40">
-								{headerGroup.headers.map((header) => (
+								{headerGroup.headers.map((header) => {
+									const align = (header.column.columnDef.meta as { align?: string } | undefined)?.align;
+									return (
 									<th
 										key={header.id}
-										className="px-4 py-2.5 text-left text-xs font-medium text-muted-foreground cursor-pointer select-none"
+										className={`px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none ${align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left"}`}
 										onClick={header.column.getToggleSortingHandler()}
 									>
-										<div className="flex items-center gap-1">
+										<div className={`flex items-center gap-1 ${align === "center" ? "justify-center" : align === "right" ? "justify-end" : ""}`}>
 											{header.isPlaceholder
 												? null
 												: flexRender(
@@ -318,7 +321,8 @@ function CattleTable({
 											{header.column.getIsSorted() === "desc" && " ↓"}
 										</div>
 									</th>
-								))}
+									);
+								})}
 							</tr>
 						))}
 					</thead>

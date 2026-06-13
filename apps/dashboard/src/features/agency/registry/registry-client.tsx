@@ -138,7 +138,8 @@ export function RegistryClient() {
 			},
 			{
 				id: "actions",
-				header: () => <span className="sr-only">Actions</span>,
+				header: "Actions",
+				meta: { align: "right" },
 				cell: ({ row }) => (
 					<div className="flex items-center justify-end">
 						<Button
@@ -229,24 +230,30 @@ export function RegistryClient() {
 						{table.getHeaderGroups().map((headerGroup) => (
 							<tr key={headerGroup.id} className="border-b bg-muted/40">
 								{headerGroup.headers.map((header) => {
-									const align = (header.column.columnDef.meta as { align?: string } | undefined)?.align;
+									const align = (
+										header.column.columnDef.meta as
+											| { align?: string }
+											| undefined
+									)?.align;
 									return (
-									<th
-										key={header.id}
-										className={`px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none ${align === "center" ? "text-center" : "text-left"}`}
-										onClick={header.column.getToggleSortingHandler()}
-									>
-										<div className={`flex items-center gap-1 ${align === "center" ? "justify-center" : ""}`}>
-											{header.isPlaceholder
-												? null
-												: flexRender(
-														header.column.columnDef.header,
-														header.getContext(),
-													)}
-											{header.column.getIsSorted() === "asc" && " ↑"}
-											{header.column.getIsSorted() === "desc" && " ↓"}
-										</div>
-									</th>
+										<th
+											key={header.id}
+											className={`px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none ${align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left"}`}
+											onClick={header.column.getToggleSortingHandler()}
+										>
+											<div
+												className={`flex items-center gap-1 ${align === "center" ? "justify-center" : align === "right" ? "justify-end" : ""}`}
+											>
+												{header.isPlaceholder
+													? null
+													: flexRender(
+															header.column.columnDef.header,
+															header.getContext(),
+														)}
+												{header.column.getIsSorted() === "asc" && " ↑"}
+												{header.column.getIsSorted() === "desc" && " ↓"}
+											</div>
+										</th>
 									);
 								})}
 							</tr>
