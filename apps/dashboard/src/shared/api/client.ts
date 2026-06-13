@@ -164,6 +164,29 @@ export async function getRiskSignals(token: string, agencyUserId: string) {
 	return { signals: signals as RiskSignalItem[], rule: data.rule ?? {} };
 }
 
+export type JurisdictionItem = {
+	id: string;
+	name: string;
+	level: string;
+	parent_id: string | null;
+	latitude: number | null;
+	longitude: number | null;
+};
+
+export async function getJurisdictions(token: string, agencyUserId: string) {
+	const data = await request<{ jurisdictions: JurisdictionItem[] }>(
+		"/api/agency/jurisdictions",
+		{
+			headers: {
+				Authorization: `Bearer ${token}`,
+				"X-Agency-User-Id": agencyUserId,
+			},
+		},
+		token,
+	);
+	return { jurisdictions: data.jurisdictions };
+}
+
 export async function getAuditLogs(token: string, agencyUserId: string) {
 	const data = await request<{ audit_logs: unknown[] }>(
 		"/api/agency/audit-logs",

@@ -31,6 +31,8 @@ class AdministrativeJurisdiction:
     parent_id: str | None
     level: str
     name: str
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 @dataclass(frozen=True)
@@ -76,30 +78,40 @@ class JurisdictionStore:
                         parent_id=None,
                         level="province",
                         name="Jawa Tengah",
+                        latitude=-7.150975,
+                        longitude=110.140259,
                     ),
                     AgencyJurisdictionModel(
                         id="semarang-city",
                         parent_id="central-java",
                         level="regency_city",
                         name="Kota Semarang",
+                        latitude=-6.966667,
+                        longitude=110.416664,
                     ),
                     AgencyJurisdictionModel(
                         id="tembalang",
                         parent_id="semarang-city",
                         level="district_subdistrict",
                         name="Tembalang",
+                        latitude=-7.044997,
+                        longitude=110.445999,
                     ),
                     AgencyJurisdictionModel(
                         id="banyumanik",
                         parent_id="semarang-city",
                         level="district_subdistrict",
                         name="Banyumanik",
+                        latitude=-7.066667,
+                        longitude=110.416664,
                     ),
                     AgencyJurisdictionModel(
                         id="west-java",
                         parent_id=None,
                         level="province",
                         name="Jawa Barat",
+                        latitude=-6.914744,
+                        longitude=107.609810,
                     ),
                 ]
             )
@@ -246,7 +258,14 @@ def filter_visible_farmers(
 
 
 def _jurisdiction_from_row(row: AgencyJurisdictionModel) -> AdministrativeJurisdiction:
-    return AdministrativeJurisdiction(row.id, row.parent_id, row.level, row.name)
+    return AdministrativeJurisdiction(
+        row.id,
+        row.parent_id,
+        row.level,
+        row.name,
+        getattr(row, "latitude", None),
+        getattr(row, "longitude", None),
+    )
 
 
 def _agency_from_row(row: AgencyUserModel) -> AgencyUser:

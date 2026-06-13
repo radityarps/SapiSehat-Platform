@@ -1530,7 +1530,14 @@ async def list_jurisdictions(
     jurisdictions = _jurisdiction_store.all_by_id()
     return {
         "jurisdictions": [
-            {"id": j.id, "name": j.name, "level": j.level, "parent_id": j.parent_id}
+            {
+                "id": j.id,
+                "name": j.name,
+                "level": j.level,
+                "parent_id": j.parent_id,
+                "latitude": j.latitude,
+                "longitude": j.longitude,
+            }
             for j in jurisdictions.values()
         ]
     }
