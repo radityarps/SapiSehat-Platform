@@ -342,7 +342,7 @@ function DetectionDetailDialog({
 					</DialogTitle>
 				</DialogHeader>
 
-				<div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-3">
+				<div className="mt-2 grid grid-cols-2 overflow-hidden rounded-md border">
 					<DetailCell label="Detection ID" value={item.id} mono />
 					<DetailCell label="Farmer ID" value={item.farmer_id} mono />
 					<DetailCell
@@ -404,7 +404,7 @@ function DetailCell({
 	children?: React.ReactNode;
 }) {
 	return (
-		<div className="space-y-1 overflow-hidden">
+		<div className="space-y-1 overflow-hidden border-b border-r px-3 py-2">
 			<p className="text-xs text-muted-foreground">{label}</p>
 			{children ?? (
 				<p
