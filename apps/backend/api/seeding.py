@@ -74,7 +74,9 @@ def seed_development_sample_data() -> None:
         },
     )
     if login.status_code != 200:
-        logger.warning("Sample seed skipped: admin login failed (%s)", login.status_code)
+        logger.warning(
+            "Sample seed skipped: admin login failed (%s)", login.status_code
+        )
         return
     auth = login.json()
     headers = {

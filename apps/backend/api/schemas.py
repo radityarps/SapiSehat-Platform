@@ -173,6 +173,14 @@ class AgencyFollowUpResponse(BaseModel):
     internal_notes: str
 
 
+class FollowUpUpdateRequest(BaseModel):
+    """Agency edit of an existing follow-up."""
+
+    status: Optional[str] = Field(default=None, max_length=40)
+    public_message: Optional[str] = Field(default=None, max_length=500)
+    internal_notes: Optional[str] = Field(default=None, max_length=1000)
+
+
 class FarmerFollowUpResponse(BaseModel):
     """Farmer-visible follow-up status without internal notes."""
 

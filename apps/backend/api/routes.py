@@ -67,6 +67,7 @@ from api.schemas import (
     AgencyRiskSignalSummaryResponse,
     FarmerAreaAdvisoryResponse,
     FollowUpCreateRequest,
+    FollowUpUpdateRequest,
     AgencyFollowUpResponse,
     FarmerFollowUpListResponse,
     AuditLogListResponse,
@@ -1247,6 +1248,51 @@ async def create_agency_follow_up(
             "cattle_id": request.cattle_id,
             "status": request.status,
         },
+    )
+    return _serialize_agency_follow_up(follow_up)
+
+
+@router.put(
+    "/agency/follow-ups/{follow_up_id}",
+    response_model=AgencyFollowUpResponse,
+    tags=["agency"],
+)
+async def update_agency_follow_up(
+    follow_up_id: str,
+    request: FollowUpUpdateRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    """Edit an existing follow-up the agency can access."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    existing = follow_up_store.get_by_id(follow_up_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Follow-up not found")
+    farmer = farmer_account_store.get_by_id(existing.farmer_id)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    record = FarmerRecord(
+        farmer.id,
+        farmer.name,
+        farmer.jurisdiction_id,
+        ConsentTier(farmer.consent_state.value),
+    )
+    if not can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
+        raise HTTPException(status_code=403, detail="Follow-up not visible to agency")
+    follow_up = follow_up_store.update(
+        follow_up_id,
+        status=request.status,
+        public_message=request.public_message,
+        internal_notes=request.internal_notes,
+    )
+    audit_log_store.record(
+        actor_type="agency",
+        actor_id=agency_user_id,
+        action="follow_up.updated",
+        resource_type="follow_up",
+        resource_id=follow_up_id,
+        metadata_json={"status": request.status},
     )
     return _serialize_agency_follow_up(follow_up)
 

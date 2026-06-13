@@ -293,6 +293,33 @@ export async function createAgencyFollowUp(
 	return followUpSchema.parse(data) as AgencyFollowUpItem;
 }
 
+export type UpdateFollowUpInput = {
+	status?: string;
+	public_message?: string;
+	internal_notes?: string;
+};
+
+export async function updateAgencyFollowUp(
+	token: string,
+	agencyUserId: string,
+	followUpId: string,
+	input: UpdateFollowUpInput,
+) {
+	const data = await request<unknown>(
+		`/api/agency/follow-ups/${followUpId}`,
+		{
+			method: "PUT",
+			headers: {
+				Authorization: `Bearer ${token}`,
+				"X-Agency-User-Id": agencyUserId,
+			},
+			body: JSON.stringify(input),
+		},
+		token,
+	);
+	return followUpSchema.parse(data) as AgencyFollowUpItem;
+}
+
 export type NlpPlaceholderInput = {
 	farmer_id: string;
 	cattle_id?: string;

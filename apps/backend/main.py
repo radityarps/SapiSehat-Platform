@@ -16,7 +16,7 @@ app = FastAPI(
     description="Cattle disease detection API (PMK & LSD)",
     version=settings.model_version,
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # CORS middleware - allow requests from Android app
@@ -37,6 +37,7 @@ app.add_middleware(
 
 # Include routes
 app.include_router(router)
+
 
 @app.on_event("startup")
 async def _seed_on_startup() -> None:
@@ -62,7 +63,7 @@ async def root():
         "name": "SapiSehat Backend",
         "version": settings.model_version,
         "docs": "/docs",
-        "status": "running"
+        "status": "running",
     }
 
 
@@ -121,5 +122,5 @@ if __name__ == "__main__":
         host=settings.host,
         port=settings.port,
         log_level=settings.log_level.lower(),
-        reload=settings.debug
+        reload=settings.debug,
     )
