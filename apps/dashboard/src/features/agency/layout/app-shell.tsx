@@ -59,9 +59,9 @@ const navItems = [
 	},
 	{
 		href: "/agency/registry",
-		label: "Registry",
+		label: "Farmers",
 		icon: Users,
-		keywords: ["farmers", "cattle", "list", "search"],
+		keywords: ["farmers", "cattle", "list", "search", "registry"],
 		roles: ["admin", "province_officer", "district_officer"] as AgencyRole[],
 	},
 	{
