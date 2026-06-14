@@ -20,6 +20,7 @@ import { Skeleton } from "@/src/shared/ui/skeleton";
 import { RiskSignalMap } from "@/src/features/agency/risk-signals/risk-map";
 import {
 	getAgencyRegistry,
+	getDetectionMonitoring,
 	getJurisdictions,
 	getRiskSignals,
 } from "@/src/shared/api/client";
@@ -85,6 +86,11 @@ export function RiskSignalsClient() {
 	const registryQuery = useQuery({
 		queryKey: ["registry"],
 		queryFn: () => getAgencyRegistry(token, agencyUserId),
+		enabled,
+	});
+	const detectionsQuery = useQuery({
+		queryKey: ["detections"],
+		queryFn: () => getDetectionMonitoring(token, agencyUserId),
 		enabled,
 	});
 
@@ -342,6 +348,8 @@ export function RiskSignalsClient() {
 				item={selected}
 				open={!!selected}
 				onClose={() => setSelected(null)}
+				detections={detectionsQuery.data?.detections ?? []}
+				farmers={registryQuery.data?.farmers ?? []}
 			/>
 			<RecordFollowUpDialog
 				signal={followUpSignal}
@@ -361,20 +369,27 @@ function RiskSignalDetailDialog({
 	item,
 	open,
 	onClose,
+	detections,
+	farmers,
 }: {
 	item: RiskSignalItem | null;
 	open: boolean;
 	onClose: () => void;
+	detections: { id: string; farmer_id: string }[];
+	farmers: { id: string; name: string; address?: string | null; jurisdiction_id: string }[];
 }) {
 	if (!item) return null;
 
+	const farmerMap = Object.fromEntries(farmers.map((f) => [f.id, f]));
+	const relatedFarmerIds = [...new Set(
+		detections
+			.filter((d) => item.source_result_ids.includes(d.id))
+			.map((d) => d.farmer_id),
+	)];
+	const relatedFarmers = relatedFarmerIds.map((id) => farmerMap[id]).filter(Boolean);
+
 	return (
-		<Dialog
-			open={open}
-			onOpenChange={(v) => {
-				if (!v) onClose();
-			}}
-		>
+		<Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
 			<DialogContent className="sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle className="capitalize">
@@ -397,7 +412,7 @@ function RiskSignalDetailDialog({
 							{riskLabel(item.risk_level)}
 						</Badge>
 					</DetailCell>
-					<DetailCell label="Priority" value={item.priority} />
+					<DetailCell label="Priority" value={item.priority.replace(/_/g, " ")} />
 				</div>
 
 				<div className="mt-3 space-y-2">
@@ -405,19 +420,32 @@ function RiskSignalDetailDialog({
 						Source detection IDs ({item.source_result_ids.length})
 					</p>
 					{item.source_result_ids.length === 0 ? (
-						<p className="text-sm text-muted-foreground">
-							No source results recorded.
-						</p>
+						<p className="text-sm text-muted-foreground">No source results recorded.</p>
 					) : (
 						<div className="flex flex-wrap gap-1.5">
 							{item.source_result_ids.map((id) => (
-								<Badge key={id} variant="outline" className="font-mono text-xs">
-									{id}
-								</Badge>
+								<Badge key={id} variant="outline" className="font-mono text-xs">{id}</Badge>
 							))}
 						</div>
 					)}
 				</div>
+
+				{relatedFarmers.length > 0 && (
+					<div className="mt-3 space-y-2">
+						<p className="text-xs font-medium text-muted-foreground">
+							Farmers to follow up ({relatedFarmers.length})
+						</p>
+						<div className="space-y-2">
+							{relatedFarmers.map((f) => (
+								<div key={f.id} className="rounded-md border bg-muted/20 px-3 py-2 text-sm space-y-0.5">
+									<p className="font-medium">{f.name}</p>
+									{f.address && <p className="text-xs text-muted-foreground">{f.address}</p>}
+									<p className="text-xs text-muted-foreground">District: {f.jurisdiction_id}</p>
+								</div>
+							))}
+						</div>
+					</div>
+				)}
 			</DialogContent>
 		</Dialog>
 	);
@@ -435,14 +463,14 @@ function DetailCell({
 	children?: React.ReactNode;
 }) {
 	return (
-		<div className="flex overflow-hidden border-b border-r">
-			<div className="flex w-2/5 shrink-0 items-center bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+		<div className="flex border-b border-r">
+			<div className="flex w-2/5 shrink-0 items-start bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
 				{label}
 			</div>
-			<div className="flex flex-1 items-center overflow-hidden px-3 py-2">
+			<div className="flex flex-1 items-start px-3 py-2">
 				{children ?? (
 					<span
-						className={`text-sm font-medium truncate ${mono ? "font-mono text-xs" : ""}`}
+						className={`text-sm font-medium break-words min-w-0 ${mono ? "font-mono text-xs" : ""}`}
 					>
 						{value}
 					</span>
