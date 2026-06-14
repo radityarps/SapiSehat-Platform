@@ -19,46 +19,24 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
 		if (status === "invalid") signOut();
 	}, [signOut, status]);
 
+	useEffect(() => {
+		if (status === "anonymous" || status === "invalid") {
+			router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+		}
+	}, [status, pathname, router]);
+
 	if (status === "authenticated" && agency?.account_type === "agency")
 		return <>{children}</>;
-
-	if (status === "checking") {
-		return (
-			<main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
-				<Card className="w-full max-w-md">
-					<CardHeader>
-						<CardTitle>Checking session</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-3">
-						<Skeleton className="h-10 w-full" />
-						<Skeleton className="h-10 w-3/4" />
-					</CardContent>
-				</Card>
-			</main>
-		);
-	}
 
 	return (
 		<main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">
 			<Card className="w-full max-w-md">
 				<CardHeader>
-					<CardTitle>
-						{status === "anonymous" ? "Sign in required" : "Session expired"}
-					</CardTitle>
+					<CardTitle>Checking session</CardTitle>
 				</CardHeader>
-				<CardContent className="space-y-4 text-sm text-muted-foreground">
-					<p>
-						{status === "anonymous"
-							? "Agency dashboard requires an active agency session."
-							: "Your agency session is no longer valid. Sign in again."}
-					</p>
-					<Button
-						onClick={() =>
-							router.push(`/login?next=${encodeURIComponent(pathname)}`)
-						}
-					>
-						Go to login
-					</Button>
+				<CardContent className="space-y-3">
+					<Skeleton className="h-10 w-full" />
+					<Skeleton className="h-10 w-3/4" />
 				</CardContent>
 			</Card>
 		</main>

@@ -47,7 +47,9 @@ export function SettingsClient() {
 			await refresh();
 			toast.success("Profile updated.");
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Failed to update profile.");
+			toast.error(
+				err instanceof Error ? err.message : "Failed to update profile.",
+			);
 		}
 	}
 
@@ -71,7 +73,9 @@ export function SettingsClient() {
 				router.push("/login");
 			}, 1500);
 		} catch (err) {
-			toast.error(err instanceof Error ? err.message : "Failed to change password.");
+			toast.error(
+				err instanceof Error ? err.message : "Failed to change password.",
+			);
 		}
 	}
 
@@ -98,17 +102,29 @@ export function SettingsClient() {
 				<CardContent className="space-y-3">
 					<div className="space-y-1">
 						<Label htmlFor="email">Email</Label>
-						<Input id="email" type="email" value={agency?.email ?? ""} disabled />
+						<Input
+							id="email"
+							type="email"
+							value={agency?.email ?? ""}
+							disabled
+						/>
 					</div>
 					<div className="space-y-1">
 						<Label htmlFor="name">Name</Label>
-						<Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+						<Input
+							id="name"
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+						/>
 					</div>
 				</CardContent>
 				<CardFooter className="pt-2">
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
-							<Button size="sm" disabled={!name.trim() || name === agency?.name}>
+							<Button
+								size="sm"
+								disabled={!name.trim() || name === agency?.name}
+							>
 								Save name
 							</Button>
 						</AlertDialogTrigger>
@@ -132,7 +148,9 @@ export function SettingsClient() {
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-base">Password</CardTitle>
-					<CardDescription>Change your account password. You will be signed out after.</CardDescription>
+					<CardDescription>
+						Change your account password. You will be signed out after.
+					</CardDescription>
 				</CardHeader>
 				<CardContent className="space-y-3">
 					<div className="space-y-1">
@@ -177,7 +195,8 @@ export function SettingsClient() {
 							<AlertDialogHeader>
 								<AlertDialogTitle>Change password?</AlertDialogTitle>
 								<AlertDialogDescription>
-									You will be signed out immediately after your password is changed.
+									You will be signed out immediately after your password is
+									changed.
 								</AlertDialogDescription>
 							</AlertDialogHeader>
 							<AlertDialogFooter>
@@ -200,7 +219,9 @@ export function SettingsClient() {
 				<CardContent>
 					<AlertDialog>
 						<AlertDialogTrigger asChild>
-							<Button variant="destructive" size="sm">Log out</Button>
+							<Button variant="destructive" size="sm">
+								Log out
+							</Button>
 						</AlertDialogTrigger>
 						<AlertDialogContent>
 							<AlertDialogHeader>

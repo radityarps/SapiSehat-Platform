@@ -103,6 +103,10 @@ async function request<T>(
 	});
 
 	if (!response.ok) {
+		if (response.status === 401 && typeof window !== "undefined") {
+			const next = encodeURIComponent(window.location.pathname);
+			window.location.replace(`/login?next=${next}`);
+		}
 		let detail = `Request failed (${response.status})`;
 		try {
 			const parsed = (await response.json()) as ApiError;
