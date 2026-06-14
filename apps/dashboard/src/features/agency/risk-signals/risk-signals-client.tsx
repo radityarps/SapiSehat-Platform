@@ -43,7 +43,8 @@ import {
 function riskVariant(
 	level: string,
 ): "default" | "secondary" | "destructive" | "outline" {
-	if (level === "possible_increased_risk" || level === "high") return "destructive";
+	if (level === "possible_increased_risk" || level === "high")
+		return "destructive";
 	if (level === "medium") return "secondary";
 	return "outline";
 }

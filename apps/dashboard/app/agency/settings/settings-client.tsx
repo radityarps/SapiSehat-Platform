@@ -1,5 +1,16 @@
 "use client";
 
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+	AlertDialogTrigger,
+} from "@/src/shared/ui/alert-dialog";
 import { Button } from "@/src/shared/ui/button";
 import {
 	Card,
@@ -15,50 +26,38 @@ import { changePassword, updateProfile } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export function SettingsClient() {
 	const { agency, token, refresh, signOut } = useAgencySession();
 	const router = useRouter();
 
 	const [name, setName] = useState(agency?.name ?? "");
-	const [profileMessage, setProfileMessage] = useState("");
-	const [profileError, setProfileError] = useState("");
-
 	const [currentPassword, setCurrentPassword] = useState("");
 	const [newPassword, setNewPassword] = useState("");
 	const [confirmPassword, setConfirmPassword] = useState("");
-	const [passwordMessage, setPasswordMessage] = useState("");
-	const [passwordError, setPasswordError] = useState("");
 
 	useEffect(() => {
 		setName(agency?.name ?? "");
 	}, [agency?.name]);
 
-	async function handleProfileSubmit(e: React.FormEvent) {
-		e.preventDefault();
-		setProfileMessage("");
-		setProfileError("");
+	async function doSaveName() {
 		try {
 			await updateProfile(token, { name });
 			await refresh();
-			setProfileMessage("Profile updated.");
+			toast.success("Profile updated.");
 		} catch (err) {
-			setProfileError(
-				err instanceof Error ? err.message : "Failed to update profile.",
-			);
+			toast.error(err instanceof Error ? err.message : "Failed to update profile.");
 		}
 	}
 
-	async function handlePasswordSubmit(e: React.FormEvent) {
-		e.preventDefault();
-		setPasswordMessage("");
-		setPasswordError("");
+	async function doChangePassword() {
 		if (newPassword.length < 8) {
-			setPasswordError("New password must be at least 8 characters.");
+			toast.error("New password must be at least 8 characters.");
 			return;
 		}
 		if (newPassword !== confirmPassword) {
-			setPasswordError("Passwords do not match.");
+			toast.error("Passwords do not match.");
 			return;
 		}
 		try {
@@ -66,18 +65,17 @@ export function SettingsClient() {
 				current_password: currentPassword,
 				new_password: newPassword,
 			});
-			setCurrentPassword("");
-			setNewPassword("");
-			setConfirmPassword("");
-			setPasswordMessage("Password changed.");
+			toast.success("Password changed. Signing you out…");
+			setTimeout(() => {
+				signOut();
+				router.push("/login");
+			}, 1500);
 		} catch (err) {
-			setPasswordError(
-				err instanceof Error ? err.message : "Failed to change password.",
-			);
+			toast.error(err instanceof Error ? err.message : "Failed to change password.");
 		}
 	}
 
-	function handleLogout() {
+	function doLogout() {
 		signOut();
 		router.push("/login");
 	}
@@ -91,107 +89,137 @@ export function SettingsClient() {
 				</p>
 			</div>
 
+			{/* Profile */}
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-base">Profile</CardTitle>
 					<CardDescription>Update your display name.</CardDescription>
 				</CardHeader>
-				<form onSubmit={handleProfileSubmit}>
-					<CardContent className="space-y-3">
-						<div className="space-y-1">
-							<Label htmlFor="email">Email</Label>
-							<Input
-								id="email"
-								type="email"
-								value={agency?.email ?? ""}
-								disabled
-							/>
-						</div>
-						<div className="space-y-1">
-							<Label htmlFor="name">Name</Label>
-							<Input
-								id="name"
-								value={name}
-								onChange={(e) => setName(e.target.value)}
-								required
-							/>
-						</div>
-						{profileMessage && (
-							<p className="text-xs text-green-600">{profileMessage}</p>
-						)}
-						{profileError && (
-							<p className="text-xs text-destructive">{profileError}</p>
-						)}
-					</CardContent>
-					<CardFooter className="pt-2">
-						<Button type="submit" size="sm">
-							Save name
-						</Button>
-					</CardFooter>
-				</form>
+				<CardContent className="space-y-3">
+					<div className="space-y-1">
+						<Label htmlFor="email">Email</Label>
+						<Input id="email" type="email" value={agency?.email ?? ""} disabled />
+					</div>
+					<div className="space-y-1">
+						<Label htmlFor="name">Name</Label>
+						<Input id="name" value={name} onChange={(e) => setName(e.target.value)} />
+					</div>
+				</CardContent>
+				<CardFooter className="pt-2">
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
+							<Button size="sm" disabled={!name.trim() || name === agency?.name}>
+								Save name
+							</Button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Save profile changes?</AlertDialogTitle>
+								<AlertDialogDescription>
+									Your display name will be updated to <strong>{name}</strong>.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Cancel</AlertDialogCancel>
+								<AlertDialogAction onClick={doSaveName}>Save</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+				</CardFooter>
 			</Card>
 
+			{/* Password */}
 			<Card>
 				<CardHeader>
 					<CardTitle className="text-base">Password</CardTitle>
-					<CardDescription>Change your account password.</CardDescription>
+					<CardDescription>Change your account password. You will be signed out after.</CardDescription>
 				</CardHeader>
-				<form onSubmit={handlePasswordSubmit}>
-					<CardContent className="space-y-3">
-						<div className="space-y-1">
-							<Label htmlFor="current-password">Current password</Label>
-							<Input
-								id="current-password"
-								type="password"
-								value={currentPassword}
-								onChange={(e) => setCurrentPassword(e.target.value)}
-								required
-							/>
-						</div>
-						<div className="space-y-1">
-							<Label htmlFor="new-password">New password</Label>
-							<Input
-								id="new-password"
-								type="password"
-								value={newPassword}
-								onChange={(e) => setNewPassword(e.target.value)}
-								required
-							/>
-						</div>
-						<div className="space-y-1">
-							<Label htmlFor="confirm-password">Confirm new password</Label>
-							<Input
-								id="confirm-password"
-								type="password"
-								value={confirmPassword}
-								onChange={(e) => setConfirmPassword(e.target.value)}
-								required
-							/>
-						</div>
-						{passwordMessage && (
-							<p className="text-xs text-green-600">{passwordMessage}</p>
-						)}
-						{passwordError && (
-							<p className="text-xs text-destructive">{passwordError}</p>
-						)}
-					</CardContent>
-					<CardFooter className="pt-4">
-						<Button type="submit" size="sm">
-							Change password
-						</Button>
-					</CardFooter>
-				</form>
+				<CardContent className="space-y-3">
+					<div className="space-y-1">
+						<Label htmlFor="current-password">Current password</Label>
+						<Input
+							id="current-password"
+							type="password"
+							value={currentPassword}
+							onChange={(e) => setCurrentPassword(e.target.value)}
+						/>
+					</div>
+					<div className="space-y-1">
+						<Label htmlFor="new-password">New password</Label>
+						<Input
+							id="new-password"
+							type="password"
+							value={newPassword}
+							onChange={(e) => setNewPassword(e.target.value)}
+						/>
+					</div>
+					<div className="space-y-1">
+						<Label htmlFor="confirm-password">Confirm new password</Label>
+						<Input
+							id="confirm-password"
+							type="password"
+							value={confirmPassword}
+							onChange={(e) => setConfirmPassword(e.target.value)}
+						/>
+					</div>
+				</CardContent>
+				<CardFooter className="pt-4">
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
+							<Button
+								size="sm"
+								disabled={!currentPassword || !newPassword || !confirmPassword}
+							>
+								Change password
+							</Button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Change password?</AlertDialogTitle>
+								<AlertDialogDescription>
+									You will be signed out immediately after your password is changed.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Cancel</AlertDialogCancel>
+								<AlertDialogAction onClick={doChangePassword}>
+									Change &amp; sign out
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
+				</CardFooter>
 			</Card>
 
+			{/* Logout */}
 			<Card className="border-destructive/50">
 				<CardHeader>
 					<CardTitle className="text-base">Session</CardTitle>
 					<CardDescription>Sign out of this dashboard session.</CardDescription>
 				</CardHeader>
 				<CardContent>
-					<Button variant="destructive" size="sm" onClick={handleLogout}>
-						Log out
-					</Button>
+					<AlertDialog>
+						<AlertDialogTrigger asChild>
+							<Button variant="destructive" size="sm">Log out</Button>
+						</AlertDialogTrigger>
+						<AlertDialogContent>
+							<AlertDialogHeader>
+								<AlertDialogTitle>Sign out?</AlertDialogTitle>
+								<AlertDialogDescription>
+									You will be returned to the login screen.
+								</AlertDialogDescription>
+							</AlertDialogHeader>
+							<AlertDialogFooter>
+								<AlertDialogCancel>Cancel</AlertDialogCancel>
+								<AlertDialogAction
+									onClick={doLogout}
+									className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+								>
+									Sign out
+								</AlertDialogAction>
+							</AlertDialogFooter>
+						</AlertDialogContent>
+					</AlertDialog>
 				</CardContent>
 			</Card>
 		</div>
