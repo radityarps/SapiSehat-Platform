@@ -705,6 +705,7 @@ async def register_or_sign_in_farmer_account(request: FarmerAccountRequest):
         account, created = farmer_account_store.upsert_by_phone(
             phone_number=request.phone_number,
             name=request.name,
+            address=request.address,
             jurisdiction_id=request.jurisdiction_id,
             consent_state=FarmerConsentState(request.consent_state),
         )
@@ -714,6 +715,7 @@ async def register_or_sign_in_farmer_account(request: FarmerAccountRequest):
         "id": account.id,
         "phone_number": account.phone_number,
         "name": account.name,
+        "address": account.address,
         "jurisdiction_id": account.jurisdiction_id,
         "consent_state": account.consent_state.value,
         "created": created,

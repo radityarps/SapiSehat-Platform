@@ -52,6 +52,7 @@ class FarmerRecord:
     name: str
     jurisdiction_id: str
     consent_tier: ConsentTier
+    address: str | None = None
 
 
 ROLE_ACCESS_DEPTH = {

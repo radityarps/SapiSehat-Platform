@@ -34,6 +34,7 @@ class FarmerAccountModel(Base):
         String(40), nullable=False, unique=True, index=True
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     jurisdiction_id: Mapped[str] = mapped_column(
         String(120), nullable=False, index=True
     )

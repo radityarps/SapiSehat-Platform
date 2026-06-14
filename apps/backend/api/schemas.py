@@ -260,6 +260,7 @@ class AgencyVisibleFarmer(BaseModel):
 
     id: str
     name: str
+    address: Optional[str] = None
     jurisdiction_id: str
     consent_tier: str
 
@@ -276,6 +277,7 @@ class FarmerAccountRequest(BaseModel):
 
     phone_number: str = Field(min_length=8, max_length=32)
     name: str = Field(min_length=1, max_length=120)
+    address: Optional[str] = Field(default=None, max_length=300)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
     consent_state: str = "private"
 

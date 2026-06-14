@@ -99,25 +99,25 @@ def seed_development_sample_data() -> None:
 
     logger.info("Seeding development sample data...")
 
-    # (name, jurisdiction, image_top, nlp_top) — 3+ non-healthy in tembalang
-    # and banyumanik to cross the cluster-risk threshold.
+    # (name, jurisdiction, address, image_top, nlp_top)
     plan = [
-        ("Pak Budi", "tembalang", "FMD", "FMD"),
-        ("Bu Wati", "tembalang", "FMD", "FMD"),
-        ("Pak Joko", "tembalang", "FMD", "LSD"),
-        ("Pak Slamet", "banyumanik", "LSD", "LSD"),
-        ("Bu Rina", "banyumanik", "LSD", "LSD"),
-        ("Pak Agus", "banyumanik", "LSD", "LSD"),
-        ("Bu Sri", "semarang-city", "healthy", "healthy"),
+        ("Pak Budi", "tembalang", "Jl. Ngesrep Timur V No. 12, Tembalang", "FMD", "FMD"),
+        ("Bu Wati", "tembalang", "Jl. Tirto Agung No. 5, Tembalang", "FMD", "FMD"),
+        ("Pak Joko", "tembalang", "Jl. Bukit Agung Raya No. 8, Tembalang", "FMD", "LSD"),
+        ("Pak Slamet", "banyumanik", "Jl. Banyumanik Raya No. 22, Banyumanik", "LSD", "LSD"),
+        ("Bu Rina", "banyumanik", "Jl. Setiabudi No. 44, Banyumanik", "LSD", "LSD"),
+        ("Pak Agus", "banyumanik", "Jl. Pudak Payung No. 3, Banyumanik", "LSD", "LSD"),
+        ("Bu Sri", "semarang-city", "Jl. Pandanaran No. 1, Semarang", "healthy", "healthy"),
     ]
 
     created = []
-    for idx, (name, jur, image_top, nlp_top) in enumerate(plan):
+    for idx, (name, jur, address, image_top, nlp_top) in enumerate(plan):
         farmer = client.post(
             "/api/farmers/accounts",
             json={
                 "phone_number": f"08120000{idx:03d}",
                 "name": name,
+                "address": address,
                 "jurisdiction_id": jur,
                 "consent_state": "agency_monitoring",
             },

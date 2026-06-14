@@ -22,6 +22,7 @@ export type AgencyMe = {
 export type AgencyRegistryFarmer = {
 	id: string;
 	name: string;
+	address?: string | null;
 	jurisdiction_id: string;
 	consent_tier: string;
 };

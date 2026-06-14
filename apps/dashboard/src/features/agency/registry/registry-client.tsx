@@ -109,9 +109,25 @@ export function RegistryClient() {
 					<span className="font-medium">{row.original.name}</span>
 				),
 			},
-			{ accessorKey: "jurisdiction_id", header: "Location", cell: ({ row }) => (
-				<span>{jurisdictionNameById[row.original.jurisdiction_id] ?? row.original.jurisdiction_id}</span>
-			) },
+			{
+				accessorKey: "address",
+				header: "Address",
+				cell: ({ row }) => (
+					<span className="text-xs text-muted-foreground">
+						{row.original.address ?? "—"}
+					</span>
+				),
+			},
+			{
+				accessorKey: "jurisdiction_id",
+				header: "Location",
+				cell: ({ row }) => (
+					<span>
+						{jurisdictionNameById[row.original.jurisdiction_id] ??
+							row.original.jurisdiction_id}
+					</span>
+				),
+			},
 			{
 				id: "cattle",
 				header: "Cattle",
