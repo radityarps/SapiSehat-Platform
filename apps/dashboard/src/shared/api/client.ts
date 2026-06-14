@@ -429,7 +429,10 @@ export async function updateProfile(token: string, input: UpdateProfileInput) {
 	return agencyMeSchema.parse(data) as AgencyMe;
 }
 
-export async function changePassword(token: string, input: ChangePasswordInput) {
+export async function changePassword(
+	token: string,
+	input: ChangePasswordInput,
+) {
 	const data = await request<unknown>(
 		"/api/me/change-password",
 		{
