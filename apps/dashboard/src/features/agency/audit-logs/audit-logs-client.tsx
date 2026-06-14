@@ -5,6 +5,7 @@ import { Button } from "@/src/shared/ui/button";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogHeader,
 	DialogTitle,
 } from "@/src/shared/ui/dialog";
@@ -310,6 +311,9 @@ function AuditLogDetailDialog({
 					<DialogTitle className="font-mono text-base">
 						{item.action}
 					</DialogTitle>
+					<DialogDescription className="sr-only">
+						View detailed audit log entry.
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className="mt-2 grid grid-cols-2 overflow-hidden rounded-md border">

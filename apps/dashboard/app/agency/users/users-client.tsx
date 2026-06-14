@@ -16,6 +16,7 @@ import { Button } from "@/src/shared/ui/button";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -515,6 +516,9 @@ function UserFormDialog({
 					<DialogTitle>
 						{isEdit ? `Edit ${editing?.id}` : "New agency user"}
 					</DialogTitle>
+					<DialogDescription className="sr-only">
+						{isEdit ? "Update agency user role and jurisdiction." : "Create a new agency user account."}
+					</DialogDescription>
 				</DialogHeader>
 
 				<form

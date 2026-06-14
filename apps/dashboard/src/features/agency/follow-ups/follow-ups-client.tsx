@@ -5,6 +5,7 @@ import { Button } from "@/src/shared/ui/button";
 import {
 	Dialog,
 	DialogContent,
+	DialogDescription,
 	DialogFooter,
 	DialogHeader,
 	DialogTitle,
@@ -468,6 +469,9 @@ function FollowUpFormDialog({
 					<DialogTitle>
 						{isEdit ? "Edit follow-up" : "Record follow-up"}
 					</DialogTitle>
+					<DialogDescription className="sr-only">
+						{isEdit ? "Update follow-up details." : "Create a new follow-up record."}
+					</DialogDescription>
 				</DialogHeader>
 
 				<form
@@ -587,6 +591,9 @@ function FollowUpDetailDialog({
 			<DialogContent className="sm:max-w-lg">
 				<DialogHeader>
 					<DialogTitle>Follow-up detail</DialogTitle>
+					<DialogDescription className="sr-only">
+						View detailed follow-up information.
+					</DialogDescription>
 				</DialogHeader>
 
 				<div className="mt-2 grid grid-cols-2 overflow-hidden rounded-md border">
