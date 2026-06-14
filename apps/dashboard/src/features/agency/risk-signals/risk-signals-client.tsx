@@ -18,12 +18,13 @@ import {
 } from "@/src/shared/ui/select";
 import { Skeleton } from "@/src/shared/ui/skeleton";
 import { RiskSignalMap } from "@/src/features/agency/risk-signals/risk-map";
-import { getJurisdictions, getRiskSignals } from "@/src/shared/api/client";
+import { getAgencyRegistry, getJurisdictions, getRiskSignals } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
 import type { RiskSignalItem } from "@/src/shared/types/api";
-import { useQuery } from "@tanstack/react-query";
-import { Eye, Search } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { Eye, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
+import { RecordFollowUpDialog } from "./record-follow-up-dialog";
 import {
 	useReactTable,
 	getCoreRowModel,
@@ -45,11 +46,13 @@ function riskVariant(
 
 export function RiskSignalsClient() {
 	const { token, agencyUserId } = useAgencySession();
+	const queryClient = useQueryClient();
 	const enabled = Boolean(token && agencyUserId);
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
 	const [riskFilter, setRiskFilter] = useState("all");
 	const [selected, setSelected] = useState<RiskSignalItem | null>(null);
+	const [followUpSignal, setFollowUpSignal] = useState<RiskSignalItem | null>(null);
 
 	const query = useQuery({
 		queryKey: ["risk-signals"],
@@ -59,6 +62,11 @@ export function RiskSignalsClient() {
 	const jurisdictionsQuery = useQuery({
 		queryKey: ["jurisdictions"],
 		queryFn: () => getJurisdictions(token, agencyUserId),
+		enabled,
+	});
+	const registryQuery = useQuery({
+		queryKey: ["registry"],
+		queryFn: () => getAgencyRegistry(token, agencyUserId),
 		enabled,
 	});
 
@@ -120,7 +128,15 @@ export function RiskSignalsClient() {
 				header: "Actions",
 				meta: { align: "right" },
 				cell: ({ row }) => (
-					<div className="flex items-center justify-end">
+					<div className="flex items-center justify-end gap-1">
+						<Button
+							variant="ghost"
+							size="sm"
+							className="h-7 gap-1 text-xs"
+							onClick={() => setFollowUpSignal(row.original)}
+						>
+							<Plus className="h-3 w-3" /> Follow-up
+						</Button>
 						<Button
 							variant="ghost"
 							size="icon"
@@ -308,6 +324,16 @@ export function RiskSignalsClient() {
 				item={selected}
 				open={!!selected}
 				onClose={() => setSelected(null)}
+			/>
+			<RecordFollowUpDialog
+				signal={followUpSignal}
+				farmers={registryQuery.data?.farmers ?? []}
+				open={!!followUpSignal}
+				onClose={() => setFollowUpSignal(null)}
+				onSaved={() => {
+					setFollowUpSignal(null);
+					queryClient.invalidateQueries({ queryKey: ["follow-ups"] });
+				}}
 			/>
 		</>
 	);

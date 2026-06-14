@@ -268,7 +268,7 @@ export function FollowUpsClient() {
 					</Select>
 					<Button
 						size="sm"
-						className="gap-1.5"
+						className="gap-1.5 sm:ml-auto"
 						onClick={() => {
 							setEditing(null);
 							setFormOpen(true);
@@ -470,7 +470,9 @@ function FollowUpFormDialog({
 						{isEdit ? "Edit follow-up" : "Record follow-up"}
 					</DialogTitle>
 					<DialogDescription className="sr-only">
-						{isEdit ? "Update follow-up details." : "Create a new follow-up record."}
+						{isEdit
+							? "Update follow-up details."
+							: "Create a new follow-up record."}
 					</DialogDescription>
 				</DialogHeader>
 

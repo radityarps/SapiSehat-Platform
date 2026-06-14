@@ -233,7 +233,12 @@ export function OverviewClient() {
 							</p>
 						) : (
 							<div className="h-[200px]">
-								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+								<ResponsiveContainer
+									width="100%"
+									height="100%"
+									minWidth={0}
+									minHeight={0}
+								>
 									<PieChart>
 										<Pie
 											data={pieData}
@@ -292,7 +297,12 @@ export function OverviewClient() {
 							</p>
 						) : (
 							<div className="h-[200px]">
-								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+								<ResponsiveContainer
+									width="100%"
+									height="100%"
+									minWidth={0}
+									minHeight={0}
+								>
 									<BarChart
 										data={barData}
 										margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
@@ -337,7 +347,12 @@ export function OverviewClient() {
 							</p>
 						) : (
 							<div className="h-[200px]">
-								<ResponsiveContainer width="100%" height="100%" minWidth={0} minHeight={0}>
+								<ResponsiveContainer
+									width="100%"
+									height="100%"
+									minWidth={0}
+									minHeight={0}
+								>
 									<BarChart
 										data={followUpBarData}
 										layout="vertical"

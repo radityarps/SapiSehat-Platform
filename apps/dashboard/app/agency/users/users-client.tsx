@@ -302,7 +302,7 @@ export function UsersClient() {
 					</Select>
 					<Button
 						size="sm"
-						className="gap-1.5"
+						className="gap-1.5 sm:ml-auto"
 						onClick={() => {
 							setEditing(null);
 							setFormOpen(true);
@@ -517,7 +517,9 @@ function UserFormDialog({
 						{isEdit ? `Edit ${editing?.id}` : "New agency user"}
 					</DialogTitle>
 					<DialogDescription className="sr-only">
-						{isEdit ? "Update agency user role and jurisdiction." : "Create a new agency user account."}
+						{isEdit
+							? "Update agency user role and jurisdiction."
+							: "Create a new agency user account."}
 					</DialogDescription>
 				</DialogHeader>
 
