@@ -101,13 +101,37 @@ def seed_development_sample_data() -> None:
 
     # (name, jurisdiction, address, image_top, nlp_top)
     plan = [
-        ("Pak Budi", "tembalang", "Jl. Ngesrep Timur V No. 12, Tembalang", "FMD", "FMD"),
+        (
+            "Pak Budi",
+            "tembalang",
+            "Jl. Ngesrep Timur V No. 12, Tembalang",
+            "FMD",
+            "FMD",
+        ),
         ("Bu Wati", "tembalang", "Jl. Tirto Agung No. 5, Tembalang", "FMD", "FMD"),
-        ("Pak Joko", "tembalang", "Jl. Bukit Agung Raya No. 8, Tembalang", "FMD", "LSD"),
-        ("Pak Slamet", "banyumanik", "Jl. Banyumanik Raya No. 22, Banyumanik", "LSD", "LSD"),
+        (
+            "Pak Joko",
+            "tembalang",
+            "Jl. Bukit Agung Raya No. 8, Tembalang",
+            "FMD",
+            "LSD",
+        ),
+        (
+            "Pak Slamet",
+            "banyumanik",
+            "Jl. Banyumanik Raya No. 22, Banyumanik",
+            "LSD",
+            "LSD",
+        ),
         ("Bu Rina", "banyumanik", "Jl. Setiabudi No. 44, Banyumanik", "LSD", "LSD"),
         ("Pak Agus", "banyumanik", "Jl. Pudak Payung No. 3, Banyumanik", "LSD", "LSD"),
-        ("Bu Sri", "semarang-city", "Jl. Pandanaran No. 1, Semarang", "healthy", "healthy"),
+        (
+            "Bu Sri",
+            "semarang-city",
+            "Jl. Pandanaran No. 1, Semarang",
+            "healthy",
+            "healthy",
+        ),
     ]
 
     created = []
