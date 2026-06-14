@@ -89,7 +89,8 @@ export function FollowUpsClient() {
 	const statusMutation = useMutation({
 		mutationFn: ({ id, status }: { id: string; status: string }) =>
 			updateAgencyFollowUp(token, agencyUserId, id, { status }),
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["follow-ups"] }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: ["follow-ups"] }),
 	});
 
 	const followUps = useMemo(() => {

@@ -1,13 +1,48 @@
 "use client";
 
 import { useAgencySession } from "@/src/features/auth/session-context";
+import {
+	AlertDialog,
+	AlertDialogAction,
+	AlertDialogCancel,
+	AlertDialogContent,
+	AlertDialogDescription,
+	AlertDialogFooter,
+	AlertDialogHeader,
+	AlertDialogTitle,
+} from "@/src/shared/ui/alert-dialog";
+import { Badge } from "@/src/shared/ui/badge";
 import { Button } from "@/src/shared/ui/button";
+import {
+	Dialog,
+	DialogContent,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/src/shared/ui/dialog";
 import { Input } from "@/src/shared/ui/input";
 import { Label } from "@/src/shared/ui/label";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/src/shared/ui/select";
 import { Skeleton } from "@/src/shared/ui/skeleton";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import {
+	useReactTable,
+	getCoreRowModel,
+	getFilteredRowModel,
+	getPaginationRowModel,
+	getSortedRowModel,
+	flexRender,
+	type ColumnDef,
+	type SortingState,
+} from "@tanstack/react-table";
 
 type AgencyUserItem = { id: string; role: string; jurisdiction_id: string };
 type JurisdictionItem = {
@@ -24,6 +59,12 @@ const ROLES = [
 	"village_officer",
 	"viewer",
 ];
+
+function roleVariant(role: string): "default" | "secondary" | "outline" {
+	if (role === "admin") return "default";
+	if (role.endsWith("officer")) return "secondary";
+	return "outline";
+}
 
 async function fetchUsers(
 	token: string,
@@ -105,241 +146,450 @@ async function deleteUser(token: string, agencyUserId: string, userId: string) {
 export function UsersClient() {
 	const { token, agencyUserId } = useAgencySession();
 	const queryClient = useQueryClient();
-	const [showForm, setShowForm] = useState(false);
-	const [editingUser, setEditingUser] = useState<AgencyUserItem | null>(null);
-	const [formId, setFormId] = useState("");
-	const [formRole, setFormRole] = useState("district_officer");
-	const [formJurisdiction, setFormJurisdiction] = useState("");
+	const enabled = Boolean(token && agencyUserId);
+
+	const [sorting, setSorting] = useState<SortingState>([]);
+	const [globalFilter, setGlobalFilter] = useState("");
+	const [roleFilter, setRoleFilter] = useState("all");
+	const [formOpen, setFormOpen] = useState(false);
+	const [editing, setEditing] = useState<AgencyUserItem | null>(null);
+	const [deleteTarget, setDeleteTarget] = useState<AgencyUserItem | null>(null);
 
 	const usersQuery = useQuery({
 		queryKey: ["agency-users"],
 		queryFn: () => fetchUsers(token, agencyUserId),
-		enabled: Boolean(token && agencyUserId),
+		enabled,
 	});
-
 	const jurisdictionsQuery = useQuery({
 		queryKey: ["jurisdictions"],
 		queryFn: () => fetchJurisdictions(token, agencyUserId),
-		enabled: Boolean(token && agencyUserId),
-	});
-
-	const createMutation = useMutation({
-		mutationFn: (data: AgencyUserItem) => createUser(token, agencyUserId, data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["agency-users"] });
-			resetForm();
-		},
-	});
-
-	const updateMutation = useMutation({
-		mutationFn: (data: {
-			userId: string;
-			role: string;
-			jurisdiction_id: string;
-		}) =>
-			updateUser(token, agencyUserId, data.userId, {
-				role: data.role,
-				jurisdiction_id: data.jurisdiction_id,
-			}),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["agency-users"] });
-			resetForm();
-		},
+		enabled,
 	});
 
 	const deleteMutation = useMutation({
 		mutationFn: (userId: string) => deleteUser(token, agencyUserId, userId),
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["agency-users"] });
+			setDeleteTarget(null);
 		},
 	});
 
-	function resetForm() {
-		setShowForm(false);
-		setEditingUser(null);
-		setFormId("");
-		setFormRole("district_officer");
-		setFormJurisdiction("");
-	}
+	const users = useMemo(() => {
+		const list = usersQuery.data?.users ?? [];
+		if (roleFilter === "all") return list;
+		return list.filter((u) => u.role === roleFilter);
+	}, [usersQuery.data?.users, roleFilter]);
 
-	function startEdit(user: AgencyUserItem) {
-		setEditingUser(user);
-		setFormId(user.id);
-		setFormRole(user.role);
-		setFormJurisdiction(user.jurisdiction_id);
-		setShowForm(true);
-	}
+	const roles = useMemo(() => {
+		const all = usersQuery.data?.users ?? [];
+		return [...new Set(all.map((u) => u.role))].sort();
+	}, [usersQuery.data?.users]);
 
-	function handleSubmit(e: React.FormEvent) {
-		e.preventDefault();
-		if (editingUser) {
-			updateMutation.mutate({
-				userId: editingUser.id,
-				role: formRole,
-				jurisdiction_id: formJurisdiction,
-			});
-		} else {
-			createMutation.mutate({
-				id: formId,
-				role: formRole,
-				jurisdiction_id: formJurisdiction,
-			});
-		}
-	}
+	const columns: ColumnDef<AgencyUserItem>[] = useMemo(
+		() => [
+			{
+				accessorKey: "id",
+				header: "ID",
+				cell: ({ row }) => (
+					<span className="font-mono text-xs">{row.original.id}</span>
+				),
+			},
+			{
+				accessorKey: "role",
+				header: "Role",
+				meta: { align: "center" },
+				cell: ({ row }) => (
+					<div className="text-center">
+						<Badge variant={roleVariant(row.original.role)}>
+							{row.original.role.replace(/_/g, " ")}
+						</Badge>
+					</div>
+				),
+			},
+			{ accessorKey: "jurisdiction_id", header: "Jurisdiction" },
+			{
+				id: "actions",
+				header: "Actions",
+				meta: { align: "right" },
+				cell: ({ row }) => (
+					<div className="flex items-center justify-end gap-1">
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7"
+							aria-label="Edit"
+							onClick={() => {
+								setEditing(row.original);
+								setFormOpen(true);
+							}}
+						>
+							<Pencil className="h-3.5 w-3.5" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7 text-destructive hover:text-destructive"
+							aria-label="Delete"
+							onClick={() => setDeleteTarget(row.original)}
+						>
+							<Trash2 className="h-3.5 w-3.5" />
+						</Button>
+					</div>
+				),
+				enableSorting: false,
+			},
+		],
+		[],
+	);
+
+	const table = useReactTable({
+		data: users,
+		columns,
+		state: { sorting, globalFilter },
+		onSortingChange: setSorting,
+		onGlobalFilterChange: setGlobalFilter,
+		getCoreRowModel: getCoreRowModel(),
+		getFilteredRowModel: getFilteredRowModel(),
+		getPaginationRowModel: getPaginationRowModel(),
+		getSortedRowModel: getSortedRowModel(),
+		initialState: { pagination: { pageSize: 10 } },
+	});
 
 	if (usersQuery.isPending) {
 		return (
 			<div className="space-y-3">
-				<Skeleton className="h-10 w-full" />
-				<Skeleton className="h-10 w-full" />
-				<Skeleton className="h-10 w-full" />
+				<Skeleton className="h-9 w-full" />
+				<Skeleton className="h-64 w-full" />
 			</div>
 		);
 	}
 
-	const users = usersQuery.data?.users ?? [];
-	const jurisdictions = jurisdictionsQuery.data?.jurisdictions ?? [];
+	if (usersQuery.isError) {
+		return (
+			<div className="rounded-md border border-destructive/50 bg-destructive/5 p-4 text-sm text-destructive">
+				Could not load users: {(usersQuery.error as Error).message}
+			</div>
+		);
+	}
 
 	return (
-		<div className="space-y-4">
-			<div className="flex items-center justify-between">
-				<p className="text-sm text-muted-foreground">{users.length} users</p>
-				<Button
-					size="sm"
-					onClick={() => {
-						resetForm();
-						setShowForm(true);
-					}}
-				>
-					<Plus className="mr-1.5 h-3.5 w-3.5" />
-					Add user
-				</Button>
+		<>
+			<div className="space-y-4">
+				{/* Filter bar + create */}
+				<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+					<div className="relative flex-1 sm:max-w-xs">
+						<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+						<Input
+							placeholder="Search users..."
+							value={globalFilter}
+							onChange={(e) => setGlobalFilter(e.target.value)}
+							className="pl-9"
+						/>
+					</div>
+					<Select value={roleFilter} onValueChange={setRoleFilter}>
+						<SelectTrigger className="w-[170px]">
+							<SelectValue placeholder="All roles" />
+						</SelectTrigger>
+						<SelectContent>
+							<SelectItem value="all">All roles</SelectItem>
+							{roles.map((r) => (
+								<SelectItem key={r} value={r}>
+									{r.replace(/_/g, " ")}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
+					<Button
+						size="sm"
+						className="gap-1.5"
+						onClick={() => {
+							setEditing(null);
+							setFormOpen(true);
+						}}
+					>
+						<Plus className="h-3.5 w-3.5" /> Add user
+					</Button>
+				</div>
+
+				{/* Table */}
+				<div className="rounded-md border">
+					<table className="w-full text-sm">
+						<thead>
+							{table.getHeaderGroups().map((headerGroup) => (
+								<tr key={headerGroup.id} className="border-b bg-muted/40">
+									{headerGroup.headers.map((header) => {
+										const align = (
+											header.column.columnDef.meta as
+												| { align?: string }
+												| undefined
+										)?.align;
+										return (
+											<th
+												key={header.id}
+												className={`px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none ${align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left"}`}
+												onClick={header.column.getToggleSortingHandler()}
+											>
+												<div
+													className={`flex items-center gap-1 ${align === "center" ? "justify-center" : align === "right" ? "justify-end" : ""}`}
+												>
+													{header.isPlaceholder
+														? null
+														: flexRender(
+																header.column.columnDef.header,
+																header.getContext(),
+															)}
+													{header.column.getIsSorted() === "asc" && " ↑"}
+													{header.column.getIsSorted() === "desc" && " ↓"}
+												</div>
+											</th>
+										);
+									})}
+								</tr>
+							))}
+						</thead>
+						<tbody>
+							{table.getRowModel().rows.length === 0 ? (
+								<tr>
+									<td
+										colSpan={columns.length}
+										className="px-4 py-8 text-center text-muted-foreground"
+									>
+										No users found.
+									</td>
+								</tr>
+							) : (
+								table.getRowModel().rows.map((row, i) => (
+									<tr
+										key={row.id}
+										className={`border-b last:border-0 transition-colors hover:bg-muted/20 ${i % 2 === 1 ? "bg-muted/5" : ""}`}
+									>
+										{row.getVisibleCells().map((cell) => (
+											<td key={cell.id} className="px-4 py-2.5">
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext(),
+												)}
+											</td>
+										))}
+									</tr>
+								))
+							)}
+						</tbody>
+					</table>
+				</div>
+
+				{/* Pagination */}
+				{table.getPageCount() > 1 && (
+					<div className="flex items-center justify-between">
+						<p className="text-xs text-muted-foreground">
+							Page {table.getState().pagination.pageIndex + 1} of{" "}
+							{table.getPageCount()}
+						</p>
+						<div className="flex items-center gap-1">
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => table.previousPage()}
+								disabled={!table.getCanPreviousPage()}
+							>
+								Previous
+							</Button>
+							<Button
+								variant="outline"
+								size="sm"
+								onClick={() => table.nextPage()}
+								disabled={!table.getCanNextPage()}
+							>
+								Next
+							</Button>
+						</div>
+					</div>
+				)}
 			</div>
 
-			{showForm && (
+			<UserFormDialog
+				open={formOpen}
+				editing={editing}
+				jurisdictions={jurisdictionsQuery.data?.jurisdictions ?? []}
+				onClose={() => {
+					setFormOpen(false);
+					setEditing(null);
+				}}
+				onSaved={() => {
+					setFormOpen(false);
+					setEditing(null);
+					queryClient.invalidateQueries({ queryKey: ["agency-users"] });
+				}}
+			/>
+
+			<AlertDialog
+				open={!!deleteTarget}
+				onOpenChange={(v) => {
+					if (!v) setDeleteTarget(null);
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Delete user?</AlertDialogTitle>
+						<AlertDialogDescription>
+							This will permanently remove agency user{" "}
+							<span className="font-mono">{deleteTarget?.id}</span> and revoke
+							their access. This cannot be undone.
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() =>
+								deleteTarget && deleteMutation.mutate(deleteTarget.id)
+							}
+							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						>
+							{deleteMutation.isPending ? "Deleting..." : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+		</>
+	);
+}
+
+function UserFormDialog({
+	open,
+	editing,
+	jurisdictions,
+	onClose,
+	onSaved,
+}: {
+	open: boolean;
+	editing: AgencyUserItem | null;
+	jurisdictions: JurisdictionItem[];
+	onClose: () => void;
+	onSaved: () => void;
+}) {
+	const { token, agencyUserId } = useAgencySession();
+	const isEdit = !!editing;
+
+	const [id, setId] = useState("");
+	const [role, setRole] = useState("district_officer");
+	const [jurisdiction, setJurisdiction] = useState("");
+
+	useEffect(() => {
+		if (editing) {
+			setId(editing.id);
+			setRole(editing.role);
+			setJurisdiction(editing.jurisdiction_id);
+		} else {
+			setId("");
+			setRole("district_officer");
+			setJurisdiction("");
+		}
+	}, [editing, open]);
+
+	const mutation = useMutation({
+		mutationFn: () => {
+			if (isEdit && editing) {
+				return updateUser(token, agencyUserId, editing.id, {
+					role,
+					jurisdiction_id: jurisdiction,
+				});
+			}
+			return createUser(token, agencyUserId, {
+				id,
+				role,
+				jurisdiction_id: jurisdiction,
+			});
+		},
+		onSuccess: onSaved,
+	});
+
+	return (
+		<Dialog
+			open={open}
+			onOpenChange={(v) => {
+				if (!v) onClose();
+			}}
+		>
+			<DialogContent className="sm:max-w-md">
+				<DialogHeader>
+					<DialogTitle>
+						{isEdit ? `Edit ${editing?.id}` : "New agency user"}
+					</DialogTitle>
+				</DialogHeader>
+
 				<form
-					onSubmit={handleSubmit}
-					className="rounded-md border bg-card p-4 space-y-3"
+					className="space-y-3"
+					onSubmit={(e) => {
+						e.preventDefault();
+						mutation.mutate();
+					}}
 				>
-					<p className="text-sm font-medium">
-						{editingUser ? `Edit: ${editingUser.id}` : "New agency user"}
-					</p>
-					{!editingUser && (
-						<div className="space-y-1">
+					{!isEdit && (
+						<div className="space-y-1.5">
 							<Label htmlFor="user-id">User ID</Label>
 							<Input
 								id="user-id"
-								value={formId}
-								onChange={(e) => setFormId(e.target.value)}
+								value={id}
+								onChange={(e) => setId(e.target.value)}
 								placeholder="e.g. agency-6"
 								required
 							/>
 						</div>
 					)}
-					<div className="space-y-1">
-						<Label htmlFor="user-role">Role</Label>
-						<select
-							id="user-role"
-							value={formRole}
-							onChange={(e) => setFormRole(e.target.value)}
-							className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-						>
-							{ROLES.map((r) => (
-								<option key={r} value={r}>
-									{r}
-								</option>
-							))}
-						</select>
+					<div className="space-y-1.5">
+						<Label htmlFor="role">Role</Label>
+						<Select value={role} onValueChange={setRole}>
+							<SelectTrigger id="role">
+								<SelectValue placeholder="Select role" />
+							</SelectTrigger>
+							<SelectContent>
+								{ROLES.map((r) => (
+									<SelectItem key={r} value={r}>
+										{r.replace(/_/g, " ")}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
-					<div className="space-y-1">
-						<Label htmlFor="user-jurisdiction">Jurisdiction</Label>
-						<select
-							id="user-jurisdiction"
-							value={formJurisdiction}
-							onChange={(e) => setFormJurisdiction(e.target.value)}
-							className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm"
-							required
-						>
-							<option value="">Select jurisdiction</option>
-							{jurisdictions.map((j) => (
-								<option key={j.id} value={j.id}>
-									{j.name} ({j.level})
-								</option>
-							))}
-						</select>
+					<div className="space-y-1.5">
+						<Label htmlFor="jurisdiction">Jurisdiction</Label>
+						<Select value={jurisdiction} onValueChange={setJurisdiction}>
+							<SelectTrigger id="jurisdiction">
+								<SelectValue placeholder="Select jurisdiction" />
+							</SelectTrigger>
+							<SelectContent>
+								{jurisdictions.map((j) => (
+									<SelectItem key={j.id} value={j.id}>
+										{j.name} ({j.level})
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					</div>
-					<div className="flex gap-2">
-						<Button
-							type="submit"
-							size="sm"
-							disabled={createMutation.isPending || updateMutation.isPending}
-						>
-							{editingUser ? "Update" : "Create"}
-						</Button>
-						<Button type="button" variant="ghost" size="sm" onClick={resetForm}>
+
+					{mutation.isError && (
+						<p className="text-sm text-destructive">
+							{(mutation.error as Error).message}
+						</p>
+					)}
+
+					<DialogFooter>
+						<Button type="button" variant="ghost" onClick={onClose}>
 							Cancel
 						</Button>
-					</div>
+						<Button
+							type="submit"
+							disabled={mutation.isPending || (!isEdit && !id) || !jurisdiction}
+						>
+							{mutation.isPending
+								? "Saving..."
+								: isEdit
+									? "Save changes"
+									: "Create"}
+						</Button>
+					</DialogFooter>
 				</form>
-			)}
-
-			<div className="rounded-md border">
-				<table className="w-full text-sm">
-					<thead>
-						<tr className="border-b bg-muted/40">
-							<th className="px-4 py-2 text-left font-medium">ID</th>
-							<th className="px-4 py-2 text-left font-medium">Role</th>
-							<th className="px-4 py-2 text-left font-medium">Jurisdiction</th>
-							<th className="px-4 py-2 text-right font-medium">Actions</th>
-						</tr>
-					</thead>
-					<tbody>
-						{users.map((user) => (
-							<tr
-								key={user.id}
-								className="border-b last:border-0 hover:bg-muted/20"
-							>
-								<td className="px-4 py-2 font-mono text-xs">{user.id}</td>
-								<td className="px-4 py-2">{user.role}</td>
-								<td className="px-4 py-2">{user.jurisdiction_id}</td>
-								<td className="px-4 py-2 text-right">
-									<div className="flex items-center justify-end gap-1">
-										<Button
-											variant="ghost"
-											size="icon"
-											className="h-7 w-7"
-											onClick={() => startEdit(user)}
-										>
-											<Pencil className="h-3.5 w-3.5" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="icon"
-											className="h-7 w-7 text-destructive"
-											onClick={() => {
-												if (confirm(`Delete user ${user.id}?`))
-													deleteMutation.mutate(user.id);
-											}}
-										>
-											<Trash2 className="h-3.5 w-3.5" />
-										</Button>
-									</div>
-								</td>
-							</tr>
-						))}
-						{users.length === 0 && (
-							<tr>
-								<td
-									colSpan={4}
-									className="px-4 py-6 text-center text-muted-foreground"
-								>
-									No users found.
-								</td>
-							</tr>
-						)}
-					</tbody>
-				</table>
-			</div>
-		</div>
+			</DialogContent>
+		</Dialog>
 	);
 }
