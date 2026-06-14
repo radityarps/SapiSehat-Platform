@@ -12,6 +12,7 @@ through the real API flow so records are valid and scope-correct.
 
 from __future__ import annotations
 
+from api.notifications import notification_store
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -84,7 +85,13 @@ def seed_development_sample_data() -> None:
         "X-Agency-User-Id": auth["account"]["id"],
     }
     existing = client.get("/api/agency/detection-monitoring", headers=headers)
-    if existing.status_code == 200 and len(existing.json().get("detections", [])) > 0:
+    has_detections = existing.status_code == 200 and len(existing.json().get("detections", [])) > 0
+
+    # Seed sample notifications for development accounts (idempotent).
+    admin_id = auth["account"]["id"]
+    _seed_sample_notifications(admin_id)
+
+    if has_detections:
         logger.info("Sample seed skipped: detections already present.")
         return
 
@@ -158,3 +165,33 @@ def seed_development_sample_data() -> None:
         )
 
     logger.info("Development sample data seeded (%d cattle).", len(created))
+
+
+def _seed_sample_notifications(admin_id: str) -> None:
+    """Create sample notifications for development accounts if none exist."""
+    from api.farmer_accounts import farmer_account_store
+
+    existing = notification_store.list_for_account(admin_id, "agency", limit=1)
+    if existing:
+        return
+    notification_store.create(
+        account_id=admin_id,
+        account_type="agency",
+        title="New risk signal",
+        body="FMD risk signal detected in Tembalang district. Review the risk signal map.",
+        link="/agency/risk-signals",
+    )
+    notification_store.create(
+        account_id=admin_id,
+        account_type="agency",
+        title="Follow-up completed",
+        body="Officer marked a follow-up as completed for a Banyumanik farmer.",
+        link="/agency/follow-ups",
+    )
+    for farmer in list(farmer_account_store.all_by_id().values())[:2]:
+        notification_store.create(
+            account_id=farmer.id,
+            account_type="farmer",
+            title="Follow-up recorded",
+            body="An agency officer recorded a follow-up for your cattle.",
+        )

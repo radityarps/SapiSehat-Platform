@@ -7,6 +7,7 @@ import type {
 	AgencyRegistryFarmer,
 	AuditLogItem,
 	DetectionMonitoringItem,
+	NotificationItem,
 	RiskSignalItem,
 	SafeLanguage,
 } from "@/src/shared/types/api";
@@ -72,6 +73,17 @@ const followUpSchema = z.object({
 	status: z.string(),
 	public_message: z.string(),
 	internal_notes: z.string(),
+});
+
+const notificationSchema = z.object({
+	id: z.string(),
+	account_id: z.string(),
+	account_type: z.string(),
+	title: z.string(),
+	body: z.string(),
+	link: z.string().nullable().optional(),
+	is_read: z.boolean(),
+	created_at: z.string(),
 });
 
 async function request<T>(
@@ -350,4 +362,42 @@ export async function createNlpPlaceholder(
 		token,
 	);
 	return nlpPlaceholderSchema.parse(data);
+}
+
+export async function getNotifications(token: string) {
+	const data = await request<unknown>(
+		"/api/notifications",
+		{ headers: { Authorization: `Bearer ${token}` } },
+		token,
+	);
+	return z
+		.object({
+			notifications: z.array(notificationSchema),
+			unread_count: z.number(),
+		})
+		.parse(data) as { notifications: NotificationItem[]; unread_count: number };
+}
+
+export async function markNotificationRead(token: string, notificationId: string) {
+	const data = await request<unknown>(
+		`/api/notifications/${notificationId}/read`,
+		{
+			method: "PATCH",
+			headers: { Authorization: `Bearer ${token}` },
+		},
+		token,
+	);
+	return notificationSchema.parse(data) as NotificationItem;
+}
+
+export async function markAllNotificationsRead(token: string) {
+	const data = await request<unknown>(
+		"/api/notifications/read-all",
+		{
+			method: "PATCH",
+			headers: { Authorization: `Bearer ${token}` },
+		},
+		token,
+	);
+	return z.object({ marked_count: z.number() }).parse(data) as { marked_count: number };
 }

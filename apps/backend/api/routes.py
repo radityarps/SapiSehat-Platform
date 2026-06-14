@@ -71,6 +71,9 @@ from api.schemas import (
     AgencyFollowUpResponse,
     FarmerFollowUpListResponse,
     AuditLogListResponse,
+    NotificationListResponse,
+    NotificationMarkReadResponse,
+    NotificationResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -88,6 +91,7 @@ from api.media_governance import media_store
 from api.object_storage import media_storage_client
 from api.audit_logs import audit_log_store
 from api.follow_ups import follow_up_store
+from api.notifications import notification_store
 from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
 from api.authorization import (
     AgencyRole,
@@ -166,6 +170,19 @@ def _serialize_audit_log(event):
         "resource_id": event.resource_id,
         "metadata_json": event.metadata_json,
         "created_at": event.created_at,
+    }
+
+
+def _serialize_notification(notification):
+    return {
+        "id": notification.id,
+        "account_id": notification.account_id,
+        "account_type": notification.account_type,
+        "title": notification.title,
+        "body": notification.body,
+        "link": notification.link,
+        "is_read": notification.is_read,
+        "created_at": notification.created_at,
     }
 
 
@@ -1294,6 +1311,13 @@ async def update_agency_follow_up(
         resource_id=follow_up_id,
         metadata_json={"status": request.status},
     )
+    if request.status is not None and request.status != existing.status:
+        notification_store.create(
+            account_id=existing.farmer_id,
+            account_type="farmer",
+            title="Follow-up status updated",
+            body=f"Your follow-up status is now {request.status.replace('_', ' ')}.",
+        )
     return _serialize_agency_follow_up(follow_up)
 
 
@@ -1587,3 +1611,72 @@ async def list_jurisdictions(
             for j in jurisdictions.values()
         ]
     }
+
+
+@router.get("/notifications", response_model=NotificationListResponse, tags=["notifications"])
+async def list_notifications(
+    authorization: str = Header(..., alias="Authorization"),
+    unread_only: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=100),
+):
+    """List notifications for the authenticated account."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    account_type = str(claims["account_type"])
+    notifications = notification_store.list_for_account(
+        account_id, account_type, unread_only=unread_only, limit=limit
+    )
+    return {
+        "notifications": [_serialize_notification(n) for n in notifications],
+        "unread_count": notification_store.unread_count(account_id, account_type),
+    }
+
+
+@router.patch(
+    "/notifications/{notification_id}/read",
+    response_model=NotificationResponse,
+    tags=["notifications"],
+)
+async def mark_notification_read(
+    notification_id: str,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Mark a single notification as read."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    account_type = str(claims["account_type"])
+    notification = notification_store.mark_read(notification_id, account_id, account_type)
+    if notification is None:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return _serialize_notification(notification)
+
+
+@router.patch(
+    "/notifications/read-all",
+    response_model=NotificationMarkReadResponse,
+    tags=["notifications"],
+)
+async def mark_all_notifications_read(
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Mark all notifications as read for the authenticated account."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    account_type = str(claims["account_type"])
+    count = notification_store.mark_all_read(account_id, account_type)
+    return {"marked_count": count}

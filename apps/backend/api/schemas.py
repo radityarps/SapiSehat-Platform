@@ -216,6 +216,32 @@ class AuditLogListResponse(BaseModel):
     audit_logs: List[AuditLogResponse]
 
 
+class NotificationResponse(BaseModel):
+    """User notification item."""
+
+    id: str
+    account_id: str
+    account_type: str
+    title: str
+    body: str
+    link: Optional[str]
+    is_read: bool
+    created_at: str
+
+
+class NotificationListResponse(BaseModel):
+    """Notification list."""
+
+    notifications: List[NotificationResponse]
+    unread_count: int
+
+
+class NotificationMarkReadResponse(BaseModel):
+    """Result of marking notifications read."""
+
+    marked_count: int
+
+
 class AgencyVisibleFarmer(BaseModel):
     """Farmer record visible to an agency user after authorization filtering."""
 

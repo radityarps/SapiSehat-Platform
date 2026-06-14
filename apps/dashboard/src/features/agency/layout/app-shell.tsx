@@ -29,7 +29,7 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useAgencySession } from "@/src/features/auth/session-context";
-import { Button } from "@/src/shared/ui/button";
+import { NotificationBell } from "@/src/features/agency/notifications/notification-sheet";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -119,14 +119,7 @@ function TopBar() {
 				<CommandSearch />
 			</div>
 			<div className="flex items-center gap-1">
-				<Button
-					variant="ghost"
-					size="icon"
-					className="h-8 w-8"
-					aria-label="Notifications"
-				>
-					<Bell className="h-4 w-4" />
-				</Button>
+				<NotificationBell />
 			</div>
 		</header>
 	);

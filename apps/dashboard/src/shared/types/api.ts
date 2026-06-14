@@ -88,3 +88,14 @@ export type AgencyFollowUpItem = {
 	public_message: string;
 	internal_notes: string;
 };
+
+export type NotificationItem = {
+	id: string;
+	account_id: string;
+	account_type: string;
+	title: string;
+	body: string;
+	link?: string | null;
+	is_read: boolean;
+	created_at: string;
+};
