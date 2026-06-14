@@ -21,11 +21,9 @@ import {
 	FileClock,
 	LayoutDashboard,
 	LogOut,
-	Moon,
 	Search,
 	Settings,
 	ShieldAlert,
-	Sun,
 	Users,
 } from "lucide-react";
 import Link from "next/link";
@@ -39,7 +37,7 @@ import {
 	DropdownMenuSeparator,
 	DropdownMenuTrigger,
 } from "@/src/shared/ui/dropdown-menu";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import type { AgencyRole } from "@/src/shared/types/api";
 
@@ -114,19 +112,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 }
 
 function TopBar() {
-	const [dark, setDark] = useState(false);
-
-	useEffect(() => {
-		const isDark = document.documentElement.classList.contains("dark");
-		setDark(isDark);
-	}, []);
-
-	const toggleTheme = useCallback(() => {
-		const next = !dark;
-		setDark(next);
-		document.documentElement.classList.toggle("dark", next);
-	}, [dark]);
-
 	return (
 		<header className="sticky top-0 z-10 flex h-14 items-center gap-3 border-b bg-background px-4">
 			<SidebarTrigger />
@@ -141,15 +126,6 @@ function TopBar() {
 					aria-label="Notifications"
 				>
 					<Bell className="h-4 w-4" />
-				</Button>
-				<Button
-					variant="ghost"
-					size="icon"
-					className="h-8 w-8"
-					aria-label="Toggle theme"
-					onClick={toggleTheme}
-				>
-					{dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
 				</Button>
 			</div>
 		</header>

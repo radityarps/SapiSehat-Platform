@@ -18,7 +18,11 @@ import {
 } from "@/src/shared/ui/select";
 import { Skeleton } from "@/src/shared/ui/skeleton";
 import { RiskSignalMap } from "@/src/features/agency/risk-signals/risk-map";
-import { getAgencyRegistry, getJurisdictions, getRiskSignals } from "@/src/shared/api/client";
+import {
+	getAgencyRegistry,
+	getJurisdictions,
+	getRiskSignals,
+} from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
 import type { RiskSignalItem } from "@/src/shared/types/api";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -52,7 +56,9 @@ export function RiskSignalsClient() {
 	const [globalFilter, setGlobalFilter] = useState("");
 	const [riskFilter, setRiskFilter] = useState("all");
 	const [selected, setSelected] = useState<RiskSignalItem | null>(null);
-	const [followUpSignal, setFollowUpSignal] = useState<RiskSignalItem | null>(null);
+	const [followUpSignal, setFollowUpSignal] = useState<RiskSignalItem | null>(
+		null,
+	);
 
 	const query = useQuery({
 		queryKey: ["risk-signals"],

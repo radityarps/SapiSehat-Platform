@@ -68,7 +68,12 @@ export function RecordFollowUpDialog({
 	});
 
 	return (
-		<Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
+		<Dialog
+			open={open}
+			onOpenChange={(v) => {
+				if (!v) onClose();
+			}}
+		>
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>Record follow-up</DialogTitle>
@@ -79,13 +84,25 @@ export function RecordFollowUpDialog({
 
 				<form
 					className="space-y-3"
-					onSubmit={(e) => { e.preventDefault(); mutation.mutate(); }}
+					onSubmit={(e) => {
+						e.preventDefault();
+						mutation.mutate();
+					}}
 				>
 					{signal && (
 						<div className="rounded-md border bg-muted/20 px-3 py-2 text-xs space-y-1">
-							<p><span className="text-muted-foreground">Signal:</span> {signal.id}</p>
-							<p><span className="text-muted-foreground">Class:</span> {signal.disease_class.replace(/_/g, " ")}</p>
-							<p><span className="text-muted-foreground">District:</span> {signal.jurisdiction_id}</p>
+							<p>
+								<span className="text-muted-foreground">Signal:</span>{" "}
+								{signal.id}
+							</p>
+							<p>
+								<span className="text-muted-foreground">Class:</span>{" "}
+								{signal.disease_class.replace(/_/g, " ")}
+							</p>
+							<p>
+								<span className="text-muted-foreground">District:</span>{" "}
+								{signal.jurisdiction_id}
+							</p>
 						</div>
 					)}
 					<div className="space-y-1.5">
