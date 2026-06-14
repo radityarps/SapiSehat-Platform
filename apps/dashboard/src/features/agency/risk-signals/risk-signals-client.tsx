@@ -43,9 +43,20 @@ import {
 function riskVariant(
 	level: string,
 ): "default" | "secondary" | "destructive" | "outline" {
-	if (level === "high") return "destructive";
+	if (level === "possible_increased_risk" || level === "high") return "destructive";
 	if (level === "medium") return "secondary";
-	return "default";
+	return "outline";
+}
+
+function riskLabel(level: string): string {
+	const map: Record<string, string> = {
+		possible_increased_risk: "Possible increased risk",
+		baseline_monitoring: "Baseline monitoring",
+		high: "High",
+		medium: "Medium",
+		low: "Low",
+	};
+	return map[level] ?? level.replace(/_/g, " ");
 }
 
 export function RiskSignalsClient() {
@@ -116,7 +127,7 @@ export function RiskSignalsClient() {
 				cell: ({ row }) => (
 					<div className="text-center">
 						<Badge variant={riskVariant(row.original.risk_level)}>
-							{row.original.risk_level}
+							{riskLabel(row.original.risk_level)}
 						</Badge>
 					</div>
 				),
@@ -382,7 +393,7 @@ function RiskSignalDetailDialog({
 					<DetailCell label="Signal Count" value={String(item.signal_count)} />
 					<DetailCell label="Risk Level">
 						<Badge variant={riskVariant(item.risk_level)}>
-							{item.risk_level}
+							{riskLabel(item.risk_level)}
 						</Badge>
 					</DetailCell>
 					<DetailCell label="Priority" value={item.priority} />
