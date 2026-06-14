@@ -376,21 +376,35 @@ function RiskSignalDetailDialog({
 	open: boolean;
 	onClose: () => void;
 	detections: { id: string; farmer_id: string }[];
-	farmers: { id: string; name: string; address?: string | null; jurisdiction_id: string }[];
+	farmers: {
+		id: string;
+		name: string;
+		address?: string | null;
+		jurisdiction_id: string;
+	}[];
 }) {
 	if (!item) return null;
 
 	const farmerMap = Object.fromEntries(farmers.map((f) => [f.id, f]));
-	const relatedFarmerIds = [...new Set(
-		detections
-			.filter((d) => item.source_result_ids.includes(d.id))
-			.map((d) => d.farmer_id),
-	)];
-	const relatedFarmers = relatedFarmerIds.map((id) => farmerMap[id]).filter(Boolean);
+	const relatedFarmerIds = [
+		...new Set(
+			detections
+				.filter((d) => item.source_result_ids.includes(d.id))
+				.map((d) => d.farmer_id),
+		),
+	];
+	const relatedFarmers = relatedFarmerIds
+		.map((id) => farmerMap[id])
+		.filter(Boolean);
 
 	return (
-		<Dialog open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
-			<DialogContent className="sm:max-w-lg">
+		<Dialog
+			open={open}
+			onOpenChange={(v) => {
+				if (!v) onClose();
+			}}
+		>
+			<DialogContent className="sm:max-w-2xl">
 				<DialogHeader>
 					<DialogTitle className="capitalize">
 						{item.disease_class.replace(/_/g, " ")} signal ·{" "}
@@ -398,7 +412,7 @@ function RiskSignalDetailDialog({
 					</DialogTitle>
 				</DialogHeader>
 
-				<div className="mt-2 grid grid-cols-2 overflow-hidden rounded-md border">
+				<div className="mt-2 overflow-hidden rounded-md border">
 					<DetailCell label="Signal ID" value={item.id} mono />
 					<DetailCell label="Jurisdiction" value={item.jurisdiction_id} />
 					<DetailCell label="Disease Class">
@@ -412,7 +426,10 @@ function RiskSignalDetailDialog({
 							{riskLabel(item.risk_level)}
 						</Badge>
 					</DetailCell>
-					<DetailCell label="Priority" value={item.priority.replace(/_/g, " ")} />
+					<DetailCell
+						label="Priority"
+						value={item.priority.replace(/_/g, " ")}
+					/>
 				</div>
 
 				<div className="mt-3 space-y-2">
@@ -420,11 +437,15 @@ function RiskSignalDetailDialog({
 						Source detection IDs ({item.source_result_ids.length})
 					</p>
 					{item.source_result_ids.length === 0 ? (
-						<p className="text-sm text-muted-foreground">No source results recorded.</p>
+						<p className="text-sm text-muted-foreground">
+							No source results recorded.
+						</p>
 					) : (
 						<div className="flex flex-wrap gap-1.5">
 							{item.source_result_ids.map((id) => (
-								<Badge key={id} variant="outline" className="font-mono text-xs">{id}</Badge>
+								<Badge key={id} variant="outline" className="font-mono text-xs">
+									{id}
+								</Badge>
 							))}
 						</div>
 					)}
@@ -437,10 +458,17 @@ function RiskSignalDetailDialog({
 						</p>
 						<div className="space-y-2">
 							{relatedFarmers.map((f) => (
-								<div key={f.id} className="rounded-md border bg-muted/20 px-3 py-2 text-sm space-y-0.5">
+								<div
+									key={f.id}
+									className="rounded-md border bg-muted/20 px-3 py-2 text-sm space-y-0.5"
+								>
 									<p className="font-medium">{f.name}</p>
-									{f.address && <p className="text-xs text-muted-foreground">{f.address}</p>}
-									<p className="text-xs text-muted-foreground">District: {f.jurisdiction_id}</p>
+									{f.address && (
+										<p className="text-xs text-muted-foreground">{f.address}</p>
+									)}
+									<p className="text-xs text-muted-foreground">
+										District: {f.jurisdiction_id}
+									</p>
 								</div>
 							))}
 						</div>
