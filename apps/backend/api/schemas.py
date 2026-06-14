@@ -107,6 +107,19 @@ class AuthAccountResponse(BaseModel):
     role: Optional[str] = None
 
 
+class ProfileUpdateRequest(BaseModel):
+    """Update own profile."""
+
+    name: str = Field(min_length=1, max_length=120)
+
+
+class ChangePasswordRequest(BaseModel):
+    """Change own password."""
+
+    current_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
+
+
 class FarmerProfileUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     jurisdiction_id: str = Field(min_length=1, max_length=120)

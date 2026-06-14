@@ -234,6 +234,7 @@ class FarmerPreferenceModel(Base):
         String(8), nullable=False, default="06:00"
     )
 
+
 class NotificationModel(Base):
     __tablename__ = "notifications"
 

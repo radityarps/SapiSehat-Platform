@@ -1,9 +1,19 @@
 "use client";
 
 import { Button } from "@/src/shared/ui/button";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/src/shared/ui/sheet";
+import {
+	Sheet,
+	SheetContent,
+	SheetDescription,
+	SheetHeader,
+	SheetTitle,
+} from "@/src/shared/ui/sheet";
 import { Skeleton } from "@/src/shared/ui/skeleton";
-import { getNotifications, markAllNotificationsRead, markNotificationRead } from "@/src/shared/api/client";
+import {
+	getNotifications,
+	markAllNotificationsRead,
+	markNotificationRead,
+} from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Bell, Check, ExternalLink } from "lucide-react";
@@ -45,7 +55,13 @@ export function NotificationBell() {
 	);
 }
 
-function NotificationSheet({ open, onOpenChange }: { open: boolean; onOpenChange: (v: boolean) => void }) {
+function NotificationSheet({
+	open,
+	onOpenChange,
+}: {
+	open: boolean;
+	onOpenChange: (v: boolean) => void;
+}) {
 	const { token } = useAgencySession();
 	const queryClient = useQueryClient();
 	const router = useRouter();
@@ -59,12 +75,14 @@ function NotificationSheet({ open, onOpenChange }: { open: boolean; onOpenChange
 
 	const markRead = useMutation({
 		mutationFn: (id: string) => markNotificationRead(token, id),
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: ["notifications"] }),
 	});
 
 	const markAll = useMutation({
 		mutationFn: () => markAllNotificationsRead(token),
-		onSuccess: () => queryClient.invalidateQueries({ queryKey: ["notifications"] }),
+		onSuccess: () =>
+			queryClient.invalidateQueries({ queryKey: ["notifications"] }),
 	});
 
 	const notifications = query.data?.notifications ?? [];
@@ -89,7 +107,9 @@ function NotificationSheet({ open, onOpenChange }: { open: boolean; onOpenChange
 
 				<div className="mt-4 flex items-center justify-between">
 					<p className="text-xs text-muted-foreground">
-						{query.isLoading ? "Loading..." : `${notifications.length} notification${notifications.length === 1 ? "" : "s"}`}
+						{query.isLoading
+							? "Loading..."
+							: `${notifications.length} notification${notifications.length === 1 ? "" : "s"}`}
 					</p>
 					{notifications.some((n) => !n.is_read) && (
 						<Button
@@ -127,14 +147,22 @@ function NotificationSheet({ open, onOpenChange }: { open: boolean; onOpenChange
 								>
 									<div className="flex-1 min-w-0">
 										<p className="text-sm font-medium">{n.title}</p>
-										<p className="line-clamp-2 text-xs text-muted-foreground">{n.body}</p>
+										<p className="line-clamp-2 text-xs text-muted-foreground">
+											{n.body}
+										</p>
 										<p className="mt-1 text-[10px] text-muted-foreground">
-											{n.created_at ? new Date(n.created_at).toLocaleString() : ""}
+											{n.created_at
+												? new Date(n.created_at).toLocaleString()
+												: ""}
 										</p>
 									</div>
 									<div className="flex flex-col items-end gap-1">
-										{!n.is_read && <span className="h-2 w-2 rounded-full bg-primary" />}
-										{n.link && <ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100" />}
+										{!n.is_read && (
+											<span className="h-2 w-2 rounded-full bg-primary" />
+										)}
+										{n.link && (
+											<ExternalLink className="h-3 w-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+										)}
 									</div>
 								</button>
 							))}
@@ -145,4 +173,3 @@ function NotificationSheet({ open, onOpenChange }: { open: boolean; onOpenChange
 		</Sheet>
 	);
 }
-	

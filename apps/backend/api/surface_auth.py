@@ -126,6 +126,28 @@ class SurfaceAccountStore:
             session.refresh(row)
             return _account_from_row(row)
 
+    def update_profile(self, *, account_id: str, name: str) -> SurfaceAccount:
+        with SessionLocal() as session:
+            row = session.get(AccountModel, account_id)
+            if row is None or not row.is_active:
+                raise ValueError("account not found")
+            row.name = name
+            session.commit()
+            session.refresh(row)
+            return _account_from_row(row)
+
+    def change_password(self, *, account_id: str, current_password: str, new_password: str) -> SurfaceAccount:
+        with SessionLocal() as session:
+            row = session.get(AccountModel, account_id)
+            if row is None or not row.is_active:
+                raise ValueError("account not found")
+            if not verify_password(current_password, row.password_hash):
+                raise ValueError("current password is incorrect")
+            row.password_hash = hash_password(new_password)
+            session.commit()
+            session.refresh(row)
+            return _account_from_row(row)
+
     def archive_farmer(self, *, account_id: str, password: str | None = None) -> SurfaceAccount:
         with SessionLocal() as session:
             row = session.get(AccountModel, account_id)

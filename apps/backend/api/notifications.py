@@ -65,9 +65,7 @@ class NotificationStore:
             if unread_only:
                 query = query.filter_by(is_read=False)
             rows = (
-                query.order_by(NotificationModel.created_at.desc())
-                .limit(limit)
-                .all()
+                query.order_by(NotificationModel.created_at.desc()).limit(limit).all()
             )
             return [_notification_from_row(row) for row in rows]
 
@@ -100,7 +98,9 @@ class NotificationStore:
         with SessionLocal() as session:
             count = (
                 session.query(NotificationModel)
-                .filter_by(account_id=account_id, account_type=account_type, is_read=False)
+                .filter_by(
+                    account_id=account_id, account_type=account_type, is_read=False
+                )
                 .update({"is_read": True})
             )
             session.commit()
@@ -110,7 +110,9 @@ class NotificationStore:
         with SessionLocal() as session:
             return (
                 session.query(NotificationModel)
-                .filter_by(account_id=account_id, account_type=account_type, is_read=False)
+                .filter_by(
+                    account_id=account_id, account_type=account_type, is_read=False
+                )
                 .count()
             )
 

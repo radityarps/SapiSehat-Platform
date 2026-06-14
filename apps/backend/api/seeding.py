@@ -85,7 +85,9 @@ def seed_development_sample_data() -> None:
         "X-Agency-User-Id": auth["account"]["id"],
     }
     existing = client.get("/api/agency/detection-monitoring", headers=headers)
-    has_detections = existing.status_code == 200 and len(existing.json().get("detections", [])) > 0
+    has_detections = (
+        existing.status_code == 200 and len(existing.json().get("detections", [])) > 0
+    )
 
     # Seed sample notifications for development accounts (idempotent).
     admin_id = auth["account"]["id"]

@@ -339,6 +339,15 @@ export type NlpPlaceholderInput = {
 	questionnaire_answers?: Record<string, unknown>;
 };
 
+export type UpdateProfileInput = {
+	name: string;
+};
+
+export type ChangePasswordInput = {
+	current_password: string;
+	new_password: string;
+};
+
 const nlpPlaceholderSchema = z.object({
 	status: z.literal("unavailable"),
 	evidence_state: z.literal("nlp_unavailable"),
@@ -378,7 +387,10 @@ export async function getNotifications(token: string) {
 		.parse(data) as { notifications: NotificationItem[]; unread_count: number };
 }
 
-export async function markNotificationRead(token: string, notificationId: string) {
+export async function markNotificationRead(
+	token: string,
+	notificationId: string,
+) {
 	const data = await request<unknown>(
 		`/api/notifications/${notificationId}/read`,
 		{
@@ -399,5 +411,33 @@ export async function markAllNotificationsRead(token: string) {
 		},
 		token,
 	);
-	return z.object({ marked_count: z.number() }).parse(data) as { marked_count: number };
+	return z.object({ marked_count: z.number() }).parse(data) as {
+		marked_count: number;
+	};
+}
+
+export async function updateProfile(token: string, input: UpdateProfileInput) {
+	const data = await request<unknown>(
+		"/api/me/profile",
+		{
+			method: "PUT",
+			headers: { Authorization: `Bearer ${token}` },
+			body: JSON.stringify(input),
+		},
+		token,
+	);
+	return agencyMeSchema.parse(data) as AgencyMe;
+}
+
+export async function changePassword(token: string, input: ChangePasswordInput) {
+	const data = await request<unknown>(
+		"/api/me/change-password",
+		{
+			method: "POST",
+			headers: { Authorization: `Bearer ${token}` },
+			body: JSON.stringify(input),
+		},
+		token,
+	);
+	return agencyMeSchema.parse(data) as AgencyMe;
 }

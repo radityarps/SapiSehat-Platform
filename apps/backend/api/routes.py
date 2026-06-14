@@ -28,6 +28,8 @@ from api.schemas import (
     AgencyLoginRequest,
     AuthResponse,
     AuthAccountResponse,
+    ProfileUpdateRequest,
+    ChangePasswordRequest,
     FarmerProfileUpdateRequest,
     FarmerArchiveRequest,
     FarmerPreferencesRequest,
@@ -315,6 +317,52 @@ async def get_current_surface_account(
     )
     if account is None:
         raise HTTPException(status_code=401, detail="Account not found")
+    return _serialize_auth_account(account)
+
+
+@router.put("/me/profile", response_model=AuthAccountResponse, tags=["auth"])
+async def update_current_profile(
+    request: ProfileUpdateRequest,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Update the authenticated account's display name."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    try:
+        account = surface_account_store.update_profile(
+            account_id=account_id, name=request.name
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _serialize_auth_account(account)
+
+
+@router.post("/me/change-password", response_model=AuthAccountResponse, tags=["auth"])
+async def change_current_password(
+    request: ChangePasswordRequest,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Change the authenticated account's password."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    try:
+        account = surface_account_store.change_password(
+            account_id=account_id,
+            current_password=request.current_password,
+            new_password=request.new_password,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     return _serialize_auth_account(account)
 
 
@@ -1613,7 +1661,9 @@ async def list_jurisdictions(
     }
 
 
-@router.get("/notifications", response_model=NotificationListResponse, tags=["notifications"])
+@router.get(
+    "/notifications", response_model=NotificationListResponse, tags=["notifications"]
+)
 async def list_notifications(
     authorization: str = Header(..., alias="Authorization"),
     unread_only: bool = Query(default=False),
@@ -1655,7 +1705,9 @@ async def mark_notification_read(
         raise HTTPException(status_code=401, detail=str(exc)) from exc
     account_id = str(claims["sub"])
     account_type = str(claims["account_type"])
-    notification = notification_store.mark_read(notification_id, account_id, account_type)
+    notification = notification_store.mark_read(
+        notification_id, account_id, account_type
+    )
     if notification is None:
         raise HTTPException(status_code=404, detail="Notification not found")
     return _serialize_notification(notification)
