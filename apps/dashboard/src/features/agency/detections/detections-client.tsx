@@ -404,14 +404,14 @@ function DetailCell({
 	children?: React.ReactNode;
 }) {
 	return (
-		<div className="flex overflow-hidden border-b border-r">
-			<div className="flex w-2/5 shrink-0 items-center bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
+		<div className="flex min-w-0 overflow-hidden border-b border-r">
+			<div className="flex w-2/5 shrink-0 items-start bg-muted/50 px-3 py-2 text-xs text-muted-foreground">
 				{label}
 			</div>
-			<div className="flex flex-1 items-center overflow-hidden px-3 py-2">
+			<div className="flex flex-1 min-w-0 items-start px-3 py-2">
 				{children ?? (
 					<span
-						className={`text-sm font-medium truncate ${mono ? "font-mono text-xs" : ""}`}
+						className={`text-sm font-medium break-words min-w-0 w-full ${mono ? "font-mono text-xs" : ""}`}
 					>
 						{value}
 					</span>
