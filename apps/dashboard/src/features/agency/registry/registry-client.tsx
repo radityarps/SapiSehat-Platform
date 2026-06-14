@@ -14,6 +14,7 @@ import { Skeleton } from "@/src/shared/ui/skeleton";
 import {
 	getAgencyRegistry,
 	getDetectionMonitoring,
+	getJurisdictions,
 } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
 import type { AgencyRegistryFarmer } from "@/src/shared/types/api";
@@ -50,6 +51,20 @@ export function RegistryClient() {
 		queryFn: () => getDetectionMonitoring(token, agencyUserId),
 		enabled: Boolean(token && agencyUserId),
 	});
+
+	const jurisdictionsQuery = useQuery({
+		queryKey: ["jurisdictions"],
+		queryFn: () => getJurisdictions(token, agencyUserId),
+		enabled: Boolean(token && agencyUserId),
+	});
+
+	const jurisdictionNameById = useMemo(() => {
+		const map: Record<string, string> = {};
+		(jurisdictionsQuery.data?.jurisdictions ?? []).forEach((j) => {
+			map[j.id] = j.name;
+		});
+		return map;
+	}, [jurisdictionsQuery.data?.jurisdictions]);
 
 	const cattleCountByFarmer = useMemo(() => {
 		const map: Record<string, number> = {};
@@ -94,7 +109,9 @@ export function RegistryClient() {
 					<span className="font-medium">{row.original.name}</span>
 				),
 			},
-			{ accessorKey: "jurisdiction_id", header: "Jurisdiction" },
+			{ accessorKey: "jurisdiction_id", header: "Location", cell: ({ row }) => (
+				<span>{jurisdictionNameById[row.original.jurisdiction_id] ?? row.original.jurisdiction_id}</span>
+			) },
 			{
 				id: "cattle",
 				header: "Cattle",
@@ -156,7 +173,7 @@ export function RegistryClient() {
 				enableSorting: false,
 			},
 		],
-		[router, cattleCountByFarmer, detectionCountByFarmer],
+		[router, cattleCountByFarmer, detectionCountByFarmer, jurisdictionNameById],
 	);
 
 	const table = useReactTable({
