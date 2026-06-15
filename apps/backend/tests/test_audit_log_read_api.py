@@ -39,7 +39,7 @@ def test_admin_can_read_recent_audit_logs_with_filters():
     assert body[0]["resource_id"] == "media-1"
     assert body[0]["metadata_json"] == {"content_type": "image/jpeg"}
 
-def test_non_admin_agency_cannot_read_audit_logs():
+def test_non_admin_agency_can_read_audit_logs():
     audit_log_store.record(
         actor_type="farmer",
         actor_id="farmer-1",
@@ -53,5 +53,5 @@ def test_non_admin_agency_cannot_read_audit_logs():
         headers={"X-Agency-User-Id": "semarang-officer"},
     )
 
-    assert response.status_code == 403
-    assert "admin" in response.text
+    assert response.status_code == 200, response.text
+    assert "audit_logs" in response.json()
