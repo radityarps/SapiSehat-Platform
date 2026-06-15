@@ -29,6 +29,7 @@ class SurfaceAccount:
     password_hash: str
     is_active: bool = True
     archived_at: str | None = None
+    address: str | None = None
 
 
 class SurfaceAccountStore:
@@ -115,13 +116,15 @@ class SurfaceAccountStore:
             return None
         return account
 
-    def update_farmer_profile(self, *, account_id: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+    def update_farmer_profile(self, *, account_id: str, name: str, jurisdiction_id: str, address: str | None = None) -> SurfaceAccount:
         with SessionLocal() as session:
             row = session.get(AccountModel, account_id)
             if row is None or row.account_type != "farmer" or not row.is_active:
                 raise ValueError("farmer account not found")
             row.name = name
             row.jurisdiction_id = jurisdiction_id
+            if address is not None:
+                row.address = address
             session.commit()
             session.refresh(row)
             return _account_from_row(row)
@@ -181,6 +184,7 @@ def _account_from_row(row: AccountModel) -> SurfaceAccount:
         account_type=row.account_type,
         email=row.email,
         name=row.name,
+        address=getattr(row, "address", None),
         jurisdiction_id=row.jurisdiction_id,
         password_hash=row.password_hash,
         is_active=getattr(row, "is_active", True),

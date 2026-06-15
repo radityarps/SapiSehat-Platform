@@ -20,6 +20,7 @@ class SapiSehatApiClient {
       farmerId: account['id'] as String,
       email: account['email'] as String,
       name: account['name'] as String? ?? '',
+      address: account['address'] as String?,
       jurisdictionId: account['jurisdiction_id'] as String? ?? 'tembalang',
       isActive: account['is_active'] as bool? ?? true,
     );
@@ -41,7 +42,12 @@ class SapiSehatApiClient {
     final response = await transport.send(ApiRequest('PUT', '/api/farmers/${session.farmerId}/profile', body: jsonEncode(draft.toJson()), headers: _auth(session)));
     if (response.statusCode < 200 || response.statusCode >= 300) throw Exception('Profile update failed');
     final account = response.json;
-    return session.copyWith(name: account['name'] as String? ?? draft.name, jurisdictionId: account['jurisdiction_id'] as String? ?? draft.jurisdictionId, isActive: account['is_active'] as bool? ?? true);
+    return session.copyWith(
+      name: account['name'] as String? ?? draft.name,
+      address: account['address'] as String? ?? draft.address,
+      jurisdictionId: account['jurisdiction_id'] as String? ?? draft.jurisdictionId,
+      isActive: account['is_active'] as bool? ?? true,
+    );
   }
 
   Future<AccountSession> archiveFarmerAccount(AccountSession session, String password) async {

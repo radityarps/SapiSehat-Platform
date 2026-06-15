@@ -83,7 +83,7 @@ router = APIRouter(prefix="/api")
 
 
 def _serialize_auth_account(account):
-    return {"id": account.id, "account_type": account.account_type, "email": account.email, "is_active": account.is_active, "name": account.name, "jurisdiction_id": account.jurisdiction_id}
+    return {"id": account.id, "account_type": account.account_type, "email": account.email, "is_active": account.is_active, "name": account.name, "address": getattr(account, "address", None), "jurisdiction_id": account.jurisdiction_id}
 
 
 def _get_farmer_preferences(farmer_id: str):
@@ -224,7 +224,7 @@ async def update_farmer_profile(farmer_id: str, request: FarmerProfileUpdateRequ
     if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
         raise HTTPException(status_code=403, detail="Farmer profile update requires same farmer account")
     try:
-        account = surface_account_store.update_farmer_profile(account_id=farmer_id, name=request.name, jurisdiction_id=request.jurisdiction_id)
+        account = surface_account_store.update_farmer_profile(account_id=farmer_id, name=request.name, jurisdiction_id=request.jurisdiction_id, address=request.address)
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
     return _serialize_auth_account(account)

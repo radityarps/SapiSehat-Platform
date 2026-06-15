@@ -37,6 +37,8 @@ dependencies:
   flutter_riverpod: ^2.6.1
   flutter_dotenv: ^5.2.1
   flutter_svg: ^2.2.3
+  geolocator: ^13.0.2
+  http: ^1.4.0
 
 dev_dependencies:
   flutter_test:

@@ -87,12 +87,14 @@ class AuthAccountResponse(BaseModel):
     email: str
     is_active: bool = True
     name: str = ""
+    address: Optional[str] = None
     jurisdiction_id: str = ""
 
 
 class FarmerProfileUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
+    address: Optional[str] = Field(default=None, max_length=300)
 
 
 class FarmerArchiveRequest(BaseModel):

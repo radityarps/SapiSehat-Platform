@@ -16,6 +16,7 @@ class AccountModel(Base):
     account_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     email: Mapped[str] = mapped_column(String(254), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     jurisdiction_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
