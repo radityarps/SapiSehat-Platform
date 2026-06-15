@@ -45,7 +45,7 @@ def validate_production_settings(settings: "Settings") -> None:
 class Settings(BaseSettings):
     """Application configuration loaded from environment variables."""
 
-    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False)
+    model_config = SettingsConfigDict(env_file=".env", case_sensitive=False, extra="ignore")
 
     # FastAPI
     fastapi_env: str = os.getenv("FASTAPI_ENV", "development")
