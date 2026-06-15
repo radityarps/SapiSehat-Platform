@@ -10,27 +10,39 @@ from api.database import Base
 
 class AccountModel(Base):
     __tablename__ = "accounts"
-    __table_args__ = (UniqueConstraint("account_type", "email", name="uq_accounts_type_email"),)
+    __table_args__ = (
+        UniqueConstraint("account_type", "email", name="uq_accounts_type_email"),
+    )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
     account_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     email: Mapped[str] = mapped_column(String(254), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     address: Mapped[str | None] = mapped_column(String(300), nullable=True)
-    jurisdiction_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    jurisdiction_id: Mapped[str] = mapped_column(
+        String(120), nullable=False, index=True
+    )
     password_hash: Mapped[str] = mapped_column(String(128), nullable=False)
     is_active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     archived_at: Mapped[str | None] = mapped_column(String(80), nullable=True)
+
 
 class FarmerAccountModel(Base):
     __tablename__ = "farmer_accounts"
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    phone_number: Mapped[str] = mapped_column(String(40), nullable=False, unique=True, index=True)
+    phone_number: Mapped[str] = mapped_column(
+        String(40), nullable=False, unique=True, index=True
+    )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    jurisdiction_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    jurisdiction_id: Mapped[str] = mapped_column(
+        String(120), nullable=False, index=True
+    )
     consent_state: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
-    scan_image_storage_notice_accepted: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    scan_image_storage_notice_accepted: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+
 
 class AgencyJurisdictionModel(Base):
     __tablename__ = "agency_jurisdictions"
@@ -40,12 +52,14 @@ class AgencyJurisdictionModel(Base):
     level: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
 
+
 class AgencyUserModel(Base):
     __tablename__ = "agency_users"
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
     role: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     jurisdiction_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+
 
 class CattleProfileModel(Base):
     __tablename__ = "cattle_profiles"
@@ -58,7 +72,9 @@ class CattleProfileModel(Base):
     age_months: Mapped[int | None]
     birth_year_estimate: Mapped[int | None]
     status: Mapped[str] = mapped_column(String(20), nullable=False)
-    jurisdiction_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    jurisdiction_id: Mapped[str] = mapped_column(
+        String(120), nullable=False, index=True
+    )
 
 
 class DetectionEventModel(Base):
@@ -78,15 +94,23 @@ class StoredMediaModel(Base):
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
     farmer_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     cattle_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
-    detection_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
+    detection_id: Mapped[str | None] = mapped_column(
+        String(80), nullable=True, index=True
+    )
     checksum: Mapped[str] = mapped_column(String(160), nullable=False)
     consent_scope: Mapped[str] = mapped_column(String(80), nullable=False)
     storage_reference: Mapped[str] = mapped_column(String(500), nullable=False)
-    storage_backend: Mapped[str] = mapped_column(String(80), nullable=False, default="metadata-only")
+    storage_backend: Mapped[str] = mapped_column(
+        String(80), nullable=False, default="metadata-only"
+    )
     object_key: Mapped[str] = mapped_column(String(500), nullable=False, default="")
-    content_type: Mapped[str] = mapped_column(String(80), nullable=False, default="image/jpeg")
+    content_type: Mapped[str] = mapped_column(
+        String(80), nullable=False, default="image/jpeg"
+    )
     byte_size: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    retention_policy: Mapped[str] = mapped_column(String(80), nullable=False, default="first_release_monitoring")
+    retention_policy: Mapped[str] = mapped_column(
+        String(80), nullable=False, default="first_release_monitoring"
+    )
     created_at: Mapped[str] = mapped_column(String(80), nullable=False, default="")
 
 
@@ -127,9 +151,12 @@ class OfflineSyncedDetectionModel(Base):
 
     local_detection_id: Mapped[str] = mapped_column(String(160), primary_key=True)
     sync_status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
-    fusion_result_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    fusion_result_id: Mapped[str] = mapped_column(
+        String(80), nullable=False, index=True
+    )
     local_created_at: Mapped[str] = mapped_column(String(80), nullable=False)
     synced_at: Mapped[str] = mapped_column(String(80), nullable=False)
+
 
 class FollowUpModel(Base):
     __tablename__ = "follow_ups"
@@ -146,7 +173,9 @@ class ClusterRiskSignalModel(Base):
     __tablename__ = "cluster_risk_signals"
 
     id: Mapped[str] = mapped_column(String(120), primary_key=True)
-    jurisdiction_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    jurisdiction_id: Mapped[str] = mapped_column(
+        String(120), nullable=False, index=True
+    )
     disease_class: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     signal_count: Mapped[int] = mapped_column(Integer, nullable=False)
     window_days: Mapped[int] = mapped_column(Integer, nullable=False)
@@ -155,6 +184,7 @@ class ClusterRiskSignalModel(Base):
     summary_label: Mapped[str] = mapped_column(String(160), nullable=False)
     source_result_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False)
 
+
 class RateLimitRequestModel(Base):
     __tablename__ = "rate_limit_requests"
 
@@ -162,6 +192,7 @@ class RateLimitRequestModel(Base):
     client_key: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     path: Mapped[str] = mapped_column(String(160), nullable=False, index=True)
     requested_at: Mapped[float] = mapped_column(nullable=False, index=True)
+
 
 class AuditLogModel(Base):
     __tablename__ = "audit_logs"
@@ -180,10 +211,24 @@ class FarmerPreferenceModel(Base):
     __tablename__ = "farmer_preferences"
 
     farmer_id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    scan_result_notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    sync_notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    area_risk_advisory_notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    follow_up_status_notifications: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
-    quiet_hours_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    quiet_hours_start: Mapped[str] = mapped_column(String(8), nullable=False, default="21:00")
-    quiet_hours_end: Mapped[str] = mapped_column(String(8), nullable=False, default="06:00")
+    scan_result_notifications: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    sync_notifications: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    area_risk_advisory_notifications: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    follow_up_status_notifications: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=True
+    )
+    quiet_hours_enabled: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    quiet_hours_start: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="21:00"
+    )
+    quiet_hours_end: Mapped[str] = mapped_column(
+        String(8), nullable=False, default="06:00"
+    )

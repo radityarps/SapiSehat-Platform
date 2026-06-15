@@ -20,9 +20,13 @@ class SapiSehatApp extends StatelessWidget {
   Widget build(BuildContext context) {
     final overrides = <Override>[
       if (apiClient != null) apiClientProvider.overrideWithValue(apiClient!),
-      if (sessionStore != null) sessionStoreProvider.overrideWithValue(sessionStore!),
+      if (sessionStore != null)
+        sessionStoreProvider.overrideWithValue(sessionStore!),
     ];
-    return ProviderScope(overrides: overrides, child: const _SapiSehatAppView());
+    return ProviderScope(
+      overrides: overrides,
+      child: const _SapiSehatAppView(),
+    );
   }
 }
 
@@ -45,16 +49,17 @@ class _SapiSehatAppViewState extends ConsumerState<_SapiSehatAppView> {
       home: !onboarded
           ? OnboardingScreen(onFinished: () => setState(() => onboarded = true))
           : session == null
-              ? LoginScreen(
-                  apiClient: apiClient,
-                  sessionStore: sessionStore,
-                  onLoggedIn: (value) => ref.read(sessionControllerProvider.notifier).save(value),
-                )
-              : HomeScreen(
-                  apiClient: apiClient,
-                  session: session,
-                  sessionStore: sessionStore,
-                ),
+          ? LoginScreen(
+              apiClient: apiClient,
+              sessionStore: sessionStore,
+              onLoggedIn: (value) =>
+                  ref.read(sessionControllerProvider.notifier).save(value),
+            )
+          : HomeScreen(
+              apiClient: apiClient,
+              session: session,
+              sessionStore: sessionStore,
+            ),
     );
   }
 }
@@ -96,7 +101,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         apiClient: widget.apiClient,
         session: session,
         sessionStore: widget.sessionStore,
-        onSessionChanged: (s) => ref.read(sessionControllerProvider.notifier).save(s),
+        onSessionChanged: (s) =>
+            ref.read(sessionControllerProvider.notifier).save(s),
         onArchived: () => ref.read(sessionControllerProvider.notifier).clear(),
         onLogout: () => ref.read(sessionControllerProvider.notifier).clear(),
       ),

@@ -35,15 +35,11 @@ def _run_migrations() -> None:
         result = conn.exec_driver_sql("PRAGMA table_info(farmer_accounts)")
         existing = {row[1] for row in result.fetchall()}
         if "address" not in existing:
-            conn.exec_driver_sql(
-                "ALTER TABLE farmer_accounts ADD COLUMN address TEXT"
-            )
+            conn.exec_driver_sql("ALTER TABLE farmer_accounts ADD COLUMN address TEXT")
             conn.commit()
         # accounts.address
         result2 = conn.exec_driver_sql("PRAGMA table_info(accounts)")
         existing2 = {row[1] for row in result2.fetchall()}
         if "address" not in existing2:
-            conn.exec_driver_sql(
-                "ALTER TABLE accounts ADD COLUMN address TEXT"
-            )
+            conn.exec_driver_sql("ALTER TABLE accounts ADD COLUMN address TEXT")
             conn.commit()

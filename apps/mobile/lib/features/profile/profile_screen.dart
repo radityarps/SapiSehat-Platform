@@ -26,8 +26,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   late final name = TextEditingController(
     text: widget.session.name.isEmpty ? 'Demo Farmer' : widget.session.name,
   );
-  late final jurisdiction = TextEditingController(text: widget.session.jurisdictionId);
-  late final addressCtrl = TextEditingController(text: widget.session.address ?? '');
+  late final jurisdiction = TextEditingController(
+    text: widget.session.jurisdictionId,
+  );
+  late final addressCtrl = TextEditingController(
+    text: widget.session.address ?? '',
+  );
   bool saving = false;
   bool gpsLoading = false;
   String? error;
@@ -42,18 +46,88 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> fetchGpsAddress() async {
     setState(() { gpsLoading = true; error = null; });
+    // ignore: use_build_context_synchronously — context is always checked via mounted
+    final ctx = context;
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) throw Exception('Layanan lokasi tidak aktif.');
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) throw Exception('Izin lokasi ditolak.');
+      // Check location service
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        if (mounted) {
+          await showDialog(
+            context: ctx,
+            builder: (_) => AlertDialog(
+              title: const Text('Layanan lokasi tidak aktif'),
+              content: const Text('Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.'),
+              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
+            ),
+          );
+        }
+        return;
       }
-      if (permission == LocationPermission.deniedForever) throw Exception('Izin lokasi ditolak permanen. Buka pengaturan perangkat.');
-      final pos = await Geolocator.getCurrentPosition(locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium));
-      final uri = Uri.parse('https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json');
-      final resp = await http.get(uri, headers: {'User-Agent': 'SapiSehatApp/1.0'});
+
+      LocationPermission permission = await Geolocator.checkPermission();
+
+      // Permanently denied — direct to app settings
+      if (permission == LocationPermission.deniedForever) {
+        if (mounted) {
+          await showDialog(
+            context: ctx,
+            builder: (_) => AlertDialog(
+              title: const Text('Izin lokasi ditolak permanen'),
+              content: const Text(
+                'Izin lokasi telah ditolak secara permanen. '
+                'Buka pengaturan perangkat untuk mengizinkan akses lokasi.',
+              ),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+                FilledButton(
+                  onPressed: () { Navigator.pop(ctx); Geolocator.openAppSettings(); },
+                  child: const Text('Buka Pengaturan'),
+                ),
+              ],
+            ),
+          );
+        }
+        return;
+      }
+
+      // Not yet granted — explain then request
+      if (permission == LocationPermission.denied) {
+        final confirmed = await showDialog<bool>(
+          context: ctx,
+          builder: (_) => AlertDialog(
+            title: const Text('Izin lokasi diperlukan'),
+            content: const Text(
+              'SapiSehat membutuhkan izin lokasi untuk mengisi alamat secara '
+              'otomatis dari GPS. Izin ini hanya digunakan saat Anda menekan tombol lokasi.',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Izinkan')),
+            ],
+          ),
+        );
+        if (confirmed != true) return;
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied ||
+            permission == LocationPermission.deniedForever) {
+          setState(() => error = 'Izin lokasi ditolak.');
+          return;
+        }
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      );
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json',
+      );
+      final resp = await http.get(
+        uri,
+        headers: {'User-Agent': 'SapiSehatApp/1.0'},
+      );
+      if (!mounted) return;
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
         final displayName = data['display_name'] as String? ?? '';
@@ -67,7 +141,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> save() async {
-    setState(() { saving = true; error = null; });
+    setState(() {
+      saving = true;
+      error = null;
+    });
     try {
       final updated = await widget.apiClient.updateFarmerProfile(
         widget.session,
@@ -93,67 +170,80 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Edit profil')),
-        body: ListView(
-          padding: const EdgeInsets.all(20),
+    appBar: AppBar(title: const Text('Edit profil')),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        TextField(
+          controller: name,
+          decoration: const InputDecoration(
+            labelText: 'Nama',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          enabled: false,
+          controller: TextEditingController(text: widget.session.email),
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        TextField(
+          controller: jurisdiction,
+          decoration: const InputDecoration(
+            labelText: 'Kecamatan/distrik',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            TextField(
-              controller: name,
-              decoration: const InputDecoration(labelText: 'Nama', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              enabled: false,
-              controller: TextEditingController(text: widget.session.email),
-              decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: jurisdiction,
-              decoration: const InputDecoration(labelText: 'Kecamatan/distrik', border: OutlineInputBorder()),
-            ),
-            const SizedBox(height: 12),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: addressCtrl,
-                    maxLines: 2,
-                    decoration: const InputDecoration(
-                      labelText: 'Alamat',
-                      hintText: 'Kosongkan atau isi manual / gunakan GPS',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+            Expanded(
+              child: TextField(
+                controller: addressCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Alamat',
+                  hintText: 'Kosongkan atau isi manual / gunakan GPS',
+                  border: OutlineInputBorder(),
                 ),
-                const SizedBox(width: 8),
-                SizedBox(
-                  height: 56,
-                  child: OutlinedButton(
-                    onPressed: gpsLoading ? null : fetchGpsAddress,
-                    child: gpsLoading
-                        ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                        : const Icon(Icons.my_location),
-                  ),
-                ),
-              ],
+              ),
             ),
-            const SizedBox(height: 4),
-            const Text(
-              'Tekan ikon lokasi untuk mengisi alamat otomatis dari GPS. Anda bisa mengedit hasilnya.',
-              style: TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            if (error != null) ...[
-              const SizedBox(height: 8),
-              Text(error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
-            ],
-            const SizedBox(height: 20),
-            FilledButton(
-              onPressed: saving ? null : save,
-              child: Text(saving ? 'Menyimpan...' : 'Simpan profil'),
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 56,
+              child: OutlinedButton(
+                onPressed: gpsLoading ? null : fetchGpsAddress,
+                child: gpsLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location),
+              ),
             ),
           ],
         ),
-      );
+        const SizedBox(height: 4),
+        const Text(
+          'Tekan ikon lokasi untuk mengisi alamat otomatis dari GPS. Anda bisa mengedit hasilnya.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 8),
+          Text(error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+        ],
+        const SizedBox(height: 20),
+        FilledButton(
+          onPressed: saving ? null : save,
+          child: Text(saving ? 'Menyimpan...' : 'Simpan profil'),
+        ),
+      ],
+    ),
+  );
 }
