@@ -45,7 +45,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> fetchGpsAddress() async {
-    setState(() { gpsLoading = true; error = null; });
+    setState(() {
+      gpsLoading = true;
+      error = null;
+    });
     final ctx = context;
     try {
       // Check location service
@@ -57,11 +60,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context: ctx,
           builder: (_) => AlertDialog(
             title: const Text('Layanan lokasi tidak aktif'),
-            content: const Text('Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.'),
+            content: const Text(
+              'Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
               FilledButton(
-                onPressed: () { Navigator.pop(ctx); Geolocator.openLocationSettings(); },
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Geolocator.openLocationSettings();
+                },
                 child: const Text('Pengaturan'),
               ),
             ],
@@ -80,11 +91,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context: ctx,
           builder: (_) => AlertDialog(
             title: const Text('Izin lokasi ditolak'),
-            content: const Text('Izin lokasi telah ditolak secara permanen. Buka pengaturan aplikasi untuk mengizinkan akses lokasi.'),
+            content: const Text(
+              'Izin lokasi telah ditolak secara permanen. Buka pengaturan aplikasi untuk mengizinkan akses lokasi.',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
               FilledButton(
-                onPressed: () { Navigator.pop(ctx); Geolocator.openAppSettings(); },
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Geolocator.openAppSettings();
+                },
                 child: const Text('Pengaturan'),
               ),
             ],
@@ -101,10 +120,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context: ctx,
           builder: (_) => AlertDialog(
             title: const Text('Izin lokasi diperlukan'),
-            content: const Text('SapiSehat membutuhkan izin lokasi untuk mengisi alamat secara otomatis dari GPS. Izin ini hanya digunakan saat Anda menekan tombol lokasi.'),
+            content: const Text(
+              'SapiSehat membutuhkan izin lokasi untuk mengisi alamat secara otomatis dari GPS. Izin ini hanya digunakan saat Anda menekan tombol lokasi.',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Izinkan')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Izinkan'),
+              ),
             ],
           ),
         );
@@ -122,11 +149,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
             context: ctx,
             builder: (_) => AlertDialog(
               title: const Text('Izin lokasi ditolak'),
-              content: const Text('Buka pengaturan aplikasi untuk mengizinkan akses lokasi.'),
+              content: const Text(
+                'Buka pengaturan aplikasi untuk mengizinkan akses lokasi.',
+              ),
               actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Batal'),
+                ),
                 FilledButton(
-                  onPressed: () { Navigator.pop(ctx); Geolocator.openAppSettings(); },
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Geolocator.openAppSettings();
+                  },
                   child: const Text('Pengaturan'),
                 ),
               ],
@@ -151,7 +186,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
         final displayName = data['display_name'] as String? ?? '';
-        setState(() => addressCtrl.text = displayName);
+        final addr = data['address'] as Map<String, dynamic>? ?? {};
+        // Extract district (kecamatan): subdistrict > suburb > city_district > city
+        final district = (addr['subdistrict'] ??
+                addr['suburb'] ??
+                addr['city_district'] ??
+                addr['city'] ??
+                addr['town'] ??
+                '') as String;
+        setState(() {
+          addressCtrl.text = displayName;
+          if (district.isNotEmpty) jurisdiction.text = district;
+        });
       }
     } catch (e) {
       setState(() => error = e.toString());
