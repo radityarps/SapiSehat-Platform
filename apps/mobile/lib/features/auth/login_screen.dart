@@ -24,10 +24,16 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final email = TextEditingController(text: kDebugMode ? 'farmer@example.com' : '');
-  final password = TextEditingController(text: kDebugMode ? 'strong-password' : '');
+  final email = TextEditingController(
+    text: kDebugMode ? 'farmer@example.com' : '',
+  );
+  final password = TextEditingController(
+    text: kDebugMode ? 'strong-password' : '',
+  );
   final name = TextEditingController(text: kDebugMode ? 'Demo Farmer' : '');
-  final jurisdiction = TextEditingController(text: kDebugMode ? 'tembalang' : '');
+  final jurisdiction = TextEditingController(
+    text: kDebugMode ? 'tembalang' : '',
+  );
   final address = TextEditingController();
 
   bool registerMode = false;

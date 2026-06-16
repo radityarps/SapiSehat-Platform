@@ -258,8 +258,28 @@ Flutter farmer app email/password account creation flow with name, email, passwo
 _Avoid_: Agency registration, email-verification blocker, hidden terms, fake Google success
 
 **Jurisdiction Autofill from GPS**:
-Registration/profile helper that proposes a district/subdistrict jurisdiction from device location and lets the farmer confirm or edit it. It is a convenience input aid, not a precise geofence truth source.
+Registration/profile helper that proposes a district/subdistrict jurisdiction and full address from device location via Nominatim reverse geocoding, letting the farmer confirm or edit it. It is a convenience input aid, not a precise geofence truth source. Requires `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` Android permissions, requested at runtime with an explain-first dialog.
 _Avoid_: Silent auto-override, hard GPS lock, exact coordinate storage as profile identity
+
+**Farmer Address Field**:
+Optional free-text address on farmer account, populated via GPS auto-fill or manual entry. Stored in `AccountModel.address` and returned in auth responses. Used by agency dashboard registry to show farmer location.
+_Avoid_: Required registration field, precise GPS coordinate storage, address-as-identity
+
+**Agency Dashboard RBAC**:
+Role-based access control for agency dashboard with 5 roles: admin, province_officer, district_officer, village_officer, viewer. Each role determines which nav items, pages, and data are visible, scoped by jurisdiction assignment.
+_Avoid_: Single admin-only dashboard, no-role all-access, farmer RBAC
+
+**Agency Notification**:
+In-app notification for agency dashboard users, stored in `NotificationModel` and delivered via `GET /api/notifications`. Emitted by backend on follow-up status changes. Read/unread state tracked per account. Bell icon with unread badge in dashboard topbar opens a right-drawer sheet.
+_Avoid_: Email/SMS notification, push notification, farmer-facing agency notification
+
+**Dashboard Settings Page**:
+Agency dashboard page at `/agency/settings` with three sections: profile (edit display name), password change (auto-logout on success), and logout. All destructive actions guarded by AlertDialog confirmation.
+_Avoid_: Agency registration, admin-only settings, farmer settings page
+
+**Debug Mode Pre-fill**:
+Flutter `kDebugMode` flag that pre-fills login/register fields with seeded dev credentials (`farmer@example.com` / `strong-password`) in debug builds only. Empty in release builds.
+_Avoid_: Hardcoded production credentials, env-file credentials for mobile, release-time pre-fill
 
 **Farmer Account Archive**:
 Backend-supported soft delete for farmer account that disables future login while preserving existing records, scan images, and follow-up history. It is reversible only by admin policy, not by farmer self-service in first release.
