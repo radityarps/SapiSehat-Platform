@@ -108,15 +108,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     ];
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('SapiSehat'),
-        actions: const [
-          Padding(
-            padding: EdgeInsets.only(right: 16),
-            child: Center(child: Text('Sinyal risiko, bukan diagnosis')),
-          ),
-        ],
-      ),
       body: pages[tab],
       bottomNavigationBar: NavigationBar(
         selectedIndex: tab,

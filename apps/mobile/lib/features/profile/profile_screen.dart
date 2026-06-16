@@ -188,12 +188,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final displayName = data['display_name'] as String? ?? '';
         final addr = data['address'] as Map<String, dynamic>? ?? {};
         // Extract district (kecamatan): subdistrict > suburb > city_district > city
-        final district = (addr['subdistrict'] ??
-                addr['suburb'] ??
-                addr['city_district'] ??
-                addr['city'] ??
-                addr['town'] ??
-                '') as String;
+        final district =
+            (addr['subdistrict'] ??
+                    addr['suburb'] ??
+                    addr['city_district'] ??
+                    addr['city'] ??
+                    addr['town'] ??
+                    '')
+                as String;
         setState(() {
           addressCtrl.text = displayName;
           if (district.isNotEmpty) jurisdiction.text = district;
