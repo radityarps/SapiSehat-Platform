@@ -292,3 +292,7 @@ _Avoid_: Legal-only onboarding, alarmist disease promises, diagnosis claims
 **Offline TFLite Model Asset**:
 Legacy Android asset `cattle_disease.tflite` under `apps/mobile-android-legacy/app/src/main/assets/` is the current offline image inference model source for Flutter migration.
 _Avoid_: Missing-model assumption, hardcoded fake offline scores
+
+**Complete Livestock Profile Fields**:
+Cattle profiles now store optional physical, reproductive, health, economic, and notes data: `name`, `color`, `weight_kg`, `reproductive_status`, `is_pregnant`, `last_calving_date`, `last_vaccination_date`, `last_deworming_date`, `health_notes`, `purchase_date`, `purchase_price_idr`, and `notes`. Timeline events remain separate for dated operational history, while profile fields store latest-known summary values. Development seeding includes realistic Indonesian cattle data for these fields.
+_Avoid_: diagnosis claims, required completion before scanning, replacing timeline events with summary-only data

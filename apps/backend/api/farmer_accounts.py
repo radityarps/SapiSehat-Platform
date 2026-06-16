@@ -21,6 +21,7 @@ class FarmerAccount:
     id: str
     phone_number: str
     name: str
+    address: str | None
     jurisdiction_id: str
     consent_state: FarmerConsentState
     scan_image_storage_notice_accepted: bool = False
@@ -38,6 +39,7 @@ class FarmerAccountStore:
         name: str,
         jurisdiction_id: str,
         consent_state: FarmerConsentState = FarmerConsentState.PRIVATE,
+        address: str | None = None,
     ) -> tuple[FarmerAccount, bool]:
         normalized_phone = normalize_phone_number(phone_number)
         with SessionLocal() as session:
@@ -49,6 +51,7 @@ class FarmerAccountStore:
                 id=f"farmer-{next_id}",
                 phone_number=normalized_phone,
                 name=name,
+                address=address,
                 jurisdiction_id=jurisdiction_id,
                 consent_state=consent_state,
             )
@@ -57,6 +60,7 @@ class FarmerAccountStore:
                     id=account.id,
                     phone_number=account.phone_number,
                     name=account.name,
+                    address=account.address,
                     jurisdiction_id=account.jurisdiction_id,
                     consent_state=account.consent_state.value,
                     scan_image_storage_notice_accepted=account.scan_image_storage_notice_accepted,
@@ -96,6 +100,7 @@ def _farmer_from_row(row: FarmerAccountModel) -> FarmerAccount:
         id=row.id,
         phone_number=row.phone_number,
         name=row.name,
+        address=getattr(row, "address", None),
         jurisdiction_id=row.jurisdiction_id,
         consent_state=FarmerConsentState(row.consent_state),
         scan_image_storage_notice_accepted=bool(row.scan_image_storage_notice_accepted),

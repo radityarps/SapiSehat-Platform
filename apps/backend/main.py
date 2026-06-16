@@ -39,6 +39,14 @@ app.add_middleware(
 app.include_router(router)
 
 
+@app.on_event("startup")
+async def seed_development_data_on_startup():
+    """Seed development sample data idempotently for local demos."""
+    from api.seeding import seed_development_sample_data
+
+    seed_development_sample_data()
+
+
 @app.get("/")
 async def root():
     """Root endpoint."""

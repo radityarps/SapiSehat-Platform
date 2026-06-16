@@ -172,8 +172,21 @@ class SapiSehatApiClient {
           'sex': cattle.sex,
           'breed': cattle.breed,
           'age_months': cattle.ageMonths,
+          'birth_year_estimate': cattle.birthYearEstimate,
           'jurisdiction_id': cattle.jurisdictionId,
           'is_archived': cattle.isArchived,
+          'name': cattle.name,
+          'color': cattle.color,
+          'weight_kg': cattle.weightKg,
+          'reproductive_status': cattle.reproductiveStatus,
+          'is_pregnant': cattle.isPregnant,
+          'last_calving_date': cattle.lastCalvingDate,
+          'last_vaccination_date': cattle.lastVaccinationDate,
+          'last_deworming_date': cattle.lastDewormingDate,
+          'health_notes': cattle.healthNotes,
+          'purchase_date': cattle.purchaseDate,
+          'purchase_price_idr': cattle.purchasePriceIdr,
+          'notes': cattle.notes,
         }),
         headers: {'Accept': 'application/json'},
       ),
@@ -185,8 +198,8 @@ class SapiSehatApiClient {
   Future<CattleProfile> archiveCattle(String farmerId, String cattleId) async {
     final response = await transport.send(
       ApiRequest(
-        'POST',
-        '/api/farmers/$farmerId/cattle/$cattleId/archive',
+        'DELETE',
+        '/api/farmers/$farmerId/cattle/$cattleId',
         headers: {'Accept': 'application/json'},
       ),
     );

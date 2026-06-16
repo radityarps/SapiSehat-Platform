@@ -196,7 +196,7 @@ async def register_farmer_surface_account(request: FarmerRegisterRequest):
             jurisdiction_id=request.jurisdiction_id,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {
         "access_token": issue_token(account),
         "token_type": "bearer",
@@ -213,7 +213,7 @@ async def login_farmer_surface_account(request: FarmerLoginRequest):
             account_type="farmer", email=request.email, password=request.password
         )
     except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc))
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return {
@@ -231,7 +231,7 @@ async def login_farmer_google_account(request: FarmerGoogleLoginRequest):
             id_token=request.id_token, jurisdiction_id=request.jurisdiction_id
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {
         "access_token": issue_token(account),
         "token_type": "bearer",
@@ -248,7 +248,7 @@ async def login_agency_surface_account(request: AgencyLoginRequest):
             account_type="agency", email=request.email, password=request.password
         )
     except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc))
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return {
@@ -274,7 +274,7 @@ async def get_current_surface_account(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc))
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
     account = surface_account_store.get_by_id(
         account_type=str(claims["account_type"]), account_id=str(claims["sub"])
     )
@@ -296,7 +296,7 @@ async def update_farmer_profile(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc))
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
     if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
         raise HTTPException(
             status_code=403, detail="Farmer profile update requires same farmer account"
@@ -309,7 +309,7 @@ async def update_farmer_profile(
             address=request.address,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc))
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
     return _serialize_auth_account(account)
 
 
@@ -326,7 +326,7 @@ async def get_farmer_preferences(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc))
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
     if str(claims["sub"]) != farmer_id:
         raise HTTPException(
             status_code=403, detail="Preferences require same farmer account"
@@ -349,7 +349,7 @@ async def put_farmer_preferences(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc))
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
     if str(claims["sub"]) != farmer_id:
         raise HTTPException(
             status_code=403, detail="Preferences require same farmer account"
@@ -386,7 +386,7 @@ async def archive_farmer_account(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc))
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
     if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
         raise HTTPException(
             status_code=403, detail="Farmer archive requires same farmer account"
@@ -396,7 +396,7 @@ async def archive_farmer_account(
             account_id=farmer_id, password=request.password
         )
     except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc))
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     return _serialize_auth_account(account)
 
 
@@ -411,6 +411,18 @@ def _serialize_cattle(profile):
         "birth_year_estimate": profile.birth_year_estimate,
         "status": profile.status.value,
         "jurisdiction_id": profile.jurisdiction_id,
+        "name": profile.name,
+        "color": profile.color,
+        "weight_kg": profile.weight_kg,
+        "reproductive_status": profile.reproductive_status,
+        "is_pregnant": profile.is_pregnant,
+        "last_calving_date": profile.last_calving_date,
+        "last_vaccination_date": profile.last_vaccination_date,
+        "last_deworming_date": profile.last_deworming_date,
+        "health_notes": profile.health_notes,
+        "purchase_date": profile.purchase_date,
+        "purchase_price_idr": profile.purchase_price_idr,
+        "notes": profile.notes,
     }
 
 
@@ -623,15 +635,17 @@ async def register_or_sign_in_farmer_account(request: FarmerAccountRequest):
         account, created = farmer_account_store.upsert_by_phone(
             phone_number=request.phone_number,
             name=request.name,
+            address=request.address,
             jurisdiction_id=request.jurisdiction_id,
             consent_state=FarmerConsentState(request.consent_state),
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {
         "id": account.id,
         "phone_number": account.phone_number,
         "name": account.name,
+        "address": account.address,
         "jurisdiction_id": account.jurisdiction_id,
         "consent_state": account.consent_state.value,
         "created": created,
@@ -692,9 +706,21 @@ async def create_cattle_profile(
             birth_year_estimate=request.birth_year_estimate,
             status=CattleStatus(request.status),
             jurisdiction_id=request.jurisdiction_id,
+            name=request.name,
+            color=request.color,
+            weight_kg=request.weight_kg,
+            reproductive_status=request.reproductive_status,
+            is_pregnant=request.is_pregnant,
+            last_calving_date=request.last_calving_date,
+            last_vaccination_date=request.last_vaccination_date,
+            last_deworming_date=request.last_deworming_date,
+            health_notes=request.health_notes,
+            purchase_date=request.purchase_date,
+            purchase_price_idr=request.purchase_price_idr,
+            notes=request.notes,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return _serialize_cattle(profile)
 
 
@@ -725,6 +751,46 @@ async def select_farmer_cattle_for_detection(
     return _serialize_cattle_detail(profile)
 
 
+@router.put(
+    "/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileResponse
+)
+async def update_farmer_cattle(
+    request: CattleProfileRequest,
+    farmer_id: str = Path(...),
+    cattle_id: str = Path(...),
+):
+    """Update farmer-owned cattle profile fields."""
+    try:
+        profile = cattle_profile_store.update(
+            farmer_id=farmer_id,
+            cattle_id=cattle_id,
+            tag=request.tag,
+            sex=CattleSex(request.sex),
+            breed=request.breed,
+            age_months=request.age_months,
+            birth_year_estimate=request.birth_year_estimate,
+            status=CattleStatus(request.status),
+            jurisdiction_id=request.jurisdiction_id,
+            name=request.name,
+            color=request.color,
+            weight_kg=request.weight_kg,
+            reproductive_status=request.reproductive_status,
+            is_pregnant=request.is_pregnant,
+            last_calving_date=request.last_calving_date,
+            last_vaccination_date=request.last_vaccination_date,
+            last_deworming_date=request.last_deworming_date,
+            health_notes=request.health_notes,
+            purchase_date=request.purchase_date,
+            purchase_price_idr=request.purchase_price_idr,
+            notes=request.notes,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if profile is None:
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    return _serialize_cattle(profile)
+
+
 @router.delete(
     "/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileResponse
 )
@@ -734,6 +800,17 @@ async def archive_farmer_cattle(farmer_id: str = Path(...), cattle_id: str = Pat
     if profile is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     return _serialize_cattle(profile)
+
+
+@router.post(
+    "/farmers/{farmer_id}/cattle/{cattle_id}/archive",
+    response_model=CattleProfileResponse,
+)
+async def archive_farmer_cattle_legacy_post(
+    farmer_id: str = Path(...), cattle_id: str = Path(...)
+):
+    """Backward-compatible archive endpoint for older mobile builds."""
+    return await archive_farmer_cattle(farmer_id=farmer_id, cattle_id=cattle_id)
 
 
 @router.get("/agency/cattle", response_model=CattleProfileListResponse)
@@ -774,7 +851,7 @@ async def add_farmer_cattle_timeline_event(
             creator_id=request.creator_id,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     if event is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     return _serialize_cattle_event(event)
@@ -926,7 +1003,7 @@ async def create_backend_primary_fusion_result(request: FusionRequest):
             nlp_evidence=request.nlp_evidence,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return _serialize_fusion_result(result)
 
 
@@ -964,7 +1041,7 @@ async def sync_offline_detection(request: OfflineDetectionSyncRequest):
             nlp_evidence=request.nlp_evidence,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
     return {
         "local_detection_id": synced.local_detection_id,
         "sync_status": synced.sync_status,

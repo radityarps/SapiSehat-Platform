@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, JSON, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, Float, Integer, JSON, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from api.database import Base
@@ -35,6 +35,7 @@ class FarmerAccountModel(Base):
         String(40), nullable=False, unique=True, index=True
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     jurisdiction_id: Mapped[str] = mapped_column(
         String(120), nullable=False, index=True
     )
@@ -75,6 +76,22 @@ class CattleProfileModel(Base):
     jurisdiction_id: Mapped[str] = mapped_column(
         String(120), nullable=False, index=True
     )
+    # Physical / identity
+    name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    color: Mapped[str | None] = mapped_column(String(80), nullable=True)
+    weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    # Reproduction
+    reproductive_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    is_pregnant: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
+    last_calving_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    # Health
+    last_vaccination_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    last_deworming_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    health_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    # Economic
+    purchase_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
+    purchase_price_idr: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class DetectionEventModel(Base):

@@ -197,16 +197,48 @@ function CattleTable({
 				accessorKey: "tag",
 				header: "Tag",
 				cell: ({ row }) => (
-					<span className="font-mono text-xs">{row.original.tag}</span>
+					<div className="space-y-0.5">
+						<span className="font-mono text-xs">{row.original.tag}</span>
+						{row.original.name ? (
+							<div className="text-xs text-muted-foreground">
+								{row.original.name}
+							</div>
+						) : null}
+					</div>
 				),
 			},
 			{ accessorKey: "breed", header: "Breed" },
+			{
+				accessorKey: "weight_kg",
+				header: "Weight",
+				cell: ({ row }) =>
+					row.original.weight_kg ? `${row.original.weight_kg} kg` : "-",
+			},
 			{
 				accessorKey: "sex",
 				header: "Sex",
 				cell: ({ row }) => (
 					<span className="capitalize">{row.original.sex}</span>
 				),
+			},
+			{
+				accessorKey: "reproductive_status",
+				header: "Reproduction",
+				cell: ({ row }) => (
+					<div className="space-y-0.5">
+						<span className="capitalize">
+							{row.original.reproductive_status?.replaceAll("_", " ") ?? "-"}
+						</span>
+						{row.original.is_pregnant ? (
+							<div className="text-xs text-muted-foreground">Pregnant</div>
+						) : null}
+					</div>
+				),
+			},
+			{
+				accessorKey: "last_vaccination_date",
+				header: "Vaccination",
+				cell: ({ row }) => row.original.last_vaccination_date ?? "-",
 			},
 			{
 				accessorKey: "status",
