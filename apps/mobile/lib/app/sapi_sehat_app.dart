@@ -108,7 +108,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       ),
     ];
     return Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(toolbarHeight: 0),
       body: pages[tab],
       bottomNavigationBar: NavigationBar(
         selectedIndex: tab,
