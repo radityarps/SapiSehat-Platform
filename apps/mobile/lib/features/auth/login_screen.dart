@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
@@ -23,10 +24,10 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final email = TextEditingController();
-  final password = TextEditingController();
-  final name = TextEditingController();
-  final jurisdiction = TextEditingController();
+  final email = TextEditingController(text: kDebugMode ? 'farmer@example.com' : '');
+  final password = TextEditingController(text: kDebugMode ? 'strong-password' : '');
+  final name = TextEditingController(text: kDebugMode ? 'Demo Farmer' : '');
+  final jurisdiction = TextEditingController(text: kDebugMode ? 'tembalang' : '');
   final address = TextEditingController();
 
   bool registerMode = false;
@@ -47,17 +48,26 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   // Validation
-  bool get emailValid => RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email.text.trim());
+  bool get emailValid =>
+      RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email.text.trim());
   bool get passwordValid => password.text.length >= 8;
   bool get nameValid => name.text.trim().length >= 2;
   bool get jurisdictionValid => jurisdiction.text.trim().isNotEmpty;
 
   bool get loginEnabled => emailValid && passwordValid && !loading;
   bool get registerEnabled =>
-      emailValid && passwordValid && nameValid && jurisdictionValid && termsAccepted && !loading;
+      emailValid &&
+      passwordValid &&
+      nameValid &&
+      jurisdictionValid &&
+      termsAccepted &&
+      !loading;
 
   Future<void> fetchGpsAddress() async {
-    setState(() { gpsLoading = true; error = null; });
+    setState(() {
+      gpsLoading = true;
+      error = null;
+    });
     final ctx = context;
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -68,11 +78,19 @@ class _LoginScreenState extends State<LoginScreen> {
           context: ctx,
           builder: (_) => AlertDialog(
             title: const Text('Layanan lokasi tidak aktif'),
-            content: const Text('Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.'),
+            content: const Text(
+              'Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
               FilledButton(
-                onPressed: () { Navigator.pop(ctx); Geolocator.openLocationSettings(); },
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Geolocator.openLocationSettings();
+                },
                 child: const Text('Pengaturan'),
               ),
             ],
@@ -90,11 +108,19 @@ class _LoginScreenState extends State<LoginScreen> {
           context: ctx,
           builder: (_) => AlertDialog(
             title: const Text('Izin lokasi ditolak'),
-            content: const Text('Buka pengaturan aplikasi untuk mengizinkan akses lokasi.'),
+            content: const Text(
+              'Buka pengaturan aplikasi untuk mengizinkan akses lokasi.',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
               FilledButton(
-                onPressed: () { Navigator.pop(ctx); Geolocator.openAppSettings(); },
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Geolocator.openAppSettings();
+                },
                 child: const Text('Pengaturan'),
               ),
             ],
@@ -110,34 +136,58 @@ class _LoginScreenState extends State<LoginScreen> {
           context: ctx,
           builder: (_) => AlertDialog(
             title: const Text('Izin lokasi diperlukan'),
-            content: const Text('SapiSehat membutuhkan izin lokasi untuk mengisi alamat otomatis dari GPS.'),
+            content: const Text(
+              'SapiSehat membutuhkan izin lokasi untuk mengisi alamat otomatis dari GPS.',
+            ),
             actions: [
-              TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
-              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Izinkan')),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Izinkan'),
+              ),
             ],
           ),
         );
         if (confirmed != true) return;
         setState(() => gpsLoading = true);
         perm = await Geolocator.requestPermission();
-        if (perm == LocationPermission.denied || perm == LocationPermission.deniedForever) {
-          setState(() { gpsLoading = false; error = 'Izin lokasi ditolak.'; });
+        if (perm == LocationPermission.denied ||
+            perm == LocationPermission.deniedForever) {
+          setState(() {
+            gpsLoading = false;
+            error = 'Izin lokasi ditolak.';
+          });
           return;
         }
       }
 
       final pos = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(accuracy: LocationAccuracy.medium),
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
       );
       final uri = Uri.parse(
         'https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json',
       );
-      final resp = await http.get(uri, headers: {'User-Agent': 'SapiSehatApp/1.0'});
+      final resp = await http.get(
+        uri,
+        headers: {'User-Agent': 'SapiSehatApp/1.0'},
+      );
       if (!mounted) return;
       if (resp.statusCode == 200) {
         final data = jsonDecode(resp.body) as Map<String, dynamic>;
         final addr = data['address'] as Map<String, dynamic>? ?? {};
-        final district = (addr['subdistrict'] ?? addr['suburb'] ?? addr['city_district'] ?? addr['city'] ?? addr['town'] ?? '') as String;
+        final district =
+            (addr['subdistrict'] ??
+                    addr['suburb'] ??
+                    addr['city_district'] ??
+                    addr['city'] ??
+                    addr['town'] ??
+                    '')
+                as String;
         setState(() {
           address.text = data['display_name'] as String? ?? '';
           if (district.isNotEmpty) jurisdiction.text = district;
@@ -151,22 +201,32 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   Future<void> submit() async {
-    setState(() { loading = true; error = null; });
+    setState(() {
+      loading = true;
+      error = null;
+    });
     try {
       final session = registerMode
-          ? await widget.apiClient.registerFarmer(FarmerRegistrationDraft(
-              name: name.text.trim(),
-              email: email.text.trim(),
-              password: password.text,
-              jurisdictionId: jurisdiction.text.trim(),
-            ))
-          : await widget.apiClient.loginFarmer(email.text.trim(), password.text);
+          ? await widget.apiClient.registerFarmer(
+              FarmerRegistrationDraft(
+                name: name.text.trim(),
+                email: email.text.trim(),
+                password: password.text,
+                jurisdictionId: jurisdiction.text.trim(),
+              ),
+            )
+          : await widget.apiClient.loginFarmer(
+              email.text.trim(),
+              password.text,
+            );
       await widget.sessionStore.save(session);
       widget.onLoggedIn(session);
     } catch (_) {
-      setState(() => error = registerMode
-          ? 'Daftar gagal. Periksa data akun.'
-          : 'Login gagal. Periksa email dan password.');
+      setState(
+        () => error = registerMode
+            ? 'Daftar gagal. Periksa data akun.'
+            : 'Login gagal. Periksa email dan password.',
+      );
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -180,10 +240,17 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.all(24),
           children: [
             const SizedBox(height: 24),
-            Text('SapiSehat',
-                style: Theme.of(context).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900)),
+            Text(
+              'SapiSehat',
+              style: Theme.of(
+                context,
+              ).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900),
+            ),
             const SizedBox(height: 8),
-            const Text('Sinyal risiko, bukan diagnosis', style: TextStyle(fontSize: 16)),
+            const Text(
+              'Sinyal risiko, bukan diagnosis',
+              style: TextStyle(fontSize: 16),
+            ),
             const SizedBox(height: 20),
             SegmentedButton<bool>(
               segments: const [
@@ -247,7 +314,11 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: OutlinedButton(
                       onPressed: gpsLoading ? null : fetchGpsAddress,
                       child: gpsLoading
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
                           : const Icon(Icons.my_location),
                     ),
                   ),
@@ -279,7 +350,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 hintText: 'Minimal 8 karakter',
                 border: const OutlineInputBorder(),
                 suffixIcon: IconButton(
-                  icon: Icon(showPassword ? Icons.visibility_off : Icons.visibility),
+                  icon: Icon(
+                    showPassword ? Icons.visibility_off : Icons.visibility,
+                  ),
                   onPressed: () => setState(() => showPassword = !showPassword),
                 ),
               ),
@@ -303,8 +376,14 @@ class _LoginScreenState extends State<LoginScreen> {
 
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: (registerMode ? registerEnabled : loginEnabled) ? submit : null,
-              child: Text(loading ? 'Memproses...' : (registerMode ? 'Daftar akun' : 'Masuk')),
+              onPressed: (registerMode ? registerEnabled : loginEnabled)
+                  ? submit
+                  : null,
+              child: Text(
+                loading
+                    ? 'Memproses...'
+                    : (registerMode ? 'Daftar akun' : 'Masuk'),
+              ),
             ),
             const SizedBox(height: 12),
             OutlinedButton(
@@ -314,7 +393,10 @@ class _LoginScreenState extends State<LoginScreen> {
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),
-                child: Text(error!, style: const TextStyle(color: Color(0xFFB42318))),
+                child: Text(
+                  error!,
+                  style: const TextStyle(color: Color(0xFFB42318)),
+                ),
               ),
           ],
         ),
