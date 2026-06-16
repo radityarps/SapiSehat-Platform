@@ -26,8 +26,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
               child: Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
                 Row(children: [
-                  Container(width: 40, height: 40, decoration: BoxDecoration(color: const Color(0xFF2E6B4F), borderRadius: BorderRadius.circular(12)), child: const Icon(Icons.pets, color: Colors.white)),
-                  const SizedBox(width: 8),
                   Text('SapiSehat', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800, color: const Color(0xFF2E6B4F))),
                 ]),
                 TextButton(onPressed: widget.onFinished, child: const Text('Lewati', style: TextStyle(color: Color(0xFF687266)))),
