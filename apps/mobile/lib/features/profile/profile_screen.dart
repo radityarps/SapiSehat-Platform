@@ -46,61 +46,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> fetchGpsAddress() async {
     setState(() { gpsLoading = true; error = null; });
-    // ignore: use_build_context_synchronously — context is always checked via mounted
     final ctx = context;
     try {
       // Check location service
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
-        if (mounted) {
-          await showDialog(
-            context: ctx,
-            builder: (_) => AlertDialog(
-              title: const Text('Layanan lokasi tidak aktif'),
-              content: const Text('Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.'),
-              actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('OK'))],
-            ),
-          );
-        }
+        setState(() => gpsLoading = false);
+        if (!mounted) return;
+        await showDialog(
+          context: ctx,
+          builder: (_) => AlertDialog(
+            title: const Text('Layanan lokasi tidak aktif'),
+            content: const Text('Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              FilledButton(
+                onPressed: () { Navigator.pop(ctx); Geolocator.openLocationSettings(); },
+                child: const Text('Pengaturan'),
+              ),
+            ],
+          ),
+        );
         return;
       }
 
       LocationPermission permission = await Geolocator.checkPermission();
 
-      // Permanently denied — direct to app settings
+      // Permanently denied — open app settings
       if (permission == LocationPermission.deniedForever) {
-        if (mounted) {
-          await showDialog(
-            context: ctx,
-            builder: (_) => AlertDialog(
-              title: const Text('Izin lokasi ditolak permanen'),
-              content: const Text(
-                'Izin lokasi telah ditolak secara permanen. '
-                'Buka pengaturan perangkat untuk mengizinkan akses lokasi.',
+        setState(() => gpsLoading = false);
+        if (!mounted) return;
+        await showDialog(
+          context: ctx,
+          builder: (_) => AlertDialog(
+            title: const Text('Izin lokasi ditolak'),
+            content: const Text('Izin lokasi telah ditolak secara permanen. Buka pengaturan aplikasi untuk mengizinkan akses lokasi.'),
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+              FilledButton(
+                onPressed: () { Navigator.pop(ctx); Geolocator.openAppSettings(); },
+                child: const Text('Pengaturan'),
               ),
-              actions: [
-                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
-                FilledButton(
-                  onPressed: () { Navigator.pop(ctx); Geolocator.openAppSettings(); },
-                  child: const Text('Buka Pengaturan'),
-                ),
-              ],
-            ),
-          );
-        }
+            ],
+          ),
+        );
         return;
       }
 
       // Not yet granted — explain then request
       if (permission == LocationPermission.denied) {
+        setState(() => gpsLoading = false);
+        if (!mounted) return;
         final confirmed = await showDialog<bool>(
           context: ctx,
           builder: (_) => AlertDialog(
             title: const Text('Izin lokasi diperlukan'),
-            content: const Text(
-              'SapiSehat membutuhkan izin lokasi untuk mengisi alamat secara '
-              'otomatis dari GPS. Izin ini hanya digunakan saat Anda menekan tombol lokasi.',
-            ),
+            content: const Text('SapiSehat membutuhkan izin lokasi untuk mengisi alamat secara otomatis dari GPS. Izin ini hanya digunakan saat Anda menekan tombol lokasi.'),
             actions: [
               TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Batal')),
               FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Izinkan')),
@@ -108,10 +109,29 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         );
         if (confirmed != true) return;
+        setState(() => gpsLoading = true);
         permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied ||
-            permission == LocationPermission.deniedForever) {
+        if (permission == LocationPermission.denied) {
           setState(() => error = 'Izin lokasi ditolak.');
+          return;
+        }
+        if (permission == LocationPermission.deniedForever) {
+          if (!mounted) return;
+          setState(() => gpsLoading = false);
+          await showDialog(
+            context: ctx,
+            builder: (_) => AlertDialog(
+              title: const Text('Izin lokasi ditolak'),
+              content: const Text('Buka pengaturan aplikasi untuk mengizinkan akses lokasi.'),
+              actions: [
+                TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Batal')),
+                FilledButton(
+                  onPressed: () { Navigator.pop(ctx); Geolocator.openAppSettings(); },
+                  child: const Text('Pengaturan'),
+                ),
+              ],
+            ),
+          );
           return;
         }
       }
