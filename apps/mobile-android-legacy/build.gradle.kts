@@ -5,3 +5,9 @@ plugins {
     id("com.google.dagger.hilt.android") version "2.59" apply false
     id("com.google.devtools.ksp") version "2.2.10-2.0.2" apply false
 }
+
+subprojects {
+    tasks.withType<JavaCompile>().configureEach {
+        options.compilerArgs.add("-Xlint:-options")
+    }
+}

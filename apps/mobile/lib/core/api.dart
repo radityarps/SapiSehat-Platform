@@ -2,11 +2,28 @@ import 'dart:convert';
 import 'dart:io';
 
 class ApiRequest {
-  ApiRequest(this.method, this.path, {this.body, this.headers = const {}});
+  ApiRequest(
+    this.method,
+    this.path, {
+    this.body,
+    this.headers = const {},
+    this.formFields = const {},
+    this.fileField,
+    this.fileName,
+    this.fileBytes,
+    this.fileContentType = 'image/jpeg',
+  });
   final String method;
   final String path;
   final String? body;
   final Map<String, String> headers;
+  final Map<String, String> formFields;
+  final String? fileField;
+  final String? fileName;
+  final List<int>? fileBytes;
+  final String fileContentType;
+
+  bool get isMultipart => fileField != null && fileBytes != null;
 }
 
 class ApiResponse {
@@ -35,7 +52,29 @@ class HttpApiTransport implements ApiTransport {
     final client = HttpClient();
     final httpRequest = await client.openUrl(request.method, uri);
     request.headers.forEach(httpRequest.headers.set);
-    if (request.body != null) {
+    if (request.isMultipart) {
+      final boundary = '----sapisehat-${DateTime.now().microsecondsSinceEpoch}';
+      httpRequest.headers.contentType = ContentType(
+        'multipart',
+        'form-data',
+        parameters: {'boundary': boundary},
+      );
+      void writeAscii(String value) => httpRequest.add(utf8.encode(value));
+      for (final entry in request.formFields.entries) {
+        writeAscii('--$boundary\r\n');
+        writeAscii(
+          'Content-Disposition: form-data; name="${entry.key}"\r\n\r\n',
+        );
+        writeAscii('${entry.value}\r\n');
+      }
+      writeAscii('--$boundary\r\n');
+      writeAscii(
+        'Content-Disposition: form-data; name="${request.fileField}"; filename="${request.fileName ?? 'scan.jpg'}"\r\n',
+      );
+      writeAscii('Content-Type: ${request.fileContentType}\r\n\r\n');
+      httpRequest.add(request.fileBytes!);
+      writeAscii('\r\n--$boundary--\r\n');
+    } else if (request.body != null) {
       httpRequest.headers.contentType = ContentType.json;
       httpRequest.write(request.body);
     }

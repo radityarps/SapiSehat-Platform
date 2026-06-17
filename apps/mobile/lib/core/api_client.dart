@@ -212,11 +212,19 @@ class SapiSehatApiClient {
     String? cattleId,
     required List<int> bytes,
   }) async {
+    final scan = await predictScan(bytes: bytes);
+    return saveScanResult(farmerId: farmerId, cattleId: cattleId, result: scan);
+  }
+
+  Future<ScanResult> predictScan({required List<int> bytes}) async {
     final prediction = await transport.send(
       ApiRequest(
         'POST',
         '/api/predict',
-        body: 'multipart:file:${bytes.length}',
+        fileField: 'image',
+        fileName: 'scan.jpg',
+        fileBytes: bytes,
+        fileContentType: 'image/jpeg',
       ),
     );
     if (prediction.statusCode < 200 || prediction.statusCode >= 300) {
@@ -229,23 +237,60 @@ class SapiSehatApiClient {
     final confidence =
         (((prediction.json['prediction'] as Map?)?['confidence'] ?? 0.0) as num)
             .toDouble();
-    final media = await transport.send(
-      ApiRequest(
-        'POST',
-        '/api/media/uploads',
-        body: 'multipart:file:${bytes.length}',
-      ),
-    );
-    if (media.statusCode < 200 || media.statusCode >= 300) {
-      throw Exception('Media upload failed');
-    }
     return ScanResult(
       localId: 'online-${DateTime.now().microsecondsSinceEpoch}',
-      cattleId: cattleId,
       label: diseaseClass,
       confidence: confidence,
       capturedAt: DateTime.now(),
       inferenceMode: 'online',
+      syncStatus: 'unsaved',
+    );
+  }
+
+  Future<ScanResult> saveScanResult({
+    required String farmerId,
+    String? cattleId,
+    required ScanResult result,
+  }) async {
+    final fusion = await transport.send(
+      ApiRequest(
+        'POST',
+        '/api/fusion/results',
+        body: jsonEncode({
+          'farmer_id': farmerId,
+          'cattle_id': cattleId,
+          'image_evidence': {
+            'source': 'image',
+            'model_version': 'mobile-online',
+            'inference_mode': 'online',
+            'disease_scores': {
+              'healthy': result.label == 'healthy' ? result.confidence : 0.0,
+              'FMD': result.label == 'FMD' ? result.confidence : 0.0,
+              'LSD': result.label == 'LSD' ? result.confidence : 0.0,
+            },
+            'top_class': result.label,
+            'confidence': result.confidence,
+            'quality_status': 'accepted',
+            'rejection_reasons': [],
+          },
+          'nlp_evidence': null,
+        }),
+        headers: {'Accept': 'application/json'},
+      ),
+    );
+    if (fusion.statusCode < 200 || fusion.statusCode >= 300) {
+      throw Exception('Fusion result failed');
+    }
+    final fusedClass = (fusion.json['disease_class'] ?? result.label) as String;
+    final fusedConfidence =
+        ((fusion.json['confidence'] ?? result.confidence) as num).toDouble();
+    return ScanResult(
+      localId: result.localId,
+      cattleId: cattleId,
+      label: fusedClass,
+      confidence: fusedConfidence,
+      capturedAt: result.capturedAt,
+      inferenceMode: result.inferenceMode,
       syncStatus: 'synced',
     );
   }
