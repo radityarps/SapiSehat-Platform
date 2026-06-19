@@ -110,9 +110,9 @@ def fuse_evidence(*, farmer_id: str, cattle_id: Optional[str], image_evidence: O
     elif len(candidates) == 1:
         disease_class = candidates[0].top_class
         confidence = candidates[0].confidence
-    elif image_evidence.top_class == nlp_evidence.top_class:
-        disease_class = image_evidence.top_class
-        confidence = round((image_evidence.confidence + nlp_evidence.confidence) / 2, 4)
+    elif candidates[0].top_class == candidates[1].top_class:
+        disease_class = candidates[0].top_class
+        confidence = round((candidates[0].confidence + candidates[1].confidence) / 2, 4)
     else:
         stronger = max(candidates, key=lambda evidence: evidence.confidence)
         disease_class = stronger.top_class
@@ -129,7 +129,9 @@ def fuse_evidence(*, farmer_id: str, cattle_id: Optional[str], image_evidence: O
         reliability = "reliable"
 
     mode = "online"
-    if any(getattr(evidence, "inference_mode", None).value == "offline" for evidence in candidates):
+    if len(candidates) > 1:
+        mode = "hybrid"
+    if any(evidence.inference_mode.value == "offline" for evidence in candidates):
         mode = "offline"
 
     return FusionResult(

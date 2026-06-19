@@ -94,7 +94,13 @@ from api.object_storage import media_storage_client
 from api.audit_logs import audit_log_store
 from api.follow_ups import follow_up_store
 from api.notifications import notification_store
-from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
+from api.risk_signals import (
+    CLUSTER_WINDOW_DAYS,
+    HYBRID_ALERT_THRESHOLD,
+    RISK_SIGNAL_RELIABILITY,
+    cluster_risk_signal_store,
+    summarize_risk_signals,
+)
 from api.authorization import (
     AgencyRole,
     ConsentTier,
@@ -626,18 +632,18 @@ async def predict(
     service = get_inference_service()
     try:
         use_two_stage = two_stage and settings.two_stage_enabled
-        predict_fn = (
-            service.predict_two_stage_prototype if use_two_stage else service.predict
-        )
         if use_two_stage:
+            include_debug_regions = (
+                debug_regions and settings.two_stage_debug_regions_enabled
+            )
             threaded = asyncio.to_thread(
-                predict_fn,
-                img_pil,
-                include_debug_regions=debug_regions
-                and settings.two_stage_debug_regions_enabled,
+                lambda: service.predict_two_stage_prototype(
+                    img_pil,
+                    include_debug_regions=include_debug_regions,
+                )
             )
         else:
-            threaded = asyncio.to_thread(predict_fn, img_pil)
+            threaded = asyncio.to_thread(service.predict, img_pil)
         result = await asyncio.wait_for(threaded, timeout=settings.request_timeout)
     except asyncio.TimeoutError:
         raise HTTPException(
@@ -1496,9 +1502,9 @@ async def get_agency_risk_signal_summary(
         "agency_user_id": agency_user_id,
         "rule": {
             "name": "three_or_more_non_healthy_signals_7d",
-            "threshold_count": 3,
-            "window_days": 7,
-            "included_reliability": ["reliable", "needs_review"],
+            "threshold_count": HYBRID_ALERT_THRESHOLD,
+            "window_days": CLUSTER_WINDOW_DAYS,
+            "included_reliability": sorted(RISK_SIGNAL_RELIABILITY),
             "language": "possible increased risk, not confirmed outbreak or diagnosis",
         },
         "signals": [signal.__dict__ for signal in signals],

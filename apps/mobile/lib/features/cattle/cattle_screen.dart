@@ -116,6 +116,11 @@ class _CattleScreenState extends State<CattleScreen> {
           ],
         ),
         const SizedBox(height: 16),
+        const Text(
+          'Sinyal risiko, bukan diagnosis',
+          style: TextStyle(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 12),
         if (loading)
           const Center(
             child: Padding(
