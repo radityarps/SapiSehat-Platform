@@ -23,7 +23,6 @@ class FarmerAccount:
     id: str
     phone_number: str
     name: str
-    address: str | None
     jurisdiction_id: str
     consent_state: FarmerConsentState
     scan_image_storage_notice_accepted: bool = False
