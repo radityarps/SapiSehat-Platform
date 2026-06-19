@@ -9,10 +9,12 @@ import re
 from api.database import SessionLocal, create_all_tables
 from api.db_models import FarmerAccountModel
 
+
 class FarmerConsentState(str, Enum):
     PRIVATE = "private"
     AGENCY_MONITORING = "agency_monitoring"
     RESEARCH_AND_MONITORING = "research_and_monitoring"
+
 
 @dataclass(frozen=True)
 class FarmerAccount:
@@ -25,6 +27,8 @@ class FarmerAccount:
     jurisdiction_id: str
     consent_state: FarmerConsentState
     scan_image_storage_notice_accepted: bool = False
+    address: str | None = None
+
 
 class FarmerAccountStore:
     """Farmer account store backed by platform database."""
@@ -43,7 +47,11 @@ class FarmerAccountStore:
     ) -> tuple[FarmerAccount, bool]:
         normalized_phone = normalize_phone_number(phone_number)
         with SessionLocal() as session:
-            row = session.query(FarmerAccountModel).filter_by(phone_number=normalized_phone).one_or_none()
+            row = (
+                session.query(FarmerAccountModel)
+                .filter_by(phone_number=normalized_phone)
+                .one_or_none()
+            )
             if row is not None:
                 return _farmer_from_row(row), False
             next_id = session.query(FarmerAccountModel).count() + 1
@@ -69,7 +77,9 @@ class FarmerAccountStore:
             session.commit()
             return account, True
 
-    def set_scan_image_storage_notice(self, farmer_id: str, *, accepted: bool) -> FarmerAccount | None:
+    def set_scan_image_storage_notice(
+        self, farmer_id: str, *, accepted: bool
+    ) -> FarmerAccount | None:
         with SessionLocal() as session:
             row = session.get(FarmerAccountModel, farmer_id)
             if row is None:
@@ -86,7 +96,9 @@ class FarmerAccountStore:
 
     def all_by_id(self) -> dict[str, FarmerAccount]:
         with SessionLocal() as session:
-            rows = session.query(FarmerAccountModel).order_by(FarmerAccountModel.id).all()
+            rows = (
+                session.query(FarmerAccountModel).order_by(FarmerAccountModel.id).all()
+            )
             return {row.id: _farmer_from_row(row) for row in rows}
 
     def clear(self) -> None:
@@ -106,6 +118,7 @@ def _farmer_from_row(row: FarmerAccountModel) -> FarmerAccount:
         scan_image_storage_notice_accepted=bool(row.scan_image_storage_notice_accepted),
     )
 
+
 def normalize_phone_number(phone_number: str) -> str:
     """Normalize Indonesian phone number identity to +62 format."""
 
@@ -117,5 +130,6 @@ def normalize_phone_number(phone_number: str) -> str:
     if digits.startswith("8"):
         return f"+62{digits}"
     raise ValueError("Phone number must be Indonesian +62, 62, 0, or 8 prefix")
+
 
 farmer_account_store = FarmerAccountStore()

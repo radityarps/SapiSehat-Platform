@@ -129,6 +129,28 @@ class SurfaceAccountStore:
             session.refresh(row)
             return _account_from_row(row)
 
+    def update_profile(self, *, account_id: str, name: str) -> SurfaceAccount:
+        with SessionLocal() as session:
+            row = session.get(AccountModel, account_id)
+            if row is None or not row.is_active:
+                raise ValueError("account not found")
+            row.name = name
+            session.commit()
+            session.refresh(row)
+            return _account_from_row(row)
+
+    def change_password(self, *, account_id: str, current_password: str, new_password: str) -> SurfaceAccount:
+        with SessionLocal() as session:
+            row = session.get(AccountModel, account_id)
+            if row is None or not row.is_active:
+                raise ValueError("account not found")
+            if not verify_password(current_password, row.password_hash):
+                raise ValueError("current password is incorrect")
+            row.password_hash = hash_password(new_password)
+            session.commit()
+            session.refresh(row)
+            return _account_from_row(row)
+
     def archive_farmer(self, *, account_id: str, password: str | None = None) -> SurfaceAccount:
         with SessionLocal() as session:
             row = session.get(AccountModel, account_id)
@@ -162,20 +184,52 @@ class SurfaceAccountStore:
 
 
 def seed_default_farmer_accounts() -> None:
+    from config import settings
+
+    # Farmers only seed in staging/development, never production.
+    if settings.resolved_seed_tier == "production":
+        return
     surface_account_store.seed_farmer(
         email="farmer@example.com",
         password="strong-password",
         name="Demo Farmer",
         jurisdiction_id="tembalang",
     )
+    surface_account_store.seed_farmer(
+        email="farmer2@example.com",
+        password="strong-password",
+        name="Demo Farmer Two",
+        jurisdiction_id="banyumanik",
+    )
 
 def seed_default_agency_accounts() -> None:
-    surface_account_store.seed_agency(
-        email="semarang-officer@sapisehat.test",
-        password="agency-password",
-        name="Semarang Officer",
-        jurisdiction_id="semarang-city",
+    from api.authorization import _agency_user_store, AgencyRole, refresh_agency_users
+    from config import settings
+
+    # Master admin is always seeded, credentials from env in every tier.
+    admin = surface_account_store.seed_agency(
+        email=settings.master_admin_email,
+        password=settings.master_admin_password,
+        name=settings.master_admin_name,
+        jurisdiction_id=settings.master_admin_jurisdiction,
     )
+    _agency_user_store.ensure_exists(
+        admin.id, AgencyRole.ADMIN.value, settings.master_admin_jurisdiction
+    )
+
+    # District officer only seeds in staging/development, never production.
+    if settings.resolved_seed_tier != "production":
+        officer = surface_account_store.seed_agency(
+            email="semarang-officer@sapisehat.test",
+            password="agency-password",
+            name="Semarang Officer",
+            jurisdiction_id="semarang-city",
+        )
+        _agency_user_store.ensure_exists(
+            officer.id, AgencyRole.DISTRICT_OFFICER.value, "semarang-city"
+        )
+
+    refresh_agency_users()
 
 
 def _account_from_row(row: AccountModel) -> SurfaceAccount:

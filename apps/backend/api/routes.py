@@ -3,6 +3,7 @@
 import asyncio
 import hashlib
 import io
+from pydantic import BaseModel as BaseModel
 from datetime import datetime, timezone
 from uuid import uuid4
 from fastapi import (
@@ -27,6 +28,8 @@ from api.schemas import (
     AgencyLoginRequest,
     AuthResponse,
     AuthAccountResponse,
+    ProfileUpdateRequest,
+    ChangePasswordRequest,
     FarmerProfileUpdateRequest,
     FarmerArchiveRequest,
     FarmerPreferencesRequest,
@@ -66,9 +69,13 @@ from api.schemas import (
     AgencyRiskSignalSummaryResponse,
     FarmerAreaAdvisoryResponse,
     FollowUpCreateRequest,
+    FollowUpUpdateRequest,
     AgencyFollowUpResponse,
     FarmerFollowUpListResponse,
     AuditLogListResponse,
+    NotificationListResponse,
+    NotificationMarkReadResponse,
+    NotificationResponse,
 )
 from config import settings
 from utils.logger import get_logger
@@ -86,15 +93,20 @@ from api.media_governance import media_store
 from api.object_storage import media_storage_client
 from api.audit_logs import audit_log_store
 from api.follow_ups import follow_up_store
+from api.notifications import notification_store
 from api.risk_signals import cluster_risk_signal_store, summarize_risk_signals
 from api.authorization import (
+    AgencyRole,
     ConsentTier,
     FarmerRecord,
     DEMO_AGENCY_USERS,
     DEMO_FARMERS,
     DEMO_JURISDICTIONS,
+    _agency_user_store,
+    _jurisdiction_store,
     can_agency_access_farmer,
     filter_visible_farmers,
+    refresh_agency_users,
 )
 from api.surface_auth import (
     issue_token,
@@ -111,15 +123,19 @@ router = APIRouter(prefix="/api")
 
 
 def _serialize_auth_account(account):
-    return {
+    result = {
         "id": account.id,
         "account_type": account.account_type,
         "email": account.email,
         "is_active": account.is_active,
         "name": account.name,
-        "address": getattr(account, "address", None),
         "jurisdiction_id": account.jurisdiction_id,
     }
+    if account.account_type == "agency":
+        agency_user = _agency_user_store.get(account.id)
+        if agency_user:
+            result["role"] = agency_user.role.value
+    return result
 
 
 def _get_farmer_preferences(farmer_id: str):
@@ -159,6 +175,19 @@ def _serialize_audit_log(event):
     }
 
 
+def _serialize_notification(notification):
+    return {
+        "id": notification.id,
+        "account_id": notification.account_id,
+        "account_type": notification.account_type,
+        "title": notification.title,
+        "body": notification.body,
+        "link": notification.link,
+        "is_read": notification.is_read,
+        "created_at": notification.created_at,
+    }
+
+
 def _require_admin_agency(agency_user_id: str):
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
@@ -177,8 +206,10 @@ async def list_agency_audit_logs(
     resource_type: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
 ):
-    """List recent audit logs for admin agency users only."""
-    _require_admin_agency(agency_user_id)
+    """List recent audit logs for agency users."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
     events = audit_log_store.list_recent(
         action=action, resource_type=resource_type, limit=limit
     )
@@ -196,7 +227,7 @@ async def register_farmer_surface_account(request: FarmerRegisterRequest):
             jurisdiction_id=request.jurisdiction_id,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc))
     return {
         "access_token": issue_token(account),
         "token_type": "bearer",
@@ -213,7 +244,7 @@ async def login_farmer_surface_account(request: FarmerLoginRequest):
             account_type="farmer", email=request.email, password=request.password
         )
     except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
+        raise HTTPException(status_code=403, detail=str(exc))
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
     return {
@@ -231,7 +262,7 @@ async def login_farmer_google_account(request: FarmerGoogleLoginRequest):
             id_token=request.id_token, jurisdiction_id=request.jurisdiction_id
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc))
     return {
         "access_token": issue_token(account),
         "token_type": "bearer",
@@ -248,13 +279,19 @@ async def login_agency_surface_account(request: AgencyLoginRequest):
             account_type="agency", email=request.email, password=request.password
         )
     except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
+        raise HTTPException(status_code=403, detail=str(exc))
     if account is None:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+    result = _serialize_auth_account(account)
+    # Ensure role is always included for agency accounts
+    if "role" not in result:
+        agency_user = _agency_user_store.get(account.id)
+        if agency_user:
+            result["role"] = agency_user.role.value
     return {
         "access_token": issue_token(account),
         "token_type": "bearer",
-        "account": _serialize_auth_account(account),
+        "account": result,
     }
 
 
@@ -274,12 +311,58 @@ async def get_current_surface_account(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        raise HTTPException(status_code=401, detail=str(exc))
     account = surface_account_store.get_by_id(
         account_type=str(claims["account_type"]), account_id=str(claims["sub"])
     )
     if account is None:
         raise HTTPException(status_code=401, detail="Account not found")
+    return _serialize_auth_account(account)
+
+
+@router.put("/me/profile", response_model=AuthAccountResponse, tags=["auth"])
+async def update_current_profile(
+    request: ProfileUpdateRequest,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Update the authenticated account's display name."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    try:
+        account = surface_account_store.update_profile(
+            account_id=account_id, name=request.name
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=404, detail=str(exc)) from exc
+    return _serialize_auth_account(account)
+
+
+@router.post("/me/change-password", response_model=AuthAccountResponse, tags=["auth"])
+async def change_current_password(
+    request: ChangePasswordRequest,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Change the authenticated account's password."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    try:
+        account = surface_account_store.change_password(
+            account_id=account_id,
+            current_password=request.current_password,
+            new_password=request.new_password,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=403, detail=str(exc)) from exc
     return _serialize_auth_account(account)
 
 
@@ -296,7 +379,7 @@ async def update_farmer_profile(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        raise HTTPException(status_code=401, detail=str(exc))
     if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
         raise HTTPException(
             status_code=403, detail="Farmer profile update requires same farmer account"
@@ -306,10 +389,9 @@ async def update_farmer_profile(
             account_id=farmer_id,
             name=request.name,
             jurisdiction_id=request.jurisdiction_id,
-            address=request.address,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=404, detail=str(exc)) from exc
+        raise HTTPException(status_code=404, detail=str(exc))
     return _serialize_auth_account(account)
 
 
@@ -326,7 +408,7 @@ async def get_farmer_preferences(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        raise HTTPException(status_code=401, detail=str(exc))
     if str(claims["sub"]) != farmer_id:
         raise HTTPException(
             status_code=403, detail="Preferences require same farmer account"
@@ -349,7 +431,7 @@ async def put_farmer_preferences(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        raise HTTPException(status_code=401, detail=str(exc))
     if str(claims["sub"]) != farmer_id:
         raise HTTPException(
             status_code=403, detail="Preferences require same farmer account"
@@ -386,7 +468,7 @@ async def archive_farmer_account(
     try:
         claims = read_token(authorization.removeprefix("Bearer "))
     except ValueError as exc:
-        raise HTTPException(status_code=401, detail=str(exc)) from exc
+        raise HTTPException(status_code=401, detail=str(exc))
     if str(claims["sub"]) != farmer_id or str(claims["account_type"]) != "farmer":
         raise HTTPException(
             status_code=403, detail="Farmer archive requires same farmer account"
@@ -396,7 +478,7 @@ async def archive_farmer_account(
             account_id=farmer_id, password=request.password
         )
     except ValueError as exc:
-        raise HTTPException(status_code=403, detail=str(exc)) from exc
+        raise HTTPException(status_code=403, detail=str(exc))
     return _serialize_auth_account(account)
 
 
@@ -411,18 +493,6 @@ def _serialize_cattle(profile):
         "birth_year_estimate": profile.birth_year_estimate,
         "status": profile.status.value,
         "jurisdiction_id": profile.jurisdiction_id,
-        "name": profile.name,
-        "color": profile.color,
-        "weight_kg": profile.weight_kg,
-        "reproductive_status": profile.reproductive_status,
-        "is_pregnant": profile.is_pregnant,
-        "last_calving_date": profile.last_calving_date,
-        "last_vaccination_date": profile.last_vaccination_date,
-        "last_deworming_date": profile.last_deworming_date,
-        "health_notes": profile.health_notes,
-        "purchase_date": profile.purchase_date,
-        "purchase_price_idr": profile.purchase_price_idr,
-        "notes": profile.notes,
     }
 
 
@@ -640,7 +710,7 @@ async def register_or_sign_in_farmer_account(request: FarmerAccountRequest):
             consent_state=FarmerConsentState(request.consent_state),
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc))
     return {
         "id": account.id,
         "phone_number": account.phone_number,
@@ -706,21 +776,9 @@ async def create_cattle_profile(
             birth_year_estimate=request.birth_year_estimate,
             status=CattleStatus(request.status),
             jurisdiction_id=request.jurisdiction_id,
-            name=request.name,
-            color=request.color,
-            weight_kg=request.weight_kg,
-            reproductive_status=request.reproductive_status,
-            is_pregnant=request.is_pregnant,
-            last_calving_date=request.last_calving_date,
-            last_vaccination_date=request.last_vaccination_date,
-            last_deworming_date=request.last_deworming_date,
-            health_notes=request.health_notes,
-            purchase_date=request.purchase_date,
-            purchase_price_idr=request.purchase_price_idr,
-            notes=request.notes,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc))
     return _serialize_cattle(profile)
 
 
@@ -751,46 +809,6 @@ async def select_farmer_cattle_for_detection(
     return _serialize_cattle_detail(profile)
 
 
-@router.put(
-    "/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileResponse
-)
-async def update_farmer_cattle(
-    request: CattleProfileRequest,
-    farmer_id: str = Path(...),
-    cattle_id: str = Path(...),
-):
-    """Update farmer-owned cattle profile fields."""
-    try:
-        profile = cattle_profile_store.update(
-            farmer_id=farmer_id,
-            cattle_id=cattle_id,
-            tag=request.tag,
-            sex=CattleSex(request.sex),
-            breed=request.breed,
-            age_months=request.age_months,
-            birth_year_estimate=request.birth_year_estimate,
-            status=CattleStatus(request.status),
-            jurisdiction_id=request.jurisdiction_id,
-            name=request.name,
-            color=request.color,
-            weight_kg=request.weight_kg,
-            reproductive_status=request.reproductive_status,
-            is_pregnant=request.is_pregnant,
-            last_calving_date=request.last_calving_date,
-            last_vaccination_date=request.last_vaccination_date,
-            last_deworming_date=request.last_deworming_date,
-            health_notes=request.health_notes,
-            purchase_date=request.purchase_date,
-            purchase_price_idr=request.purchase_price_idr,
-            notes=request.notes,
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
-    if profile is None:
-        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
-    return _serialize_cattle(profile)
-
-
 @router.delete(
     "/farmers/{farmer_id}/cattle/{cattle_id}", response_model=CattleProfileResponse
 )
@@ -800,17 +818,6 @@ async def archive_farmer_cattle(farmer_id: str = Path(...), cattle_id: str = Pat
     if profile is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     return _serialize_cattle(profile)
-
-
-@router.post(
-    "/farmers/{farmer_id}/cattle/{cattle_id}/archive",
-    response_model=CattleProfileResponse,
-)
-async def archive_farmer_cattle_legacy_post(
-    farmer_id: str = Path(...), cattle_id: str = Path(...)
-):
-    """Backward-compatible archive endpoint for older mobile builds."""
-    return await archive_farmer_cattle(farmer_id=farmer_id, cattle_id=cattle_id)
 
 
 @router.get("/agency/cattle", response_model=CattleProfileListResponse)
@@ -851,7 +858,7 @@ async def add_farmer_cattle_timeline_event(
             creator_id=request.creator_id,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc))
     if event is None:
         raise HTTPException(status_code=404, detail="Cattle not found for farmer")
     return _serialize_cattle_event(event)
@@ -1003,7 +1010,7 @@ async def create_backend_primary_fusion_result(request: FusionRequest):
             nlp_evidence=request.nlp_evidence,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc))
     return _serialize_fusion_result(result)
 
 
@@ -1041,7 +1048,7 @@ async def sync_offline_detection(request: OfflineDetectionSyncRequest):
             nlp_evidence=request.nlp_evidence,
         )
     except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc)) from exc
+        raise HTTPException(status_code=422, detail=str(exc))
     return {
         "local_detection_id": synced.local_detection_id,
         "sync_status": synced.sync_status,
@@ -1312,17 +1319,83 @@ async def create_agency_follow_up(
     return _serialize_agency_follow_up(follow_up)
 
 
+@router.put(
+    "/agency/follow-ups/{follow_up_id}",
+    response_model=AgencyFollowUpResponse,
+    tags=["agency"],
+)
+async def update_agency_follow_up(
+    follow_up_id: str,
+    request: FollowUpUpdateRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    """Edit an existing follow-up the agency can access."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    existing = follow_up_store.get_by_id(follow_up_id)
+    if existing is None:
+        raise HTTPException(status_code=404, detail="Follow-up not found")
+    farmer = farmer_account_store.get_by_id(existing.farmer_id)
+    if farmer is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    record = FarmerRecord(
+        farmer.id,
+        farmer.name,
+        farmer.jurisdiction_id,
+        ConsentTier(farmer.consent_state.value),
+    )
+    if not can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
+        raise HTTPException(status_code=403, detail="Follow-up not visible to agency")
+    follow_up = follow_up_store.update(
+        follow_up_id,
+        status=request.status,
+        public_message=request.public_message,
+        internal_notes=request.internal_notes,
+    )
+    audit_log_store.record(
+        actor_type="agency",
+        actor_id=agency_user_id,
+        action="follow_up.updated",
+        resource_type="follow_up",
+        resource_id=follow_up_id,
+        metadata_json={"status": request.status},
+    )
+    if request.status is not None and request.status != existing.status:
+        notification_store.create(
+            account_id=existing.farmer_id,
+            account_type="farmer",
+            title="Follow-up status updated",
+            body=f"Your follow-up status is now {request.status.replace('_', ' ')}.",
+        )
+    return _serialize_agency_follow_up(follow_up)
+
+
 @router.get(
     "/agency/follow-ups", response_model=list[AgencyFollowUpResponse], tags=["agency"]
 )
 async def list_agency_follow_up_status(
     agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
 ):
-    """List agency follow-up status rows."""
+    """List agency follow-up status rows visible to the agency jurisdiction."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
-    return [_serialize_agency_follow_up(item) for item in follow_up_store.list_all()]
+    farmers_by_id = farmer_account_store.all_by_id()
+    visible = []
+    for item in follow_up_store.list_all():
+        farmer = farmers_by_id.get(item.farmer_id)
+        if farmer is None:
+            continue
+        record = FarmerRecord(
+            farmer.id,
+            farmer.name,
+            farmer.jurisdiction_id,
+            ConsentTier(farmer.consent_state.value),
+        )
+        if can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
+            visible.append(item)
+    return [_serialize_agency_follow_up(item) for item in visible]
 
 
 @router.get(
@@ -1467,3 +1540,197 @@ async def get_farmer_area_advisory(farmer_id: str = Path(...)):
             "disclaimer": "not confirmed diagnosis or outbreak declaration",
         },
     }
+
+
+# --- User Management (admin-only) ---
+
+
+class AgencyUserCreateRequest(BaseModel):
+    id: str
+    role: str
+    jurisdiction_id: str
+
+
+class AgencyUserUpdateRequest(BaseModel):
+    role: str
+    jurisdiction_id: str | None = None
+
+
+@router.get("/agency/users", tags=["agency"])
+async def list_agency_users(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    """List all agency users. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    users = _agency_user_store.list_all()
+    return {
+        "users": [
+            {"id": u.id, "role": u.role.value, "jurisdiction_id": u.jurisdiction_id}
+            for u in users
+        ]
+    }
+
+
+@router.post("/agency/users", tags=["agency"], status_code=201)
+async def create_agency_user(
+    request: AgencyUserCreateRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    """Create a new agency user. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    valid_roles = [r.value for r in AgencyRole]
+    if request.role not in valid_roles:
+        raise HTTPException(
+            status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}"
+        )
+    _agency_user_store.ensure_exists(request.id, request.role, request.jurisdiction_id)
+    refresh_agency_users()
+    return {
+        "id": request.id,
+        "role": request.role,
+        "jurisdiction_id": request.jurisdiction_id,
+    }
+
+
+@router.put("/agency/users/{user_id}", tags=["agency"])
+async def update_agency_user(
+    user_id: str,
+    request: AgencyUserUpdateRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    """Update an agency user's role/jurisdiction. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    valid_roles = [r.value for r in AgencyRole]
+    if request.role not in valid_roles:
+        raise HTTPException(
+            status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}"
+        )
+    updated = _agency_user_store.update_role(
+        user_id, request.role, request.jurisdiction_id
+    )
+    if updated is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    refresh_agency_users()
+    return {
+        "id": updated.id,
+        "role": updated.role.value,
+        "jurisdiction_id": updated.jurisdiction_id,
+    }
+
+
+@router.delete("/agency/users/{user_id}", tags=["agency"])
+async def delete_agency_user(
+    user_id: str, agency_user_id: str = Header(..., alias="X-Agency-User-Id")
+):
+    """Delete an agency user. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    deleted = _agency_user_store.delete(user_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="User not found")
+    refresh_agency_users()
+    return {"deleted": True}
+
+
+@router.get("/agency/jurisdictions", tags=["agency"])
+async def list_jurisdictions(
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    """List all available jurisdictions."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None:
+        raise HTTPException(status_code=403, detail="Unknown agency user")
+    jurisdictions = _jurisdiction_store.all_by_id()
+    return {
+        "jurisdictions": [
+            {
+                "id": j.id,
+                "name": j.name,
+                "level": j.level,
+                "parent_id": j.parent_id,
+                "latitude": j.latitude,
+                "longitude": j.longitude,
+            }
+            for j in jurisdictions.values()
+        ]
+    }
+
+
+@router.get(
+    "/notifications", response_model=NotificationListResponse, tags=["notifications"]
+)
+async def list_notifications(
+    authorization: str = Header(..., alias="Authorization"),
+    unread_only: bool = Query(default=False),
+    limit: int = Query(default=50, ge=1, le=100),
+):
+    """List notifications for the authenticated account."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    account_type = str(claims["account_type"])
+    notifications = notification_store.list_for_account(
+        account_id, account_type, unread_only=unread_only, limit=limit
+    )
+    return {
+        "notifications": [_serialize_notification(n) for n in notifications],
+        "unread_count": notification_store.unread_count(account_id, account_type),
+    }
+
+
+@router.patch(
+    "/notifications/{notification_id}/read",
+    response_model=NotificationResponse,
+    tags=["notifications"],
+)
+async def mark_notification_read(
+    notification_id: str,
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Mark a single notification as read."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    account_type = str(claims["account_type"])
+    notification = notification_store.mark_read(
+        notification_id, account_id, account_type
+    )
+    if notification is None:
+        raise HTTPException(status_code=404, detail="Notification not found")
+    return _serialize_notification(notification)
+
+
+@router.patch(
+    "/notifications/read-all",
+    response_model=NotificationMarkReadResponse,
+    tags=["notifications"],
+)
+async def mark_all_notifications_read(
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Mark all notifications as read for the authenticated account."""
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    account_id = str(claims["sub"])
+    account_type = str(claims["account_type"])
+    count = notification_store.mark_all_read(account_id, account_type)
+    return {"marked_count": count}

@@ -37,18 +37,6 @@ export type AgencyRegistryCattle = {
 	birth_year_estimate?: number | null;
 	status: string;
 	jurisdiction_id: string;
-	name?: string | null;
-	color?: string | null;
-	weight_kg?: number | null;
-	reproductive_status?: string | null;
-	is_pregnant?: boolean | null;
-	last_calving_date?: string | null;
-	last_vaccination_date?: string | null;
-	last_deworming_date?: string | null;
-	health_notes?: string | null;
-	purchase_date?: string | null;
-	purchase_price_idr?: number | null;
-	notes?: string | null;
 };
 
 export type SafeLanguage = {

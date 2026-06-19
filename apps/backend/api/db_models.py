@@ -18,7 +18,6 @@ class AccountModel(Base):
     account_type: Mapped[str] = mapped_column(String(32), nullable=False, index=True)
     email: Mapped[str] = mapped_column(String(254), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
-    address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     jurisdiction_id: Mapped[str] = mapped_column(
         String(120), nullable=False, index=True
     )
@@ -52,6 +51,8 @@ class AgencyJurisdictionModel(Base):
     parent_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     level: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(120), nullable=False)
+    latitude: Mapped[float | None] = mapped_column(Float, nullable=True)
+    longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
 class AgencyUserModel(Base):
@@ -76,22 +77,6 @@ class CattleProfileModel(Base):
     jurisdiction_id: Mapped[str] = mapped_column(
         String(120), nullable=False, index=True
     )
-    # Physical / identity
-    name: Mapped[str | None] = mapped_column(String(120), nullable=True)
-    color: Mapped[str | None] = mapped_column(String(80), nullable=True)
-    weight_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
-    # Reproduction
-    reproductive_status: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    is_pregnant: Mapped[bool | None] = mapped_column(Boolean, nullable=True)
-    last_calving_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    # Health
-    last_vaccination_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    last_deworming_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    health_notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
-    # Economic
-    purchase_date: Mapped[str | None] = mapped_column(String(40), nullable=True)
-    purchase_price_idr: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
 
 
 class DetectionEventModel(Base):
@@ -249,3 +234,16 @@ class FarmerPreferenceModel(Base):
     quiet_hours_end: Mapped[str] = mapped_column(
         String(8), nullable=False, default="06:00"
     )
+
+
+class NotificationModel(Base):
+    __tablename__ = "notifications"
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    account_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    account_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    body: Mapped[str] = mapped_column(String(500), nullable=False)
+    link: Mapped[str | None] = mapped_column(String(200), nullable=True)
+    is_read: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[str] = mapped_column(String(80), nullable=False, index=True)

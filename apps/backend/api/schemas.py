@@ -103,14 +103,26 @@ class AuthAccountResponse(BaseModel):
     email: str
     is_active: bool = True
     name: str = ""
-    address: Optional[str] = None
     jurisdiction_id: str = ""
+    role: Optional[str] = None
+
+
+class ProfileUpdateRequest(BaseModel):
+    """Update own profile."""
+
+    name: str = Field(min_length=1, max_length=120)
+
+
+class ChangePasswordRequest(BaseModel):
+    """Change own password."""
+
+    current_password: str = Field(min_length=8, max_length=128)
+    new_password: str = Field(min_length=8, max_length=128)
 
 
 class FarmerProfileUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
-    address: Optional[str] = Field(default=None, max_length=300)
 
 
 class FarmerArchiveRequest(BaseModel):
@@ -174,6 +186,14 @@ class AgencyFollowUpResponse(BaseModel):
     internal_notes: str
 
 
+class FollowUpUpdateRequest(BaseModel):
+    """Agency edit of an existing follow-up."""
+
+    status: Optional[str] = Field(default=None, max_length=40)
+    public_message: Optional[str] = Field(default=None, max_length=500)
+    internal_notes: Optional[str] = Field(default=None, max_length=1000)
+
+
 class FarmerFollowUpResponse(BaseModel):
     """Farmer-visible follow-up status without internal notes."""
 
@@ -209,11 +229,38 @@ class AuditLogListResponse(BaseModel):
     audit_logs: List[AuditLogResponse]
 
 
+class NotificationResponse(BaseModel):
+    """User notification item."""
+
+    id: str
+    account_id: str
+    account_type: str
+    title: str
+    body: str
+    link: Optional[str]
+    is_read: bool
+    created_at: str
+
+
+class NotificationListResponse(BaseModel):
+    """Notification list."""
+
+    notifications: List[NotificationResponse]
+    unread_count: int
+
+
+class NotificationMarkReadResponse(BaseModel):
+    """Result of marking notifications read."""
+
+    marked_count: int
+
+
 class AgencyVisibleFarmer(BaseModel):
     """Farmer record visible to an agency user after authorization filtering."""
 
     id: str
     name: str
+    address: Optional[str] = None
     jurisdiction_id: str
     consent_tier: str
 
@@ -241,7 +288,6 @@ class FarmerAccountResponse(BaseModel):
     id: str
     phone_number: str
     name: str
-    address: Optional[str] = None
     jurisdiction_id: str
     consent_state: str
     created: bool
@@ -270,18 +316,6 @@ class CattleProfileRequest(BaseModel):
     birth_year_estimate: Optional[int] = Field(default=None, ge=1900, le=2100)
     status: str = "active"
     jurisdiction_id: str = Field(min_length=1, max_length=120)
-    name: Optional[str] = Field(default=None, max_length=120)
-    color: Optional[str] = Field(default=None, max_length=80)
-    weight_kg: Optional[float] = Field(default=None, ge=0)
-    reproductive_status: Optional[str] = Field(default=None, max_length=40)
-    is_pregnant: Optional[bool] = None
-    last_calving_date: Optional[str] = Field(default=None, max_length=40)
-    last_vaccination_date: Optional[str] = Field(default=None, max_length=40)
-    last_deworming_date: Optional[str] = Field(default=None, max_length=40)
-    health_notes: Optional[str] = Field(default=None, max_length=500)
-    purchase_date: Optional[str] = Field(default=None, max_length=40)
-    purchase_price_idr: Optional[int] = Field(default=None, ge=0)
-    notes: Optional[str] = Field(default=None, max_length=500)
 
 
 class CattleProfileResponse(BaseModel):
@@ -296,18 +330,6 @@ class CattleProfileResponse(BaseModel):
     birth_year_estimate: Optional[int]
     status: str
     jurisdiction_id: str
-    name: Optional[str] = None
-    color: Optional[str] = None
-    weight_kg: Optional[float] = None
-    reproductive_status: Optional[str] = None
-    is_pregnant: Optional[bool] = None
-    last_calving_date: Optional[str] = None
-    last_vaccination_date: Optional[str] = None
-    last_deworming_date: Optional[str] = None
-    health_notes: Optional[str] = None
-    purchase_date: Optional[str] = None
-    purchase_price_idr: Optional[int] = None
-    notes: Optional[str] = None
 
 
 class CattleProfileListResponse(BaseModel):

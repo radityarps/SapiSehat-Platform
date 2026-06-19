@@ -51,8 +51,12 @@ def test_registry_api_filters_farmers_and_cattle_by_authorization_scope():
 
 def test_dashboard_registry_component_contains_table_filter_and_permitted_sections():
     source = repo_text("apps/dashboard/src/features/agency/registry/registry-client.tsx")
+    page = repo_text("apps/dashboard/app/agency/registry/page.tsx")
 
     assert "@tanstack/react-table" in source
     assert "getAgencyRegistry" in source
-    assert "jurisdiction" in source
-    assert "useReactTable" in source
+    assert "X-Agency-User-Id" in repo_text("apps/dashboard/src/shared/api/client.ts")
+    assert "Search name, tag, district, consent" in source
+    assert "Farmers" in source
+    assert "Cattle" in source
+    assert "DataTable" in source
