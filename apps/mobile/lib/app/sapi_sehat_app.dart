@@ -5,6 +5,7 @@ import '../core/api_client.dart';
 import '../features/auth/auth.dart';
 import '../features/auth/login_screen.dart';
 import '../features/cattle/cattle_screen.dart';
+import '../features/guide/guide_screen.dart';
 import '../features/history/history_screen.dart';
 import '../features/onboarding/onboarding_screen.dart';
 import '../features/scan/scan_screen.dart';
@@ -96,7 +97,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         apiClient: widget.apiClient,
         session: session,
         localHistory: ref.watch(localHistoryProvider),
+        onDeleteLocal: (result) =>
+            ref.read(localHistoryProvider.notifier).remove(result),
       ),
+      const GuideScreen(),
       SettingsScreen(
         apiClient: widget.apiClient,
         session: session,
@@ -117,6 +121,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           NavigationDestination(icon: Icon(Icons.pets), label: 'Sapi'),
           NavigationDestination(icon: Icon(Icons.camera_alt), label: 'Scan'),
           NavigationDestination(icon: Icon(Icons.history), label: 'Riwayat'),
+          NavigationDestination(icon: Icon(Icons.menu_book), label: 'Panduan'),
           NavigationDestination(icon: Icon(Icons.settings), label: 'Setelan'),
         ],
       ),

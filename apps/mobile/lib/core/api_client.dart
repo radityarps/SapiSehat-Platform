@@ -85,22 +85,43 @@ class SapiSehatApiClient {
     );
   }
 
-  Future<AccountSession> archiveFarmerAccount(
+  Future<AccountSession> deleteFarmerAccount(
     AccountSession session,
     String password,
   ) async {
     final response = await transport.send(
       ApiRequest(
         'POST',
-        '/api/farmers/${session.farmerId}/account/archive',
+        '/api/farmers/${session.farmerId}/account/delete',
         body: jsonEncode({'password': password}),
         headers: _auth(session),
       ),
     );
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw Exception('Archive failed');
+      throw Exception('Delete account failed');
     }
     return session.copyWith(isActive: false);
+  }
+
+  Future<void> changePassword(
+    AccountSession session, {
+    required String currentPassword,
+    required String newPassword,
+  }) async {
+    final response = await transport.send(
+      ApiRequest(
+        'POST',
+        '/api/farmers/${session.farmerId}/account/change-password',
+        body: jsonEncode({
+          'current_password': currentPassword,
+          'new_password': newPassword,
+        }),
+        headers: _auth(session),
+      ),
+    );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Change password failed');
+    }
   }
 
   Future<FarmerPreferences> getPreferences(AccountSession session) async {
@@ -292,6 +313,7 @@ class SapiSehatApiClient {
       capturedAt: result.capturedAt,
       inferenceMode: result.inferenceMode,
       syncStatus: 'synced',
+      imagePath: result.imagePath,
     );
   }
 

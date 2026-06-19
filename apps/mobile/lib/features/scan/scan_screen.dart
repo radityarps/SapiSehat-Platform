@@ -227,8 +227,18 @@ class _ScanScreenState extends State<ScanScreen> {
   Future<void> predictAndOpen(XFile file) async {
     setState(() => selectedImage = file);
     try {
-      final scan = await widget.apiClient.predictScan(
+      final prediction = await widget.apiClient.predictScan(
         bytes: await file.readAsBytes(),
+      );
+      final scan = ScanResult(
+        localId: prediction.localId,
+        cattleId: prediction.cattleId,
+        label: prediction.label,
+        confidence: prediction.confidence,
+        capturedAt: prediction.capturedAt,
+        inferenceMode: prediction.inferenceMode,
+        syncStatus: prediction.syncStatus,
+        imagePath: file.path,
       );
       if (!mounted) return;
       final saved = await Navigator.of(context).push<ScanResult?>(

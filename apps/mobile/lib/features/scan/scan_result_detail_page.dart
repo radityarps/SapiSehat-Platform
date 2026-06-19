@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +8,7 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../core/api_client.dart';
 import '../../features/auth/auth.dart';
 import '../cattle/cattle.dart';
+import '../cattle/cattle_form_page.dart';
 import 'scan.dart';
 
 class ScanResultDetailPage extends StatefulWidget {
@@ -19,6 +19,9 @@ class ScanResultDetailPage extends StatefulWidget {
     required this.result,
     required this.image,
     required this.cattle,
+    this.skipAutoSave = false,
+    this.onChanged,
+    this.onDelete,
   });
 
   final SapiSehatApiClient apiClient;
@@ -26,6 +29,9 @@ class ScanResultDetailPage extends StatefulWidget {
   final ScanResult result;
   final XFile? image;
   final List<CattleProfile> cattle;
+  final bool skipAutoSave;
+  final VoidCallback? onChanged;
+  final Future<void> Function()? onDelete;
 
   @override
   State<ScanResultDetailPage> createState() => _ScanResultDetailPageState();
@@ -36,6 +42,8 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
   var saving = false;
   var saved = false;
   var allowPop = false;
+
+  String? get _resultImagePath => widget.image?.path ?? result.imagePath;
 
   void closeWith(Object? value) {
     allowPop = true;
@@ -78,6 +86,10 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
   }
 
   Future<void> autoSaveAndClose() async {
+    if (widget.skipAutoSave) {
+      closeWith(null);
+      return;
+    }
     if (saving) return;
     if (saved) {
       closeWith(result);
@@ -98,14 +110,64 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
         capturedAt: result.capturedAt,
         inferenceMode: result.inferenceMode,
         syncStatus: 'pending_sync',
+        imagePath: widget.image?.path ?? result.imagePath,
       );
       closeWith(local);
     }
   }
 
+  Future<void> editLinkedCow() async {
+    final cow = await showDialog<CattleProfile>(
+      context: context,
+      builder: (_) =>
+          _LinkedCowDialog(cattle: widget.cattle, cattleId: result.cattleId),
+    );
+    if (cow == null || !mounted) return;
+    final updated = await Navigator.of(context).push<CattleProfile>(
+      MaterialPageRoute(
+        builder: (_) => CattleFormPage(
+          apiClient: widget.apiClient,
+          session: widget.session,
+          cattle: cow,
+        ),
+      ),
+    );
+    if (updated != null) widget.onChanged?.call();
+  }
+
+  Future<void> deleteResult() async {
+    final delete = widget.onDelete;
+    if (delete == null) return;
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Hapus riwayat ini?'),
+        content: const Text(
+          'Riwayat akan dihapus dari daftar. Tindakan ini membutuhkan konfirmasi.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Hapus'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await delete();
+    if (!mounted) return;
+    closeWith('deleted');
+  }
+
   Future<void> sharePdf() async {
     try {
-      final regularFont = await _loadPdfFont('/system/fonts/Roboto-Regular.ttf');
+      final regularFont = await _loadPdfFont(
+        '/system/fonts/Roboto-Regular.ttf',
+      );
       final boldFont = await _loadPdfFont('/system/fonts/Roboto-Bold.ttf');
       final doc = pw.Document();
       doc.addPage(
@@ -175,16 +237,6 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          if (widget.image != null)
-            ClipRRect(
-              borderRadius: BorderRadius.circular(24),
-              child: Image.file(
-                File(widget.image!.path),
-                height: 220,
-                fit: BoxFit.cover,
-              ),
-            ),
-          const SizedBox(height: 16),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(18),
@@ -197,7 +249,9 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 14),
+                  _ResultImagePreview(path: _resultImagePath),
+                  const SizedBox(height: 12),
                   const Text(
                     'Hasil ini bukan diagnosis. Hubungi petugas bila ada gejala berlanjut.',
                   ),
@@ -243,7 +297,7 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('� '),
+                          const Text('• '),
                           Expanded(child: Text(measure)),
                         ],
                       ),
@@ -253,27 +307,86 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
             ),
           ),
           const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: saving ? null : saveWithDialog,
-            icon: const Icon(Icons.save),
-            label: Text(saving ? 'Menyimpan...' : 'Simpan'),
-          ),
-          const SizedBox(height: 8),
+          if (!widget.skipAutoSave) ...[
+            FilledButton.icon(
+              onPressed: saving ? null : saveWithDialog,
+              icon: const Icon(Icons.save),
+              label: Text(saving ? 'Menyimpan...' : 'Simpan'),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (widget.cattle.isNotEmpty) ...[
+            OutlinedButton.icon(
+              onPressed: editLinkedCow,
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('Edit sapi'),
+            ),
+            const SizedBox(height: 8),
+          ],
+          if (widget.onDelete != null) ...[
+            OutlinedButton.icon(
+              onPressed: deleteResult,
+              icon: const Icon(Icons.delete_outline),
+              label: const Text('Hapus'),
+            ),
+            const SizedBox(height: 8),
+          ],
           OutlinedButton.icon(
             onPressed: sharePdf,
             icon: const Icon(Icons.picture_as_pdf),
             label: const Text('Bagikan / Export PDF'),
           ),
-          const SizedBox(height: 8),
-          TextButton.icon(
-            onPressed: () => closeWith(null),
-            icon: const Icon(Icons.refresh),
-            label: const Text('Ulangi'),
-          ),
+          if (!widget.skipAutoSave) ...[
+            const SizedBox(height: 8),
+            TextButton.icon(
+              onPressed: () => closeWith(null),
+              icon: const Icon(Icons.refresh),
+              label: const Text('Ulangi'),
+            ),
+          ],
         ],
       ),
     ),
   );
+}
+
+class _ResultImagePreview extends StatelessWidget {
+  const _ResultImagePreview({this.path});
+  final String? path;
+
+  @override
+  Widget build(BuildContext context) {
+    final file = path == null ? null : File(path!);
+    final hasImage = file != null && file.existsSync();
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: Container(
+        height: 180,
+        width: double.infinity,
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        child: hasImage
+            ? Image.file(file, fit: BoxFit.cover)
+            : Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.image_outlined,
+                    size: 40,
+                    color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Preview gambar tidak tersedia',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
 }
 
 Future<pw.Font?> _loadPdfFont(String path) async {
@@ -316,6 +429,42 @@ List<String> _preventiveMeasures(String label) {
   ];
 }
 
+class _LinkedCowDialog extends StatelessWidget {
+  const _LinkedCowDialog({required this.cattle, this.cattleId});
+  final List<CattleProfile> cattle;
+  final String? cattleId;
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Pilih sapi terkait'),
+    content: SizedBox(
+      width: double.maxFinite,
+      child: ListView(
+        shrinkWrap: true,
+        children: [
+          for (final cow in cattle)
+            ListTile(
+              leading: Icon(
+                cow.id == cattleId
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              title: Text(cow.tag),
+              subtitle: Text(cow.name ?? cow.breed),
+              onTap: () => Navigator.of(context).pop(cow),
+            ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('Batal'),
+      ),
+    ],
+  );
+}
+
 class _CowSaveChoice {
   const _CowSaveChoice({required this.save, this.cattleId});
   final bool save;
@@ -354,7 +503,7 @@ class _CowSelectDialogState extends State<_CowSelectDialog> {
             ...widget.cattle.map(
               (item) => DropdownMenuItem<CattleProfile?>(
                 value: item,
-                child: Text('${item.tag} · ${item.name ?? item.breed}'),
+                child: Text('${item.tag} Â· ${item.name ?? item.breed}'),
               ),
             ),
           ],
