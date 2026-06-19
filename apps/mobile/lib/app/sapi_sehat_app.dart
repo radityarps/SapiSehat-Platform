@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/api_client.dart';
+import '../features/advisory/advisory.dart';
 import '../features/auth/auth.dart';
 import '../features/auth/login_screen.dart';
 import '../features/cattle/cattle_screen.dart';
@@ -113,7 +114,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     ];
     return Scaffold(
       appBar: AppBar(toolbarHeight: 0),
-      body: pages[tab],
+      body: Column(
+        children: [
+          AreaAdvisoryBanner(apiClient: widget.apiClient, session: session),
+          Expanded(child: pages[tab]),
+        ],
+      ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: tab,
         onDestinationSelected: (value) => setState(() => tab = value),

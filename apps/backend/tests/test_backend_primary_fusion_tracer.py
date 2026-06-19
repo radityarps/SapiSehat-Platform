@@ -76,6 +76,7 @@ def test_matching_medium_high_evidence_produces_reliable_result_and_stores_break
 
     assert result["disease_class"] == "FMD"
     assert result["reliability"] == "reliable"
+    assert result["inference_mode"] == "hybrid"
     assert result["conflict_status"] == "none"
     assert result["confidence_level"] == "high"
     assert result["model_versions"] == {"image": "image-model-1.0.0", "nlp": "nlp-model-1.0.0"}

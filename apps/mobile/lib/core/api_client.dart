@@ -7,6 +7,31 @@ import '../features/scan/scan.dart';
 import '../features/settings/settings.dart';
 import 'api.dart';
 
+class FarmerAreaAdvisory {
+  const FarmerAreaAdvisory({
+    required this.farmerId,
+    required this.jurisdictionId,
+    required this.advisoryActive,
+    required this.title,
+    required this.message,
+  });
+
+  final String farmerId;
+  final String jurisdictionId;
+  final bool advisoryActive;
+  final String title;
+  final String message;
+
+  factory FarmerAreaAdvisory.fromJson(Map<String, dynamic> json) =>
+      FarmerAreaAdvisory(
+        farmerId: json['farmer_id'] as String? ?? '',
+        jurisdictionId: json['jurisdiction_id'] as String? ?? '',
+        advisoryActive: json['advisory_active'] as bool? ?? false,
+        title: json['title'] as String? ?? 'Area advisory',
+        message: json['message'] as String? ?? '',
+      );
+}
+
 class SapiSehatApiClient {
   SapiSehatApiClient({ApiTransport? transport})
     : transport = transport ?? HttpApiTransport();
@@ -152,6 +177,20 @@ class SapiSehatApiClient {
       throw Exception('Preferences update failed');
     }
     return FarmerPreferences.fromJson(response.json);
+  }
+
+  Future<FarmerAreaAdvisory> getAreaAdvisory(AccountSession session) async {
+    final response = await transport.send(
+      ApiRequest(
+        'GET',
+        '/api/farmers/${session.farmerId}/area-advisory',
+        headers: _auth(session),
+      ),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Area advisory failed');
+    }
+    return FarmerAreaAdvisory.fromJson(response.json);
   }
 
   Future<List<CattleProfile>> listCattle(String farmerId) async {
