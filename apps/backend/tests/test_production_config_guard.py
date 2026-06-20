@@ -52,19 +52,3 @@ def test_production_accepts_strong_required_config():
     )
 
     assert result.returncode == 0, result.stderr
-
-def test_google_client_id_required_when_google_auth_enabled():
-    result = run_config_import(
-        {
-            "FASTAPI_ENV": "production",
-            "CORS_ORIGINS": "https://agency.sapisehat.test",
-            "JWT_SECRET": "x" * 40,
-            "S3_ACCESS_KEY_ID": "prod-access-key",
-            "S3_SECRET_ACCESS_KEY": "prod-secret-key",
-            "S3_BUCKET": "prod-sapisehat-scan-images",
-            "GOOGLE_AUTH_ENABLED": "true",
-        }
-    )
-
-    assert result.returncode != 0
-    assert "GOOGLE_CLIENT_ID must be set" in result.stderr

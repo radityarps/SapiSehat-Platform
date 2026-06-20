@@ -19,7 +19,7 @@ Web-dashboard user from livestock or animal-health service who monitors jurisdic
 _Avoid_: Farmer user, cattle record owner, public self-registered user
 
 **Farmer Account**:
-Mobile account registered by farmer using email/password or Google login. Phone number is optional contact information.
+Mobile account registered by farmer using email/password. Phone number is optional contact information. Google login was removed as overkill for tugas akhir scope.
 _Avoid_: Phone-primary identity, anonymous-only farmer, agency-created farmer identity
 
 **Agency Account**:
@@ -186,7 +186,7 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 
 - **Farmer User** uses **Flutter Farmer App** only; there is no farmer web dashboard in first release.
 - **Agency User** uses **Next.js TanStack Dashboard** only.
-- **Farmer Account** supports email/password and Google login.
+- **Farmer Account** supports email/password only; Google login is out of scope for tugas akhir.
 - Farmer email/password registration does not require email verification in first release.
 - **Agency Account** supports email/password only and is admin-seeded.
 - Agency password reset is manual/admin reset only in first release.
@@ -233,7 +233,7 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 
 - "mobile stack" means **Flutter Farmer App** for Android first release; native Android/Kotlin becomes **Legacy Android App**.
 - "backend architecture" means **FastAPI Platform Backend**, not Go gateway.
-- "farmer login" means **Farmer Account** with email/password and Google login; phone is optional contact.
+- "farmer login" means **Farmer Account** with email/password; phone is optional contact.
 - "same email on mobile and dashboard" means **Surface-Specific Account**; no automatic cross-surface access.
 - "combine Team 1 and Team 2 models" means **Weighted Evidence Fusion** with real **NLP Evidence** before release.
 - "Team 2 NLP not ready" means **Image-Only Evidence Result** plus **NLP Placeholder** temporarily; no fake NLP scores.
