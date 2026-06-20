@@ -106,7 +106,7 @@ def test_prediction_and_follow_up_write_audit_logs(monkeypatch):
         headers={"X-Agency-User-Id": "semarang-officer"},
         json={
             "farmer_id": farmer["id"],
-            "status": "reviewing",
+            "status": "in_progress",
             "public_message": "Officer reviewing possible risk.",
             "internal_notes": "Audit test.",
         },
