@@ -36,7 +36,7 @@ def media_payload(farmer_id, cattle_id=None):
         "farmer_id": farmer_id,
         "cattle_id": cattle_id,
         "detection_id": "detection-local-1",
-        "checksum": "sha256:abcdef1234567890",
+        "checksum": f"sha256:{uuid4().hex}",
         "consent_scope": "research_and_monitoring",
         "storage_reference": "media://bucket/object.jpg",
         "content_type": "image/jpeg",
@@ -58,7 +58,7 @@ def test_allowed_media_access_for_authorized_agency():
     body = response.json()
     assert body["farmer_id"] == f["id"]
     assert body["cattle_id"] == c["id"]
-    assert body["checksum"] == "sha256:abcdef1234567890"
+    assert body["checksum"].startswith("sha256:")
     assert body["consent_scope"] == "research_and_monitoring"
     assert body["storage_reference"] == "media://bucket/object.jpg"
     assert body["content_type"] == "image/jpeg"

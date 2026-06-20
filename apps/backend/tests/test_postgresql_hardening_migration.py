@@ -1,7 +1,8 @@
 from pathlib import Path
 
-MIGRATION = Path("alembic/versions/0018_postgresql_hardening.py")
-DOC = Path("docs/postgresql-hardening.md")
+BACKEND_ROOT = Path(__file__).resolve().parents[1]
+MIGRATION = BACKEND_ROOT / "alembic/versions/0018_postgresql_hardening.py"
+DOC = BACKEND_ROOT / "docs/postgresql-hardening.md"
 
 
 def test_hardening_migration_declares_constraints_and_indexes():

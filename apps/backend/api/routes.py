@@ -24,7 +24,6 @@ from api.schemas import (
     HealthResponse,
     FarmerRegisterRequest,
     FarmerLoginRequest,
-    FarmerGoogleLoginRequest,
     AgencyLoginRequest,
     AuthResponse,
     AuthAccountResponse,
@@ -260,22 +259,6 @@ async def login_farmer_surface_account(request: FarmerLoginRequest):
     }
 
 
-@router.post("/auth/farmer/google", response_model=AuthResponse, tags=["auth"])
-async def login_farmer_google_account(request: FarmerGoogleLoginRequest):
-    """Exchange verified Google token for farmer backend JWT."""
-    try:
-        account = surface_account_store.register_farmer_google(
-            id_token=request.id_token, jurisdiction_id=request.jurisdiction_id
-        )
-    except ValueError as exc:
-        raise HTTPException(status_code=422, detail=str(exc))
-    return {
-        "access_token": issue_token(account),
-        "token_type": "bearer",
-        "account": _serialize_auth_account(account),
-    }
-
-
 @router.post("/auth/agency/login", response_model=AuthResponse, tags=["auth"])
 async def login_agency_surface_account(request: AgencyLoginRequest):
     """Login admin-seeded agency dashboard account with email/password."""
@@ -299,12 +282,6 @@ async def login_agency_surface_account(request: AgencyLoginRequest):
         "token_type": "bearer",
         "account": result,
     }
-
-
-@router.post("/auth/agency/google", tags=["auth"])
-async def reject_agency_google_login():
-    """Agency Google sign-in disabled in first release."""
-    raise HTTPException(status_code=404, detail="Agency Google login not available")
 
 
 @router.get("/me", response_model=AuthAccountResponse, tags=["auth"])

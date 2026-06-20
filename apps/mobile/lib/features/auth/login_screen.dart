@@ -391,11 +391,6 @@ class _LoginScreenState extends State<LoginScreen> {
                     : (registerMode ? 'Daftar akun' : 'Masuk'),
               ),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: null,
-              child: const Text('Google login belum tersedia di perangkat ini'),
-            ),
             if (error != null)
               Padding(
                 padding: const EdgeInsets.only(top: 16),

@@ -97,7 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **FastAPI platform backend foundation**: Added surface-specific farmer and agency auth, PostgreSQL-backed accounts, farmer-owned cattle records, detection records, follow-up workflow, cluster risk signals, scan image storage notice gate, archive-only behavior, and dashboard-ready agency APIs.
 - **Private scan image object storage**: Added S3-compatible media upload path (`POST /api/media/uploads`), local MinIO development bucket, private object keys, media metadata persistence, and backend-issued signed URL endpoint for authorized agency image preview/download.
-- **Production backend hardening**: Added production config guards for JWT secret, CORS origins, S3 bucket/credentials, and Google client ID when Google auth is enabled.
+- **Production backend hardening**: Added production config guards for JWT secret, CORS origins, and S3 bucket/credentials. Google login was removed as overkill for tugas akhir scope; first release uses email/password auth only.
 - **Backend audit logs**: Added persistent audit events for predictions, media uploads, signed media URL issuance, and follow-up creation, plus admin-only `GET /api/agency/audit-logs` read API.
 - **Backend release smoke and root test entrypoint**: Added `apps/backend/scripts/release_smoke.sh`, optional real MinIO smoke test, and root `tests/test_backend_suite.py` so `python -m pytest tests -q` from repo root runs backend checks.
 - **NLP placeholder and farmer advisory APIs**: Added `POST /api/evidence/nlp/placeholder` with no scores/fusion/risk side effects, plus `GET /api/farmers/{farmer_id}/area-advisory` for safe district-level farmer advisory from cluster risk signals.

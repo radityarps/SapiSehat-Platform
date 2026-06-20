@@ -16,14 +16,14 @@ SapiSehat remains an early detection and monitoring platform. It must not claim 
 
 ### Accounts and Auth
 
-- Farmer accounts support email/password and Google login.
+- Farmer accounts support email/password only. Google login was removed as overkill for tugas akhir scope.
 - Farmer email/password registration does not require email verification in the first release.
 - Agency accounts are admin-seeded and use email/password only.
 - Agency password reset is manual/admin-reset only in the first release.
 - The same email may be registered separately as a farmer account and an agency account.
 - Agency account access does not automatically allow mobile farmer access; the user must register separately as a farmer.
 - Farmer account access does not automatically allow web dashboard access.
-- Google login is farmer/mobile only, not agency dashboard login.
+- Google login is not part of the first-release scope.
 
 ### Backend Architecture
 
@@ -175,7 +175,6 @@ Build FastAPI foundation first:
 
 - PostgreSQL connection and migrations
 - farmer account auth
-- Google token verification for farmer login
 - agency account auth with admin-seeded accounts
 - cattle profile records
 - cattle status values
@@ -258,7 +257,7 @@ Validate complete flow:
 - No farmer web dashboard.
 - No agency editing of farmer-owned cattle records.
 - No public agency self-registration.
-- No Google login for agency dashboard.
+- No Google login for farmer mobile or agency dashboard.
 - No true backend deletion by farmer.
 - No confirmed outbreak declaration.
 - No veterinary diagnosis claim.

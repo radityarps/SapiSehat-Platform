@@ -164,19 +164,6 @@ class SurfaceAccountStore:
             session.refresh(row)
             return _account_from_row(row)
 
-    def register_farmer_google(self, *, id_token: str, jurisdiction_id: str) -> SurfaceAccount:
-        email, name = parse_google_id_token(id_token)
-        existing = self.get(account_type="farmer", email=email)
-        if existing is not None:
-            return existing
-        return self._create(
-            account_type="farmer",
-            email=email,
-            password=f"google:{email}",
-            name=name,
-            jurisdiction_id=jurisdiction_id,
-        )
-
     def clear(self) -> None:
         with SessionLocal() as session:
             session.query(AccountModel).delete()
@@ -283,62 +270,3 @@ def read_token(token: str) -> dict[str, object]:
 
 
 surface_account_store = SurfaceAccountStore()
-
-
-
-def parse_google_id_token(id_token: str) -> tuple[str, str]:
-    """Verify a farmer Google ID token and return normalized email/name.
-
-    Development and test keep the legacy `google:email:name` token shape so
-    local contract tests and mobile prototypes can run without Google network
-    calls. Production requires `GOOGLE_AUTH_ENABLED=true`, `GOOGLE_CLIENT_ID`,
-    and a real Google-signed ID token.
-    """
-    if settings.fastapi_env in {"development", "test"} and id_token.startswith("google:"):
-        return _parse_dev_google_token(id_token)
-
-    if not settings.google_auth_enabled:
-        raise ValueError("google auth is not enabled")
-    if not settings.google_client_id:
-        raise ValueError("google client id is not configured")
-
-    claims = verify_google_id_token_claims(id_token)
-
-    issuer = claims.get("iss")
-    audience = claims.get("aud")
-    email = claims.get("email")
-    if issuer not in settings.allowed_google_id_token_issuers:
-        raise ValueError("invalid google token issuer")
-    if audience != settings.google_client_id:
-        raise ValueError("invalid google token audience")
-    if not email:
-        raise ValueError("google token missing email")
-    if claims.get("email_verified") is False:
-        raise ValueError("google token email is not verified")
-
-    name = claims.get("name") or email.split("@", 1)[0]
-    return normalize_email(email), name
-
-
-def verify_google_id_token_claims(token: str) -> dict[str, object]:
-    try:
-        from google.auth.transport import requests as google_requests
-        from google.oauth2 import id_token as google_id_token
-    except ImportError as exc:
-        raise ValueError("google-auth dependency is required for google login") from exc
-
-    try:
-        return google_id_token.verify_oauth2_token(
-            token,
-            google_requests.Request(),
-            settings.google_client_id,
-        )
-    except Exception as exc:  # Google verifier raises several auth/transport errors.
-        raise ValueError("invalid google token") from exc
-
-
-def _parse_dev_google_token(id_token: str) -> tuple[str, str]:
-    parts = id_token.split(":", 2)
-    if len(parts) != 3 or parts[0] != "google" or not parts[1]:
-        raise ValueError("invalid google token")
-    return normalize_email(parts[1]), parts[2]

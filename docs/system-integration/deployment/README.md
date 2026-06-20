@@ -80,7 +80,7 @@ Production must not use development defaults:
 - `CORS_ORIGINS` must not contain wildcard in production.
 - `S3_BUCKET` must be set.
 - `S3_ACCESS_KEY_ID` and `S3_SECRET_ACCESS_KEY` must not use `minioadmin`.
-- `GOOGLE_CLIENT_ID` must be set when Google auth is enabled.
+- Google auth is intentionally unsupported. Email/password auth keeps deployment scope small for tugas akhir.
 
 ## Migrated Deployment Docs
 
