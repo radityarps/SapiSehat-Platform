@@ -16,8 +16,10 @@ from api.db_models import (
 
 
 def test_backend_tables_have_expected_constraints_and_indexes():
-    assert tuple(AccountModel.__table_args__) == (AccountModel.__table_args__[0],)
-    assert AccountModel.__table_args__[0].columns.keys() == ["account_type", "email"]
+    account_constraint_names = {constraint.name for constraint in AccountModel.__table__.constraints}
+    assert "uq_accounts_type_email" in account_constraint_names
+    assert "ck_accounts_type" in account_constraint_names
+    assert "ck_accounts_email_not_blank" in account_constraint_names
 
     assert FarmerAccountModel.__table__.columns.phone_number.unique is True
     assert CattleProfileModel.__table__.columns.farmer_id.index is True
