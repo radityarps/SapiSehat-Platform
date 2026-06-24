@@ -204,7 +204,7 @@ Build FastAPI foundation first:
   - image-only evidence labels
   - follow-up status/notes
 
-### Milestone 4 — PostgreSQL Hardening
+### Milestone 4 — PostgreSQL Hardening — Implemented and Verified
 
 - Add DB constraints for accounts, cattle, detections, images, follow-up records, and jurisdictions.
 - Add indexes for dashboard queries and cluster detection.
@@ -212,13 +212,17 @@ Build FastAPI foundation first:
 - Add migration discipline.
 - Add basic backup/export approach.
 
-### Milestone 5 — Alerting and Farmer Advisory
+Verification status: completed. Covered by `apps/backend/alembic/versions/0018_postgresql_hardening.py`, `apps/backend/api/surface_auth.py`, `apps/backend/scripts/backup_export.sh`, `apps/backend/docs/postgresql-hardening.md`, and backend tests for migration discipline, backup/export contract, and DB constraint/index audit.
+
+### Milestone 5 — Alerting and Farmer Advisory — Implemented and Verified
 
 - Implement hybrid alert threshold.
 - Implement cluster trigger rule: 3 risky results for the same disease in the same district within 7 days.
 - Show cluster risk signals on dashboard.
 - Show generic farmer area risk advisory in Flutter app.
 - Enforce safe non-diagnostic wording.
+
+Verification status: completed. Covered by `apps/backend/api/risk_signals.py`, `apps/backend/api/routes.py`, the agency dashboard risk-signal surface at `apps/dashboard/src/features/agency/risk-signals/`, and Flutter farmer area advisory coverage in `apps/mobile/test/area_advisory_test.dart`.
 
 ### Milestone 6 — Real Team 2 NLP Fusion Before Release
 

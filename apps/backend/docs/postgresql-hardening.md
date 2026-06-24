@@ -1,5 +1,7 @@
 # PostgreSQL hardening
 
+Status: implemented and verified for Milestone 4. Targeted backend tests cover the hardening migration, DB constraint/index audit, agency seed documentation, and backup/export script contract.
+
 ## Migration discipline
 
 - All production schema changes must be represented by an Alembic revision under `alembic/versions`.
@@ -36,3 +38,18 @@ Operational rules:
 - Test restore before each release gate.
 - Store dumps outside app containers and encrypt storage at rest.
 - Export selected tables with `COPY` only for audited support workflows.
+
+## Verification
+
+Targeted verification command:
+
+```bash
+python -m pytest \
+  tests/test_postgresql_hardening_migration.py \
+  tests/test_backup_export_script.py \
+  tests/test_db_constraints_and_indexes.py \
+  tests/test_farmer_area_advisory_api.py \
+  -q
+```
+
+Expected result: all tests pass.
