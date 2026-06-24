@@ -97,8 +97,8 @@ function NotificationSheet({
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent className="w-full sm:max-w-md">
-				<SheetHeader className="space-y-1">
+			<SheetContent className="w-full p-4 data-[state=closed]:animate-[notification-drawer-out_180ms_ease-in_forwards] data-[state=open]:animate-[notification-drawer-in_240ms_cubic-bezier(0.16,1,0.3,1)_forwards] sm:max-w-md">
+				<SheetHeader className="space-y-1 p-0">
 					<SheetTitle className="text-base">Notifications</SheetTitle>
 					<SheetDescription className="sr-only">
 						Recent notifications for your account.
