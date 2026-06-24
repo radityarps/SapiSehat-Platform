@@ -17,15 +17,15 @@ import {
 	getJurisdictions,
 } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
+import { useDebouncedValue } from "@/src/shared/hooks/use-debounced-value";
 import type { AgencyRegistryFarmer } from "@/src/shared/types/api";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Eye, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
 	useReactTable,
 	getCoreRowModel,
-	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
 	flexRender,
@@ -38,12 +38,18 @@ export function RegistryClient() {
 	const router = useRouter();
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
+	const debouncedGlobalFilter = useDebouncedValue(globalFilter);
 	const [jurisdictionFilter, setJurisdictionFilter] = useState("all");
 
 	const query = useQuery({
-		queryKey: ["registry"],
-		queryFn: () => getAgencyRegistry(token, agencyUserId),
+		queryKey: ["registry", debouncedGlobalFilter, jurisdictionFilter],
+		queryFn: () =>
+			getAgencyRegistry(token, agencyUserId, {
+				search: debouncedGlobalFilter,
+				jurisdictionId: jurisdictionFilter,
+			}),
 		enabled: Boolean(token && agencyUserId),
+		placeholderData: keepPreviousData,
 	});
 
 	const detectionsQuery = useQuery({
@@ -83,10 +89,8 @@ export function RegistryClient() {
 	}, [detectionsQuery.data?.detections]);
 
 	const farmers = useMemo(() => {
-		const list = query.data?.farmers ?? [];
-		if (jurisdictionFilter === "all") return list;
-		return list.filter((f) => f.jurisdiction_id === jurisdictionFilter);
-	}, [query.data?.farmers, jurisdictionFilter]);
+		return query.data?.farmers ?? [];
+	}, [query.data?.farmers]);
 
 	const jurisdictions = useMemo(() => {
 		const all = query.data?.farmers ?? [];
@@ -195,11 +199,9 @@ export function RegistryClient() {
 	const table = useReactTable({
 		data: farmers,
 		columns,
-		state: { sorting, globalFilter },
+		state: { sorting },
 		onSortingChange: setSorting,
-		onGlobalFilterChange: setGlobalFilter,
 		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		initialState: { pagination: { pageSize: 10 } },
@@ -252,7 +254,7 @@ export function RegistryClient() {
 					</SelectContent>
 				</Select>
 				<span className="text-sm text-muted-foreground ml-auto">
-					{table.getFilteredRowModel().rows.length} farmers
+					{table.getRowModel().rows.length} farmers
 				</span>
 			</div>
 

@@ -25,15 +25,15 @@ import {
 	getRiskSignals,
 } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
+import { useDebouncedValue } from "@/src/shared/hooks/use-debounced-value";
 import type { RiskSignalItem } from "@/src/shared/types/api";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Eye, Plus, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import { RecordFollowUpDialog } from "./record-follow-up-dialog";
 import {
 	useReactTable,
 	getCoreRowModel,
-	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
 	flexRender,
@@ -61,12 +61,19 @@ function riskLabel(level: string): string {
 	return map[level] ?? level.replace(/_/g, " ");
 }
 
+function humanLabel(value: string): string {
+	return value
+		.replace(/_/g, " ")
+		.replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
 export function RiskSignalsClient() {
 	const { token, agencyUserId } = useAgencySession();
 	const queryClient = useQueryClient();
 	const enabled = Boolean(token && agencyUserId);
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
+	const debouncedGlobalFilter = useDebouncedValue(globalFilter);
 	const [riskFilter, setRiskFilter] = useState("all");
 	const [selected, setSelected] = useState<RiskSignalItem | null>(null);
 	const [followUpSignal, setFollowUpSignal] = useState<RiskSignalItem | null>(
@@ -74,9 +81,14 @@ export function RiskSignalsClient() {
 	);
 
 	const query = useQuery({
-		queryKey: ["risk-signals"],
-		queryFn: () => getRiskSignals(token, agencyUserId),
+		queryKey: ["risk-signals", debouncedGlobalFilter, riskFilter],
+		queryFn: () =>
+			getRiskSignals(token, agencyUserId, {
+				search: debouncedGlobalFilter,
+				riskLevel: riskFilter,
+			}),
 		enabled,
+		placeholderData: keepPreviousData,
 	});
 	const jurisdictionsQuery = useQuery({
 		queryKey: ["jurisdictions"],
@@ -95,10 +107,8 @@ export function RiskSignalsClient() {
 	});
 
 	const signals = useMemo(() => {
-		const list = query.data?.signals ?? [];
-		if (riskFilter === "all") return list;
-		return list.filter((s) => s.risk_level === riskFilter);
-	}, [query.data?.signals, riskFilter]);
+		return query.data?.signals ?? [];
+	}, [query.data?.signals]);
 
 	const riskLevels = useMemo(() => {
 		const all = query.data?.signals ?? [];
@@ -144,7 +154,7 @@ export function RiskSignalsClient() {
 				header: "Priority",
 				meta: { align: "center" },
 				cell: ({ row }) => (
-					<div className="text-center">{row.original.priority}</div>
+					<div className="text-center">{humanLabel(row.original.priority)}</div>
 				),
 			},
 			{
@@ -181,11 +191,9 @@ export function RiskSignalsClient() {
 	const table = useReactTable({
 		data: signals,
 		columns,
-		state: { sorting, globalFilter },
+		state: { sorting },
 		onSortingChange: setSorting,
-		onGlobalFilterChange: setGlobalFilter,
 		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		initialState: { pagination: { pageSize: 10 } },
@@ -236,14 +244,14 @@ export function RiskSignalsClient() {
 						<SelectContent>
 							<SelectItem value="all">All risk levels</SelectItem>
 							{riskLevels.map((r) => (
-								<SelectItem key={r} value={r} className="capitalize">
-									{r}
+								<SelectItem key={r} value={r}>
+									{riskLabel(r)}
 								</SelectItem>
 							))}
 						</SelectContent>
 					</Select>
 					<span className="text-sm text-muted-foreground ml-auto">
-						{table.getFilteredRowModel().rows.length} signals
+						{table.getRowModel().rows.length} signals
 					</span>
 				</div>
 
@@ -428,7 +436,7 @@ function RiskSignalDetailDialog({
 					</DetailCell>
 					<DetailCell
 						label="Priority"
-						value={item.priority.replace(/_/g, " ")}
+						value={humanLabel(item.priority)}
 					/>
 				</div>
 

@@ -28,8 +28,14 @@ import {
 	updateAgencyFollowUp,
 } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
+import { useDebouncedValue } from "@/src/shared/hooks/use-debounced-value";
 import type { AgencyFollowUpItem } from "@/src/shared/types/api";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import {
 	DropdownMenu,
 	DropdownMenuContent,
@@ -40,10 +46,10 @@ import {
 } from "@/src/shared/ui/dropdown-menu";
 import { ChevronDown, Eye, Pencil, Plus, Search } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
 	useReactTable,
 	getCoreRowModel,
-	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
 	flexRender,
@@ -71,15 +77,21 @@ export function FollowUpsClient() {
 
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
+	const debouncedGlobalFilter = useDebouncedValue(globalFilter);
 	const [statusFilter, setStatusFilter] = useState("all");
 	const [formOpen, setFormOpen] = useState(false);
 	const [editing, setEditing] = useState<AgencyFollowUpItem | null>(null);
 	const [viewing, setViewing] = useState<AgencyFollowUpItem | null>(null);
 
 	const query = useQuery({
-		queryKey: ["follow-ups", agencyUserId],
-		queryFn: () => getAgencyFollowUps(token, agencyUserId),
+		queryKey: ["follow-ups", agencyUserId, debouncedGlobalFilter, statusFilter],
+		queryFn: () =>
+			getAgencyFollowUps(token, agencyUserId, {
+				search: debouncedGlobalFilter,
+				status: statusFilter,
+			}),
 		enabled,
+		placeholderData: keepPreviousData,
 	});
 	const registry = useQuery({
 		queryKey: ["registry"],
@@ -90,15 +102,22 @@ export function FollowUpsClient() {
 	const statusMutation = useMutation({
 		mutationFn: ({ id, status }: { id: string; status: string }) =>
 			updateAgencyFollowUp(token, agencyUserId, id, { status }),
-		onSuccess: () =>
-			queryClient.invalidateQueries({ queryKey: ["follow-ups"] }),
+		onSuccess: () => {
+			toast.success("Follow-up status updated.");
+			queryClient.invalidateQueries({ queryKey: ["follow-ups"] });
+		},
+		onError: (error) => {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: "Failed to update follow-up status.",
+			);
+		},
 	});
 
 	const followUps = useMemo(() => {
-		const list = query.data?.followUps ?? [];
-		if (statusFilter === "all") return list;
-		return list.filter((f) => f.status === statusFilter);
-	}, [query.data?.followUps, statusFilter]);
+		return query.data?.followUps ?? [];
+	}, [query.data?.followUps]);
 
 	const statuses = useMemo(() => {
 		const all = query.data?.followUps ?? [];
@@ -212,11 +231,9 @@ export function FollowUpsClient() {
 	const table = useReactTable({
 		data: followUps,
 		columns,
-		state: { sorting, globalFilter },
+		state: { sorting },
 		onSortingChange: setSorting,
-		onGlobalFilterChange: setGlobalFilter,
 		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		initialState: { pagination: { pageSize: 10 } },
@@ -454,7 +471,19 @@ function FollowUpFormDialog({
 				internal_notes: internalNotes,
 			});
 		},
-		onSuccess: onSaved,
+		onSuccess: () => {
+			toast.success(isEdit ? "Follow-up updated." : "Follow-up recorded.");
+			onSaved();
+		},
+		onError: (error) => {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: isEdit
+						? "Failed to update follow-up."
+						: "Failed to record follow-up.",
+			);
+		},
 	});
 
 	return (

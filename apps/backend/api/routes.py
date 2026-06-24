@@ -174,6 +174,28 @@ def _serialize_audit_log(event):
         "created_at": event.created_at,
     }
 
+def _matches_query(values, query: str | None) -> bool:
+    if not query:
+        return True
+    needle = query.casefold().strip()
+    if not needle:
+        return True
+    return any(needle in str(value or "").casefold() for value in values)
+
+def _filter_value(value: str | None) -> str | None:
+    if value is None:
+        return None
+    normalized = value.strip()
+    if not normalized or normalized.casefold() == "all":
+        return None
+    return normalized
+
+def _same_filter_value(value: str | None, expected: str | None) -> bool:
+    normalized = _filter_value(expected)
+    if normalized is None:
+        return True
+    return str(value or "").casefold() == normalized.casefold()
+
 
 def _serialize_notification(notification):
     return {
@@ -202,6 +224,7 @@ def _require_admin_agency(agency_user_id: str):
 @router.get("/agency/audit-logs", response_model=AuditLogListResponse, tags=["agency"])
 async def list_agency_audit_logs(
     agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    search: str | None = Query(default=None),
     action: str | None = Query(default=None),
     resource_type: str | None = Query(default=None),
     limit: int = Query(default=50, ge=1, le=100),
@@ -210,9 +233,35 @@ async def list_agency_audit_logs(
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
+    action = _filter_value(action)
+    resource_type = _filter_value(resource_type)
     events = audit_log_store.list_recent(
         action=action, resource_type=resource_type, limit=limit
     )
+    if action:
+        events = [event for event in events if _same_filter_value(event.action, action)]
+    if resource_type:
+        events = [
+            event
+            for event in events
+            if _same_filter_value(event.resource_type, resource_type)
+        ]
+    events = [
+        event
+        for event in events
+        if _matches_query(
+            [
+                event.id,
+                event.actor_type,
+                event.actor_id,
+                event.action,
+                event.resource_type,
+                event.resource_id,
+                event.metadata_json,
+            ],
+            search,
+        )
+    ]
     return {"audit_logs": [_serialize_audit_log(event) for event in events]}
 
 
@@ -1376,6 +1425,8 @@ async def update_agency_follow_up(
 )
 async def list_agency_follow_up_status(
     agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    search: str | None = Query(default=None),
+    status: str | None = Query(default=None),
 ):
     """List agency follow-up status rows visible to the agency jurisdiction."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
@@ -1395,6 +1446,24 @@ async def list_agency_follow_up_status(
         )
         if can_agency_access_farmer(agency, record, DEMO_JURISDICTIONS):
             visible.append(item)
+    status = _filter_value(status)
+    if status:
+        visible = [item for item in visible if _same_filter_value(item.status, status)]
+    visible = [
+        item
+        for item in visible
+        if _matches_query(
+            [
+                item.id,
+                item.farmer_id,
+                item.cattle_id,
+                item.status,
+                item.public_message,
+                item.internal_notes,
+            ],
+            search,
+        )
+    ]
     return [_serialize_agency_follow_up(item) for item in visible]
 
 
@@ -1416,6 +1485,11 @@ async def list_farmer_follow_up_status(farmer_id: str = Path(...)):
 @router.get("/agency/registry", response_model=AgencyRegistryResponse)
 async def get_agency_dashboard_registry(
     agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    search: str | None = Query(default=None),
+    jurisdiction_id: str | None = Query(default=None),
+    farmer_id: str | None = Query(default=None),
+    cattle_search: str | None = Query(default=None),
+    cattle_status: str | None = Query(default=None),
 ):
     """Return dashboard registry farmers and cattle scoped to agency authorization."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
@@ -1429,6 +1503,86 @@ async def get_agency_dashboard_registry(
         farmers_by_id=farmer_account_store.all_by_id(),
         jurisdictions=DEMO_JURISDICTIONS,
     )
+    farmer_id = _filter_value(farmer_id)
+    if farmer_id:
+        visible_demo_farmers = [
+            farmer
+            for farmer in visible_demo_farmers
+            if _same_filter_value(farmer.id, farmer_id)
+        ]
+        visible_cattle = [
+            profile
+            for profile in visible_cattle
+            if _same_filter_value(profile.farmer_id, farmer_id)
+        ]
+    jurisdiction_id = _filter_value(jurisdiction_id)
+    if jurisdiction_id:
+        visible_demo_farmers = [
+            farmer
+            for farmer in visible_demo_farmers
+            if _same_filter_value(farmer.jurisdiction_id, jurisdiction_id)
+        ]
+        visible_cattle = [
+            profile
+            for profile in visible_cattle
+            if _same_filter_value(profile.jurisdiction_id, jurisdiction_id)
+        ]
+    if search:
+        scoped_farmers = visible_demo_farmers
+        visible_demo_farmers = [
+            farmer
+            for farmer in scoped_farmers
+            if _matches_query(
+                [farmer.id, farmer.name, farmer.address, farmer.jurisdiction_id], search
+            )
+        ]
+        visible_farmer_ids = {farmer.id for farmer in visible_demo_farmers}
+        matching_cattle_farmer_ids = {
+            profile.farmer_id
+            for profile in visible_cattle
+            if _matches_query(
+                [
+                    profile.id,
+                    profile.farmer_id,
+                    profile.tag,
+                    profile.sex,
+                    profile.breed,
+                    profile.status,
+                    profile.jurisdiction_id,
+                ],
+                search,
+            )
+        }
+        visible_farmer_ids |= matching_cattle_farmer_ids
+        visible_demo_farmers = [
+            farmer for farmer in scoped_farmers if farmer.id in visible_farmer_ids
+        ]
+        visible_cattle = [
+            profile for profile in visible_cattle if profile.farmer_id in visible_farmer_ids
+        ]
+    cattle_status = _filter_value(cattle_status)
+    if cattle_status:
+        visible_cattle = [
+            profile
+            for profile in visible_cattle
+            if _same_filter_value(profile.status, cattle_status)
+        ]
+    visible_cattle = [
+        profile
+        for profile in visible_cattle
+        if _matches_query(
+            [
+                profile.id,
+                profile.farmer_id,
+                profile.tag,
+                profile.sex,
+                profile.breed,
+                profile.status,
+                profile.jurisdiction_id,
+            ],
+            cattle_search,
+        )
+    ]
     return {
         "agency_user_id": agency_user_id,
         "farmers": [farmer.__dict__ for farmer in visible_demo_farmers],
@@ -1449,6 +1603,10 @@ async def get_agency_dashboard_registry(
 )
 async def get_agency_detection_monitoring(
     agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    search: str | None = Query(default=None),
+    disease_class: str | None = Query(default=None),
+    farmer_id: str | None = Query(default=None),
+    cattle_id: str | None = Query(default=None),
 ):
     """Return agency-scoped fused detection monitoring rows with safe risk language."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
@@ -1462,6 +1620,40 @@ async def get_agency_detection_monitoring(
     results = fusion_result_store.list_by_cattle_ids(
         {profile.id for profile in visible_cattle}
     )
+    farmer_id = _filter_value(farmer_id)
+    if farmer_id:
+        results = [
+            result for result in results if _same_filter_value(result.farmer_id, farmer_id)
+        ]
+    cattle_id = _filter_value(cattle_id)
+    if cattle_id:
+        results = [
+            result for result in results if _same_filter_value(result.cattle_id, cattle_id)
+        ]
+    disease_class = _filter_value(disease_class)
+    if disease_class:
+        results = [
+            result
+            for result in results
+            if _same_filter_value(result.disease_class, disease_class)
+        ]
+    results = [
+        result
+        for result in results
+        if _matches_query(
+            [
+                result.id,
+                result.farmer_id,
+                result.cattle_id,
+                result.disease_class,
+                result.confidence_level,
+                result.reliability,
+                result.conflict_status,
+                result.handling_advice_key,
+            ],
+            search,
+        )
+    ]
     return {
         "agency_user_id": agency_user_id,
         "detections": [_serialize_fusion_result(result) for result in results],
@@ -1476,6 +1668,8 @@ async def get_agency_detection_monitoring(
 @router.get("/agency/risk-signals", response_model=AgencyRiskSignalSummaryResponse)
 async def get_agency_risk_signal_summary(
     agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    search: str | None = Query(default=None),
+    risk_level: str | None = Query(default=None),
 ):
     """Return jurisdiction-level possible increased disease risk signals inside agency scope."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
@@ -1492,6 +1686,28 @@ async def get_agency_risk_signal_summary(
     signals = summarize_risk_signals(results, jurisdictions)
     cluster_risk_signal_store.replace_all(signals)
     signals = cluster_risk_signal_store.list_all()
+    risk_level = _filter_value(risk_level)
+    if risk_level:
+        signals = [
+            signal
+            for signal in signals
+            if _same_filter_value(signal.risk_level, risk_level)
+        ]
+    signals = [
+        signal
+        for signal in signals
+        if _matches_query(
+            [
+                signal.id,
+                signal.jurisdiction_id,
+                signal.disease_class,
+                signal.risk_level,
+                signal.priority,
+                signal.signal_count,
+            ],
+            search,
+        )
+    ]
     return {
         "agency_user_id": agency_user_id,
         "rule": {
@@ -1559,12 +1775,22 @@ class AgencyUserUpdateRequest(BaseModel):
 @router.get("/agency/users", tags=["agency"])
 async def list_agency_users(
     agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    search: str | None = Query(default=None),
+    role: str | None = Query(default=None),
 ):
     """List all agency users. Admin only."""
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None or agency.role.value != "admin":
         raise HTTPException(status_code=403, detail="Admin role required")
     users = _agency_user_store.list_all()
+    role = _filter_value(role)
+    if role:
+        users = [user for user in users if _same_filter_value(user.role.value, role)]
+    users = [
+        user
+        for user in users
+        if _matches_query([user.id, user.role.value, user.jurisdiction_id], search)
+    ]
     return {
         "users": [
             {"id": u.id, "role": u.role.value, "jurisdiction_id": u.jurisdiction_id}
