@@ -58,11 +58,10 @@ class _AdvisoryLoadingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-    height: 72,
+    height: 56,
     decoration: BoxDecoration(
       color: Theme.of(context).colorScheme.surfaceContainerHighest,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: BorderRadius.circular(14),
     ),
   );
 }
@@ -76,43 +75,48 @@ class _ActiveAdvisoryCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Semantics(
-      label: 'Area risk advisory',
+      label: 'Imbauan risiko area',
       child: Container(
-        margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
         decoration: BoxDecoration(
-          color: colorScheme.secondaryContainer,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: colorScheme.outlineVariant),
+          color: colorScheme.errorContainer.withValues(alpha: 0.82),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: colorScheme.error.withValues(alpha: 0.28)),
         ),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.info_outline, color: colorScheme.onSecondaryContainer),
-            const SizedBox(width: 12),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: colorScheme.error,
+              size: 22,
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Imbauan area',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: colorScheme.onSecondaryContainer,
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      color: colorScheme.onErrorContainer,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 4),
                   Text(
-                    advisory.message,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: colorScheme.onSecondaryContainer,
+                    'Ada peningkatan laporan risiko penyakit di kecamatan Anda. Pantau sapi, perkuat biosekuriti, dan hubungi petugas kesehatan hewan jika muncul gejala.',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: colorScheme.onErrorContainer,
+                      height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   Text(
                     'Berlaku untuk tingkat kecamatan. Tidak menampilkan data peternak lain.',
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: colorScheme.onSecondaryContainer,
+                    style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: colorScheme.onErrorContainer.withValues(alpha: 0.78),
+                      height: 1.3,
                     ),
                   ),
                 ],

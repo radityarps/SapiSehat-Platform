@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/api_client.dart';
+import '../advisory/advisory.dart';
 import '../auth/auth.dart';
 import 'cattle.dart';
 import 'cattle_detail_page.dart';
@@ -98,6 +99,8 @@ class _CattleScreenState extends State<CattleScreen> {
     child: ListView(
       padding: const EdgeInsets.all(20),
       children: [
+        AreaAdvisoryBanner(apiClient: widget.apiClient, session: widget.session),
+        const SizedBox(height: 16),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
