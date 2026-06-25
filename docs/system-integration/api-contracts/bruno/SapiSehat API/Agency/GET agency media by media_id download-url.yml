@@ -1,0 +1,27 @@
+info:
+  name: GET agency media by media_id download-url
+  type: http
+  seq: 7
+  tags:
+    - Agency
+
+http:
+  method: GET
+  url: "{{base_url}}/api/agency/media/{{media_id}}/download-url"
+  auth: inherit
+  headers:
+    - name: X-Agency-User-Id
+      value: "{{agency_user_id}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Get Agency Media Download Url
+
+  `GET /api/agency/media/{media_id}/download-url`
+
+  Source: `apps/backend/api/routes.py:758`

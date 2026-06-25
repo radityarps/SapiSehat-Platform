@@ -1,0 +1,27 @@
+info:
+  name: POST evidence image
+  type: http
+  seq: 1
+  tags:
+    - Evidence
+
+http:
+  method: POST
+  url: "{{base_url}}/api/evidence/image"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"source":"image","model_version":"image-online-1.0.0","inference_mode":"online","disease_scores":{"healthy":0.12,"FMD":0.72,"LSD":0.16},"top_class":"FMD","confidence":0.72,"quality_status":"accepted","rejection_reasons":[],"debug":{"device":"bruno-example"}}
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Validate Image Evidence
+
+  `POST /api/evidence/image`
+
+  Source: `apps/backend/api/routes.py:561`

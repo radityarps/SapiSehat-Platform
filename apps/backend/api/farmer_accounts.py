@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from enum import Enum
 import re
 
+from api.database import SessionLocal, create_all_tables
+from api.db_models import FarmerAccountModel
+
 
 class FarmerConsentState(str, Enum):
     PRIVATE = "private"
@@ -22,14 +25,15 @@ class FarmerAccount:
     name: str
     jurisdiction_id: str
     consent_state: FarmerConsentState
+    scan_image_storage_notice_accepted: bool = False
+    address: str | None = None
 
 
 class FarmerAccountStore:
-    """In-memory account store for tracer implementation."""
+    """Farmer account store backed by platform database."""
 
     def __init__(self) -> None:
-        self._accounts_by_phone: dict[str, FarmerAccount] = {}
-        self._next_id = 1
+        create_all_tables()
 
     def upsert_by_phone(
         self,
@@ -38,35 +42,80 @@ class FarmerAccountStore:
         name: str,
         jurisdiction_id: str,
         consent_state: FarmerConsentState = FarmerConsentState.PRIVATE,
+        address: str | None = None,
     ) -> tuple[FarmerAccount, bool]:
         normalized_phone = normalize_phone_number(phone_number)
-        existing = self._accounts_by_phone.get(normalized_phone)
-        if existing is not None:
-            return existing, False
+        with SessionLocal() as session:
+            row = (
+                session.query(FarmerAccountModel)
+                .filter_by(phone_number=normalized_phone)
+                .one_or_none()
+            )
+            if row is not None:
+                return _farmer_from_row(row), False
+            next_id = session.query(FarmerAccountModel).count() + 1
+            account = FarmerAccount(
+                id=f"farmer-{next_id}",
+                phone_number=normalized_phone,
+                name=name,
+                address=address,
+                jurisdiction_id=jurisdiction_id,
+                consent_state=consent_state,
+            )
+            session.add(
+                FarmerAccountModel(
+                    id=account.id,
+                    phone_number=account.phone_number,
+                    name=account.name,
+                    address=account.address,
+                    jurisdiction_id=account.jurisdiction_id,
+                    consent_state=account.consent_state.value,
+                    scan_image_storage_notice_accepted=account.scan_image_storage_notice_accepted,
+                )
+            )
+            session.commit()
+            return account, True
 
-        account = FarmerAccount(
-            id=f"farmer-{self._next_id}",
-            phone_number=normalized_phone,
-            name=name,
-            jurisdiction_id=jurisdiction_id,
-            consent_state=consent_state,
-        )
-        self._next_id += 1
-        self._accounts_by_phone[normalized_phone] = account
-        return account, True
+    def set_scan_image_storage_notice(
+        self, farmer_id: str, *, accepted: bool
+    ) -> FarmerAccount | None:
+        with SessionLocal() as session:
+            row = session.get(FarmerAccountModel, farmer_id)
+            if row is None:
+                return None
+            row.scan_image_storage_notice_accepted = accepted
+            session.commit()
+            session.refresh(row)
+            return _farmer_from_row(row)
 
     def get_by_id(self, farmer_id: str) -> FarmerAccount | None:
-        for account in self._accounts_by_phone.values():
-            if account.id == farmer_id:
-                return account
-        return None
+        with SessionLocal() as session:
+            row = session.get(FarmerAccountModel, farmer_id)
+            return None if row is None else _farmer_from_row(row)
 
     def all_by_id(self) -> dict[str, FarmerAccount]:
-        return {account.id: account for account in self._accounts_by_phone.values()}
+        with SessionLocal() as session:
+            rows = (
+                session.query(FarmerAccountModel).order_by(FarmerAccountModel.id).all()
+            )
+            return {row.id: _farmer_from_row(row) for row in rows}
 
     def clear(self) -> None:
-        self._accounts_by_phone.clear()
-        self._next_id = 1
+        with SessionLocal() as session:
+            session.query(FarmerAccountModel).delete()
+            session.commit()
+
+
+def _farmer_from_row(row: FarmerAccountModel) -> FarmerAccount:
+    return FarmerAccount(
+        id=row.id,
+        phone_number=row.phone_number,
+        name=row.name,
+        address=getattr(row, "address", None),
+        jurisdiction_id=row.jurisdiction_id,
+        consent_state=FarmerConsentState(row.consent_state),
+        scan_image_storage_notice_accepted=bool(row.scan_image_storage_notice_accepted),
+    )
 
 
 def normalize_phone_number(phone_number: str) -> str:

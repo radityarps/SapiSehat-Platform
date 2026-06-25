@@ -1,0 +1,19 @@
+{
+  "paths": {
+    "/api/agency/detection-monitoring": {
+      "get": { "tags": ["agency"] }
+    },
+    "/api/agency/risk-signals": {
+      "get": { "tags": [] }
+    },
+    "/api/farmers/{farmer_id}/area-advisory": {
+      "get": { "tags": ["farmer"] }
+    },
+    "/api/evidence/nlp/placeholder": {
+      "post": { "tags": ["prediction"] }
+    },
+    "/api/agency/audit-logs": {
+      "get": { "tags": ["agency"] }
+    }
+  }
+}

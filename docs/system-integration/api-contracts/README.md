@@ -5,10 +5,27 @@ Shared API contracts used by mobile, dashboard, Go gateway, Team 1 image service
 ## Contracts
 
 - [Image + NLP Fusion Contract](FUSION_CONTRACT.md)
+- [Bruno OpenCollection YAML](bruno/SapiSehat%20API/opencollection.yml)
 
 ## Rule
 
 Shared API schemas live here. Team folders may add model-specific implementation notes, but must not define competing shared schemas.
+
+## Bruno Collection
+
+Bruno collection lives at:
+
+```text
+docs/system-integration/api-contracts/bruno/SapiSehat API/
+```
+
+Open `opencollection.yml` in Bruno. Use `.yml` request files as source of truth for manual API calls.
+
+Bruno CLI notes:
+
+- OpenCollection YAML is supported.
+- Run from collection root.
+- `bru import openapi --collection-format opencollection` produces this layout.
 
 
 ## Quick-Scan Detection Attachment Tracer
@@ -22,3 +39,18 @@ Issue #6 adds emergency quick-scan behavior. API behavior:
 5. Agency detection visibility includes only attached detections whose cattle pass role-jurisdiction-consent authorization.
 
 The current FastAPI in-memory detection store is a tracer for the future Go gateway and PostgreSQL implementation.
+
+
+## Bruno Collection
+
+Open this folder in Bruno:
+
+```text
+docs/system-integration/api-contracts/bruno/SapiSehat API/
+```
+
+Collection root file:
+
+```text
+opencollection.yml
+```

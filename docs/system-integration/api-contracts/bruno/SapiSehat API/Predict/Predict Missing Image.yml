@@ -1,0 +1,33 @@
+info:
+  name: Predict Missing Image
+  type: http
+  seq: 2
+  tags:
+    - Predict
+
+http:
+  method: POST
+  url: "{{baseUrl}}/api/predict"
+  auth: inherit
+  body:
+    type: multipart-form
+    multipart-form: []
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+examples:
+  - name: 422 Response
+    description: Validation error
+    request:
+      url: "{{baseUrl}}/api/predict"
+      method: POST
+    response:
+      status: 422
+      statusText: Unprocessable Entity
+      body:
+        type: text
+        data: ""

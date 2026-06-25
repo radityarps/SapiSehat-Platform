@@ -1,0 +1,27 @@
+info:
+  name: GET agency media by media_id
+  type: http
+  seq: 6
+  tags:
+    - Agency
+
+http:
+  method: GET
+  url: "{{base_url}}/api/agency/media/{{media_id}}"
+  auth: inherit
+  headers:
+    - name: X-Agency-User-Id
+      value: "{{agency_user_id}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Get Agency Visible Media
+
+  `GET /api/agency/media/{media_id}`
+
+  Source: `apps/backend/api/routes.py:740`

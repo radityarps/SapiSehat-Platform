@@ -4,8 +4,20 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from main import app
+from api.database import SessionLocal
+from api.db_models import OfflineSyncedDetectionModel, FusionResultModel
+from api.cattle_profiles import cattle_profile_store
+from api.farmer_accounts import farmer_account_store
+from api.fusion_results import fusion_result_store
+from api.offline_sync import offline_detection_sync_store
 
 client = TestClient(app)
+
+def setup_function():
+    offline_detection_sync_store.clear()
+    fusion_result_store.clear()
+    cattle_profile_store.clear()
+    farmer_account_store.clear()
 
 
 def farmer_cattle():
@@ -77,6 +89,9 @@ def test_first_sync_preserves_local_id_versions_and_timestamp():
     assert body["fusion_result"]["inference_mode"] == "synced_offline"
     assert body["fusion_result"]["model_versions"] == {"image": "image-offline-1.0.0", "nlp": "nlp-offline-1.0.0"}
     assert body["fusion_result"]["evidence_breakdown"]["image"]["inference_mode"] == "offline"
+    with SessionLocal() as session:
+        assert session.query(OfflineSyncedDetectionModel).count() == 1
+        assert session.query(FusionResultModel).count() == 1
 
 
 def test_duplicate_sync_is_idempotent_for_stable_local_identifier():

@@ -3,6 +3,8 @@
 from fastapi.testclient import TestClient
 
 from main import app
+from api.database import SessionLocal
+from api.db_models import CattleTimelineEventModel
 from api.cattle_profiles import cattle_profile_store
 from api.farmer_accounts import FarmerConsentState, farmer_account_store
 
@@ -64,6 +66,8 @@ def test_farmer_can_create_vaccination_timeline_event():
     assert event["description"] == "Dose 1 complete"
     assert event["payload"] == {"vaccine": "FMD", "dose": 1}
     assert event["creator_id"] == farmer.id
+    with SessionLocal() as session:
+        assert session.query(CattleTimelineEventModel).count() == 1
 
 
 def test_cattle_detail_includes_timeline_ordered_newest_first():

@@ -1,0 +1,97 @@
+name: Backend CI
+
+on:
+  pull_request:
+    paths:
+      - "apps/backend/**"
+      - "apps/mobile/app/src/main/assets/model_metadata.json"
+      - "docs/**"
+      - ".github/workflows/backend-ci.yml"
+  push:
+    branches: [main, dev]
+    paths:
+      - "apps/backend/**"
+      - "apps/mobile/app/src/main/assets/model_metadata.json"
+      - "docs/**"
+      - ".github/workflows/backend-ci.yml"
+
+jobs:
+  backend-tests:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      FASTAPI_ENV: test
+      RATE_LIMIT_MAX_REQUESTS: "1000"
+      PYTEST_ADDOPTS: "-p no:cacheprovider"
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: sapisehat
+          POSTGRES_PASSWORD: sapisehat
+          POSTGRES_DB: sapisehat_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U sapisehat -d sapisehat_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+          cache: pip
+          cache-dependency-path: apps/backend/requirements.txt
+
+      - name: Install backend dependencies
+        working-directory: apps/backend
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements.txt
+
+      - name: Run full backend tests
+        env:
+          DATABASE_URL: sqlite:////tmp/sapisehat_backend_ci.db
+        run: python -m pytest apps/backend/tests -q
+
+      - name: Run Postgres migrations
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://sapisehat:sapisehat@localhost:5432/sapisehat_test
+        run: python -m alembic -c alembic.ini upgrade head
+
+      - name: Run Postgres DB smoke tests
+        working-directory: apps/backend
+        env:
+          DATABASE_URL: postgresql+psycopg://sapisehat:sapisehat@localhost:5432/sapisehat_test
+        run: >-
+          python -m pytest
+          tests/test_surface_specific_auth.py
+          tests/test_farmer_account_tracer.py
+          tests/test_cattle_profile_tracer.py
+          tests/test_cattle_timeline_tracer.py
+          tests/test_offline_detection_sync_tracer.py
+          tests/test_follow_up_status_tracer.py
+          tests/test_authorization_tracer.py
+          -q
+
+  backend-docker-package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Docker Postgres smoke
+        env:
+          IMAGE_NAME: sapisehat-backend-ci
+          NETWORK_NAME: sapisehat-ci-net
+          POSTGRES_CONTAINER: sapisehat-ci-postgres
+          PYTEST_ADDOPTS: "-p no:cacheprovider"
+        run: bash apps/backend/scripts/test_backend_db_docker.sh

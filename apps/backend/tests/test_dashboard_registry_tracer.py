@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from main import app
+from tests.conftest import repo_text
 
 client = TestClient(app)
 
@@ -49,12 +50,14 @@ def test_registry_api_filters_farmers_and_cattle_by_authorization_scope():
 
 
 def test_dashboard_registry_component_contains_table_filter_and_permitted_sections():
-    source = open("apps/dashboard/app/agency/registry/page.tsx", encoding="utf-8").read()
+    source = repo_text("apps/dashboard/src/features/agency/registry/registry-client.tsx")
+    page = repo_text("apps/dashboard/app/agency/registry/page.tsx")
 
     assert "@tanstack/react-table" in source
-    assert "fetchAgencyRegistry" in source
-    assert "X-Agency-User-Id" in source
-    assert "Filter registry" in source
-    assert "Permitted farmers" in source
-    assert "Permitted cattle" in source
+    assert "getAgencyRegistry" in source
+    assert "X-Agency-User-Id" in repo_text("apps/dashboard/src/shared/api/client.ts")
+    assert "Search farmers..." in source
+    assert "farmers" in source
+    assert "Cattle" in source
     assert "useReactTable" in source
+    assert "Farmer records scoped to your jurisdiction" in page

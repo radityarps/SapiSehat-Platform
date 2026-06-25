@@ -1,0 +1,12 @@
+.next/
+out/
+dist/
+build/
+coverage/
+.turbo/
+.vercel/
+.env
+.env.local
+.env.*.local
+node_modules/
+src/**/.DS_Store

@@ -1,0 +1,27 @@
+info:
+  name: POST evidence nlp
+  type: http
+  seq: 2
+  tags:
+    - Evidence
+
+http:
+  method: POST
+  url: "{{base_url}}/api/evidence/nlp"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"source":"nlp","model_version":"nlp-online-1.0.0","inference_mode":"online","questionnaire_answers":{"drooling":true,"reduced_appetite":true,"lameness":false},"notes_present":true,"disease_scores":{"healthy":0.2,"FMD":0.65,"LSD":0.15},"top_class":"FMD","confidence":0.65,"evidence_terms":["drooling","reduced appetite"],"debug":{"source":"bruno-example"}}
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Validate Nlp Evidence
+
+  `POST /api/evidence/nlp`
+
+  Source: `apps/backend/api/routes.py:570`

@@ -5,6 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import Enum
 
+from api.database import SessionLocal, create_all_tables
+from api.db_models import AgencyJurisdictionModel, AgencyUserModel
+
 
 class AgencyRole(str, Enum):
     ADMIN = "admin"
@@ -28,6 +31,8 @@ class AdministrativeJurisdiction:
     parent_id: str | None
     level: str
     name: str
+    latitude: float | None = None
+    longitude: float | None = None
 
 
 @dataclass(frozen=True)
@@ -47,6 +52,7 @@ class FarmerRecord:
     name: str
     jurisdiction_id: str
     consent_tier: ConsentTier
+    address: str | None = None
 
 
 ROLE_ACCESS_DEPTH = {
@@ -58,14 +64,161 @@ ROLE_ACCESS_DEPTH = {
 }
 
 
+class JurisdictionStore:
+    def __init__(self) -> None:
+        create_all_tables()
+
+    def seed_defaults(self) -> None:
+        with SessionLocal() as session:
+            if session.query(AgencyJurisdictionModel).count() > 0:
+                return
+            session.add_all(
+                [
+                    AgencyJurisdictionModel(
+                        id="central-java",
+                        parent_id=None,
+                        level="province",
+                        name="Jawa Tengah",
+                        latitude=-7.150975,
+                        longitude=110.140259,
+                    ),
+                    AgencyJurisdictionModel(
+                        id="semarang-city",
+                        parent_id="central-java",
+                        level="regency_city",
+                        name="Kota Semarang",
+                        latitude=-6.966667,
+                        longitude=110.416664,
+                    ),
+                    AgencyJurisdictionModel(
+                        id="tembalang",
+                        parent_id="semarang-city",
+                        level="district_subdistrict",
+                        name="Tembalang",
+                        latitude=-7.044997,
+                        longitude=110.445999,
+                    ),
+                    AgencyJurisdictionModel(
+                        id="banyumanik",
+                        parent_id="semarang-city",
+                        level="district_subdistrict",
+                        name="Banyumanik",
+                        latitude=-7.066667,
+                        longitude=110.416664,
+                    ),
+                    AgencyJurisdictionModel(
+                        id="west-java",
+                        parent_id=None,
+                        level="province",
+                        name="Jawa Barat",
+                        latitude=-6.914744,
+                        longitude=107.609810,
+                    ),
+                ]
+            )
+            session.commit()
+
+    def all_by_id(self) -> dict[str, AdministrativeJurisdiction]:
+        with SessionLocal() as session:
+            rows = session.query(AgencyJurisdictionModel).all()
+            return {row.id: _jurisdiction_from_row(row) for row in rows}
+
+
+class AgencyUserStore:
+    def __init__(self) -> None:
+        create_all_tables()
+
+    def seed_defaults(self) -> None:
+        with SessionLocal() as session:
+            if session.query(AgencyUserModel).count() > 0:
+                return
+            session.add_all(
+                [
+                    AgencyUserModel(
+                        id="semarang-officer",
+                        role=AgencyRole.DISTRICT_OFFICER.value,
+                        jurisdiction_id="semarang-city",
+                    ),
+                    AgencyUserModel(
+                        id="tembalang-viewer",
+                        role=AgencyRole.VIEWER.value,
+                        jurisdiction_id="tembalang",
+                    ),
+                    AgencyUserModel(
+                        id="central-java-admin",
+                        role=AgencyRole.ADMIN.value,
+                        jurisdiction_id="central-java",
+                    ),
+                ]
+            )
+            session.commit()
+
+    def get(self, user_id: str) -> AgencyUser | None:
+        with SessionLocal() as session:
+            row = session.get(AgencyUserModel, user_id)
+            return None if row is None else _agency_from_row(row)
+
+    def all(self) -> dict[str, AgencyUser]:
+        with SessionLocal() as session:
+            rows = session.query(AgencyUserModel).all()
+            return {row.id: _agency_from_row(row) for row in rows}
+
+    def ensure_exists(self, user_id: str, role: str, jurisdiction_id: str) -> None:
+        """Ensure an agency user entry exists for a given account ID."""
+        with SessionLocal() as session:
+            existing = session.get(AgencyUserModel, user_id)
+            if existing is None:
+                session.add(
+                    AgencyUserModel(
+                        id=user_id, role=role, jurisdiction_id=jurisdiction_id
+                    )
+                )
+                session.commit()
+
+    def list_all(self) -> list[AgencyUser]:
+        """List all agency users."""
+        with SessionLocal() as session:
+            rows = session.query(AgencyUserModel).all()
+            return [_agency_from_row(row) for row in rows]
+
+    def update_role(
+        self, user_id: str, role: str, jurisdiction_id: str | None = None
+    ) -> AgencyUser | None:
+        """Update an agency user's role and optionally jurisdiction."""
+        with SessionLocal() as session:
+            row = session.get(AgencyUserModel, user_id)
+            if row is None:
+                return None
+            row.role = role
+            if jurisdiction_id is not None:
+                row.jurisdiction_id = jurisdiction_id
+            session.commit()
+            session.refresh(row)
+            return _agency_from_row(row)
+
+    def delete(self, user_id: str) -> bool:
+        """Delete an agency user."""
+        with SessionLocal() as session:
+            row = session.get(AgencyUserModel, user_id)
+            if row is None:
+                return False
+            session.delete(row)
+            session.commit()
+            return True
+
+
+_jurisdiction_store = JurisdictionStore()
+_agency_user_store = AgencyUserStore()
+_jurisdiction_store.seed_defaults()
+_agency_user_store.seed_defaults()
+
+
 def _is_same_or_descendant(
     *,
     target_jurisdiction_id: str,
     agency_jurisdiction_id: str,
     jurisdictions: dict[str, AdministrativeJurisdiction],
 ) -> bool:
-    """Return true when target jurisdiction is agency jurisdiction or below it."""
-
     current_id: str | None = target_jurisdiction_id
     while current_id is not None:
         if current_id == agency_jurisdiction_id:
@@ -80,23 +233,12 @@ def can_agency_access_farmer(
     farmer: FarmerRecord,
     jurisdictions: dict[str, AdministrativeJurisdiction],
 ) -> bool:
-    """Authorize agency visibility using role, jurisdiction, and consent.
-
-    All three gates must pass:
-    - role must allow monitoring reads
-    - farmer jurisdiction must be inside agency jurisdiction scope
-    - farmer consent must allow agency monitoring
-    """
-
     if agency.role not in ROLE_ACCESS_DEPTH:
         return False
-
     if farmer.consent_tier == ConsentTier.PRIVATE:
         return False
-
     if agency.role == AgencyRole.ADMIN:
         return True
-
     return _is_same_or_descendant(
         target_jurisdiction_id=farmer.jurisdiction_id,
         agency_jurisdiction_id=agency.jurisdiction_id,
@@ -109,8 +251,6 @@ def filter_visible_farmers(
     farmers: list[FarmerRecord],
     jurisdictions: dict[str, AdministrativeJurisdiction],
 ) -> list[FarmerRecord]:
-    """Return only farmer records visible to agency user."""
-
     return [
         farmer
         for farmer in farmers
@@ -118,22 +258,32 @@ def filter_visible_farmers(
     ]
 
 
-DEMO_JURISDICTIONS = {
-    "central-java": AdministrativeJurisdiction("central-java", None, "province", "Jawa Tengah"),
-    "semarang-city": AdministrativeJurisdiction("semarang-city", "central-java", "regency_city", "Kota Semarang"),
-    "tembalang": AdministrativeJurisdiction("tembalang", "semarang-city", "district_subdistrict", "Tembalang"),
-    "banyumanik": AdministrativeJurisdiction("banyumanik", "semarang-city", "district_subdistrict", "Banyumanik"),
-    "west-java": AdministrativeJurisdiction("west-java", None, "province", "Jawa Barat"),
-}
+def _jurisdiction_from_row(row: AgencyJurisdictionModel) -> AdministrativeJurisdiction:
+    return AdministrativeJurisdiction(
+        row.id,
+        row.parent_id,
+        row.level,
+        row.name,
+        getattr(row, "latitude", None),
+        getattr(row, "longitude", None),
+    )
 
+
+def _agency_from_row(row: AgencyUserModel) -> AgencyUser:
+    return AgencyUser(row.id, AgencyRole(row.role), row.jurisdiction_id)
+
+
+DEMO_JURISDICTIONS = _jurisdiction_store.all_by_id()
 DEMO_FARMERS = [
     FarmerRecord("farmer-1", "Pak Tono", "tembalang", ConsentTier.AGENCY_MONITORING),
     FarmerRecord("farmer-2", "Bu Sari", "banyumanik", ConsentTier.PRIVATE),
     FarmerRecord("farmer-3", "Pak Asep", "west-java", ConsentTier.AGENCY_MONITORING),
 ]
+DEMO_AGENCY_USERS = _agency_user_store.all()
 
-DEMO_AGENCY_USERS = {
-    "semarang-officer": AgencyUser("semarang-officer", AgencyRole.DISTRICT_OFFICER, "semarang-city"),
-    "tembalang-viewer": AgencyUser("tembalang-viewer", AgencyRole.VIEWER, "tembalang"),
-    "central-java-admin": AgencyUser("central-java-admin", AgencyRole.ADMIN, "central-java"),
-}
+
+def refresh_agency_users() -> None:
+    """Reload DEMO_AGENCY_USERS after new accounts are seeded."""
+    global DEMO_AGENCY_USERS
+    DEMO_AGENCY_USERS.clear()
+    DEMO_AGENCY_USERS.update(_agency_user_store.all())

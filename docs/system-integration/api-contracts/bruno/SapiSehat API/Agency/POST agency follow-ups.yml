@@ -1,0 +1,30 @@
+info:
+  name: POST agency follow-ups
+  type: http
+  seq: 8
+  tags:
+    - Agency
+
+http:
+  method: POST
+  url: "{{base_url}}/api/agency/follow-ups"
+  auth: inherit
+  headers:
+    - name: X-Agency-User-Id
+      value: "{{agency_user_id}}"
+  body:
+    type: json
+    json: |-
+      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","detection_id":"{{detection_id}}","status":"pending","public_message":"Petugas akan meninjau risk signal ini. Ini bukan diagnosis.","internal_notes":"Internal triage note for agency follow-up."}
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Create Agency Follow Up
+
+  `POST /api/agency/follow-ups`
+
+  Source: `apps/backend/api/routes.py:784`

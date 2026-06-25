@@ -1,0 +1,27 @@
+info:
+  name: POST evidence nlp placeholder
+  type: http
+  seq: 3
+  tags:
+    - Evidence
+
+http:
+  method: POST
+  url: "{{base_url}}/api/evidence/nlp/placeholder"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"farmer_id":"{{farmer_id}}","cattle_id":"{{cattle_id}}","symptom_text":"Farmer notes drooling and reduced appetite.","questionnaire_answers":{"drooling":true,"reduced_appetite":true}}
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Create Nlp Placeholder
+
+  `POST /api/evidence/nlp/placeholder`
+
+  Source: `apps/backend/api/routes.py:578`

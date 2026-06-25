@@ -1,0 +1,24 @@
+info:
+  name: GET Health Check
+  type: http
+  seq: 1
+  tags:
+    - Health
+
+http:
+  method: GET
+  url: "{{base_url}}/api/health"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Health
+
+  `GET /api/health`
+
+  Source: `apps/backend/api/routes.py:339`

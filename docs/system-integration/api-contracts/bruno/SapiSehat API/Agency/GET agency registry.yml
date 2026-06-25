@@ -1,0 +1,27 @@
+info:
+  name: GET agency registry
+  type: http
+  seq: 9
+  tags:
+    - Agency
+
+http:
+  method: GET
+  url: "{{base_url}}/api/agency/registry"
+  auth: inherit
+  headers:
+    - name: X-Agency-User-Id
+      value: "{{agency_user_id}}"
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Get Agency Dashboard Registry
+
+  `GET /api/agency/registry`
+
+  Source: `apps/backend/api/routes.py:823`

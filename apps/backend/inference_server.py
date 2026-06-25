@@ -39,8 +39,16 @@ class InferenceService:
     def __init__(self):
         """Initialize inference service with singleton model loader."""
         self.model_loader = ModelLoader(settings.model_path)
+        self.LABELS = getattr(self.model_loader, "class_names", settings.labels)
         self.preprocessor = ModelPreprocessor()
         logger.info("InferenceService initialized")
+
+    def _as_probabilities(self, output: np.ndarray) -> np.ndarray:
+        values = np.asarray(output[0], dtype=np.float32)
+        if np.all(values >= 0.0) and np.isclose(float(values.sum()), 1.0, atol=1e-3):
+            return values
+        exp = np.exp(values - np.max(values))
+        return exp / exp.sum()
 
     def _top_margin(self, scores: Dict[str, float]) -> float:
         values = sorted(scores.values(), reverse=True)
@@ -101,17 +109,15 @@ class InferenceService:
             # Preprocessing: Convert image to numpy array
             image_array = self.preprocessor.process(image)
             
-            preprocessing_ms = int((time.time() - start_time) * 1000)
+            preprocessing_ms = max(1, int((time.time() - start_time) * 1000))
             infer_start = time.time()
             
             # Inference (TensorFlow/Keras)
             output = self.model_loader.predict(image_array)
-            # Softmax with numpy
-            exp = np.exp(output[0] - np.max(output[0]))
-            probs = exp / exp.sum()
+            probs = self._as_probabilities(output)
             
-            inference_ms = int((time.time() - infer_start) * 1000)
-            total_ms = int((time.time() - start_time) * 1000)
+            inference_ms = max(1, int((time.time() - infer_start) * 1000))
+            total_ms = max(1, int((time.time() - start_time) * 1000))
             
             prediction = self._build_prediction(probs)
             pred_label = prediction["disease_class"]
@@ -146,7 +152,7 @@ class InferenceService:
             return {
                 "status": "error",
                 "message": str(e),
-                "processing_time_ms": int((time.time() - start_time) * 1000)
+                "processing_time_ms": max(1, int((time.time() - start_time) * 1000))
             }
 
     def predict_two_stage_prototype(self, image: Image.Image, *, include_debug_regions: bool = False) -> Dict[str, Any]:

@@ -1,0 +1,27 @@
+info:
+  name: POST detections quick-scan
+  type: http
+  seq: 1
+  tags:
+    - Detections
+
+http:
+  method: POST
+  url: "{{base_url}}/api/detections/quick-scan"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"farmer_id":"{{farmer_id}}","result_label":"FMD","confidence":0.72,"source":"quick_scan"}
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Create Quick Scan Detection
+
+  `POST /api/detections/quick-scan`
+
+  Source: `apps/backend/api/routes.py:515`

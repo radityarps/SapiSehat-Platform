@@ -1,0 +1,27 @@
+info:
+  name: POST farmers by farmer_id cattle by cattle_id timeline
+  type: http
+  seq: 8
+  tags:
+    - Farmers
+
+http:
+  method: POST
+  url: "{{base_url}}/api/farmers/{{farmer_id}}/cattle/{{cattle_id}}/timeline"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"event_type":"vaccination","event_date":"2026-06-10","title":"Routine vaccination","description":"Scheduled preventive care recorded by field team.","payload":{"vaccine":"FMD booster","dose":"2 ml"},"creator_id":"mobile-farmer"}
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Add Farmer Cattle Timeline Event
+
+  `POST /api/farmers/{farmer_id}/cattle/{cattle_id}/timeline`
+
+  Source: `apps/backend/api/routes.py:471`

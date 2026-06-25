@@ -1,0 +1,27 @@
+info:
+  name: POST farmers accounts
+  type: http
+  seq: 1
+  tags:
+    - Farmers
+
+http:
+  method: POST
+  url: "{{base_url}}/api/farmers/accounts"
+  auth: inherit
+  body:
+    type: json
+    json: |-
+      {"phone_number":"+6281234567890","name":"Demo Farmer","jurisdiction_id":"tembalang","consent_state":"research_and_monitoring"}
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Register Or Sign In Farmer Account
+
+  `POST /api/farmers/accounts`
+
+  Source: `apps/backend/api/routes.py:367`

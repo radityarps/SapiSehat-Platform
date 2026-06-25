@@ -19,7 +19,7 @@ Web-dashboard user from livestock or animal-health service who monitors jurisdic
 _Avoid_: Farmer user, cattle record owner, public self-registered user
 
 **Farmer Account**:
-Mobile account registered by farmer using email/password or Google login. Phone number is optional contact information.
+Mobile account registered by farmer using email/password. Phone number is optional contact information. Google login was removed as overkill for tugas akhir scope.
 _Avoid_: Phone-primary identity, anonymous-only farmer, agency-created farmer identity
 
 **Agency Account**:
@@ -41,6 +41,10 @@ _Avoid_: Active farmer app, deleted reference app, mixed Flutter module
 **FastAPI Platform Backend**:
 Single shared backend that owns authentication, PostgreSQL persistence, farmer/cattle records, stored scan images, dashboard APIs, image evidence handling, NLP evidence handling, and image-plus-NLP fusion.
 _Avoid_: Go gateway rewrite, microservices-first platform, team-owned backend silos
+
+**Backend Test Entry Point**:
+Repository-root `tests/test_backend_suite.py` wrapper that runs backend suite from `apps/backend/tests` so `python -m pytest tests -q` works from repo root.
+_Avoid_: Repo-root test folder with duplicated backend cases, backend-only command that fails from root
 
 **Platform PostgreSQL Database**:
 First-release source of truth for accounts, cattle records, jurisdictions, detection events, media metadata, review items, follow-up records, and dashboard reporting.
@@ -114,6 +118,18 @@ _Avoid_: Unknown disease diagnosis, forced healthy result, silent model failure
 Detection scan image retained by backend after inference as part of detection record and agency follow-up data.
 _Avoid_: Temporary inference-only upload, unstored scan image, non-detection camera photo
 
+**Private Object Storage**:
+S3-compatible storage for detection image bytes, using local MinIO in development and production S3-compatible buckets later, while metadata stays in PostgreSQL.
+_Avoid_: Public bucket images, database blob storage, local filesystem-only production storage
+
+**Signed Media URL**:
+Short-lived backend-issued URL that lets authorized agency users preview or download private stored scan images without making bucket objects public.
+_Avoid_: Public image URL, permanent shared link, direct bucket credential exposure
+
+**Agency Audit Log Read API**:
+Admin-only endpoint for recent backend audit events such as predictions, media uploads, signed media URL issuance, and follow-up creation.
+_Avoid_: Public audit feed, farmer-visible internal notes, normal agency review queue
+
 **Scan Image Storage Notice**:
 Blocking first-scan acknowledgement that every detection scan image is stored by backend for monitoring and follow-up.
 _Avoid_: Hidden storage, silent upload, optional storage consent
@@ -170,7 +186,7 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 
 - **Farmer User** uses **Flutter Farmer App** only; there is no farmer web dashboard in first release.
 - **Agency User** uses **Next.js TanStack Dashboard** only.
-- **Farmer Account** supports email/password and Google login.
+- **Farmer Account** supports email/password only; Google login is out of scope for tugas akhir.
 - Farmer email/password registration does not require email verification in first release.
 - **Agency Account** supports email/password only and is admin-seeded.
 - Agency password reset is manual/admin reset only in first release.
@@ -179,7 +195,10 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 - **On-Device TFLite Fallback** produces offline image-only result and syncs later.
 - **Legacy Android App** remains reference only after repo move.
 - **FastAPI Platform Backend** uses **Platform PostgreSQL Database** for final first-release storage.
+- Root repo `tests/test_backend_suite.py` delegates to backend suite under `apps/backend/tests` so root pytest command stays usable.
 - **Stored Scan Image** is created for every detection scan after **Scan Image Storage Notice** acknowledgement.
+- **Private Object Storage** stores scan image bytes; **Platform PostgreSQL Database** stores media metadata and object keys.
+- **Signed Media URL** is issued by backend only after agency authorization checks.
 - EXIF metadata should be removed before storing detection images.
 - Non-detection camera/gallery photos are not part of **Stored Scan Image** scope.
 - **Farmer Archive Action** hides records in mobile view but preserves backend data and agency follow-up copy.
@@ -195,6 +214,7 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 - One risky **Early Detection Result** creates **Agency Review Item**.
 - Multiple related review items matching **Cluster Trigger Rule** create **Cluster Risk Signal**.
 - **Agency User** may update **Agency Follow-Up Status** and notes only.
+- **Agency Audit Log Read API** is admin-only and exposes recent audit events for debugging and ops review.
 - **Farmer User** sees **Farmer Follow-Up Status** only, not agency internal notes.
 - **Farmer Area Risk Advisory** appears only when **Cluster Risk Signal** exists in farmer district.
 - Advisory wording must avoid outbreak declaration and identity leakage.
@@ -213,7 +233,7 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 
 - "mobile stack" means **Flutter Farmer App** for Android first release; native Android/Kotlin becomes **Legacy Android App**.
 - "backend architecture" means **FastAPI Platform Backend**, not Go gateway.
-- "farmer login" means **Farmer Account** with email/password and Google login; phone is optional contact.
+- "farmer login" means **Farmer Account** with email/password; phone is optional contact.
 - "same email on mobile and dashboard" means **Surface-Specific Account**; no automatic cross-surface access.
 - "combine Team 1 and Team 2 models" means **Weighted Evidence Fusion** with real **NLP Evidence** before release.
 - "Team 2 NLP not ready" means **Image-Only Evidence Result** plus **NLP Placeholder** temporarily; no fake NLP scores.
@@ -224,3 +244,55 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 - "farmer area alert" means **Farmer Area Risk Advisory**, not outbreak warning or nearby-case detail.
 - "agency dashboard edits" means agency follow-up status/notes only, not farmer cattle CRUD.
 - "farmer follow-up visibility" means simplified status only, no internal agency notes.
+
+**Foundation-Complete Farmer App**:
+Milestone 2 target for Flutter mobile: onboarding, terms/privacy/storage acknowledgement, login/register, farmer home shell, cattle CRUD/status/archive, camera/gallery scan upload, offline fallback with sync queue, detection history, profile, settings, configurable backend URL, and safe wording. It excludes real Team 2 NLP, cluster risk advisory, agency follow-up workflow, and final E2E release gate.
+_Avoid_: Tracer-only shell, final release app, dashboard scope, real NLP fusion scope
+
+**Terms & Privacy Checklist**:
+Mobile farmer app checklist shown from registration and settings so farmer can review terms, privacy, non-diagnostic product boundaries, and scan-image storage expectations. It does not replace the blocking first-scan **Scan Image Storage Notice** acknowledgement.
+_Avoid_: Hidden legal copy, scan consent replacement, diagnosis disclaimer buried only in settings
+
+**Farmer Mobile Registration**:
+Flutter farmer app email/password account creation flow with name, email, password, optional phone, jurisdiction fields, and visible **Terms & Privacy Checklist** before submit. Email verification is not required for first release. Native Google sign-in may be deferred behind a clear unavailable state until the mobile SDK path is wired.
+_Avoid_: Agency registration, email-verification blocker, hidden terms, fake Google success
+
+**Jurisdiction Autofill from GPS**:
+Registration/profile helper that proposes a district/subdistrict jurisdiction and full address from device location via Nominatim reverse geocoding, letting the farmer confirm or edit it. It is a convenience input aid, not a precise geofence truth source. Requires `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` Android permissions, requested at runtime with an explain-first dialog.
+_Avoid_: Silent auto-override, hard GPS lock, exact coordinate storage as profile identity
+
+**Farmer Address Field**:
+Optional free-text address on farmer account, populated via GPS auto-fill or manual entry. Stored in `AccountModel.address` and returned in auth responses. Used by agency dashboard registry to show farmer location.
+_Avoid_: Required registration field, precise GPS coordinate storage, address-as-identity
+
+**Agency Dashboard RBAC**:
+Role-based access control for agency dashboard with 5 roles: admin, province_officer, district_officer, village_officer, viewer. Each role determines which nav items, pages, and data are visible, scoped by jurisdiction assignment.
+_Avoid_: Single admin-only dashboard, no-role all-access, farmer RBAC
+
+**Agency Notification**:
+In-app notification for agency dashboard users, stored in `NotificationModel` and delivered via `GET /api/notifications`. Emitted by backend on follow-up status changes. Read/unread state tracked per account. Bell icon with unread badge in dashboard topbar opens a right-drawer sheet.
+_Avoid_: Email/SMS notification, push notification, farmer-facing agency notification
+
+**Dashboard Settings Page**:
+Agency dashboard page at `/agency/settings` with three sections: profile (edit display name), password change (auto-logout on success), and logout. All destructive actions guarded by AlertDialog confirmation.
+_Avoid_: Agency registration, admin-only settings, farmer settings page
+
+**Debug Mode Pre-fill**:
+Flutter `kDebugMode` flag that pre-fills login/register fields with seeded dev credentials (`farmer@example.com` / `strong-password`) in debug builds only. Empty in release builds.
+_Avoid_: Hardcoded production credentials, env-file credentials for mobile, release-time pre-fill
+
+**Farmer Account Archive**:
+Backend-supported soft delete for farmer account that disables future login while preserving existing records, scan images, and follow-up history. It is reversible only by admin policy, not by farmer self-service in first release.
+_Avoid_: Permanent deletion, cascade purge, hidden local-only logout
+
+**Feature Tour Onboarding**:
+First-launch farmer mobile onboarding with two or three Indonesian-language feature screens for cattle management, scan risk signals, and offline sync. Privacy and storage acknowledgement are handled through registration/settings and the first-scan notice, not as onboarding screens.
+_Avoid_: Legal-only onboarding, alarmist disease promises, diagnosis claims
+
+**Offline TFLite Model Asset**:
+Legacy Android asset `cattle_disease.tflite` under `apps/mobile-android-legacy/app/src/main/assets/` is the current offline image inference model source for Flutter migration.
+_Avoid_: Missing-model assumption, hardcoded fake offline scores
+
+**Complete Livestock Profile Fields**:
+Cattle profiles now store optional physical, reproductive, health, economic, and notes data: `name`, `color`, `weight_kg`, `reproductive_status`, `is_pregnant`, `last_calving_date`, `last_vaccination_date`, `last_deworming_date`, `health_notes`, `purchase_date`, `purchase_price_idr`, and `notes`. Timeline events remain separate for dated operational history, while profile fields store latest-known summary values. Development seeding includes realistic Indonesian cattle data for these fields.
+_Avoid_: diagnosis claims, required completion before scanning, replacing timeline events with summary-only data

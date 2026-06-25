@@ -1,0 +1,26 @@
+info:
+  name: GET farmers by farmer_id area-advisory
+  type: http
+  seq: 11
+  tags:
+    - Farmers
+
+http:
+  method: GET
+  url: "{{base_url}}/api/farmers/{{farmer_id}}/area-advisory"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+
+docs: |-
+  ### Get Farmer Area Advisory
+
+  `GET /api/farmers/{farmer_id}/area-advisory`
+
+  Source: `apps/backend/api/routes.py:904`
+
+  Safe wording: model output is not veterinary diagnosis or outbreak declaration.

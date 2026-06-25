@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi.testclient import TestClient
 
 from main import app
+from tests.conftest import repo_text
 
 client = TestClient(app)
 
@@ -34,13 +35,14 @@ def test_detection_monitoring_lists_only_authorized_scope():
     allowed_farmer, allowed_cattle = farmer_cattle()
     outside_farmer, outside_cattle = farmer_cattle(jurisdiction_id="west-java", tag="OUT")
     allowed_result = create_fusion(allowed_farmer, allowed_cattle)
-    create_fusion(outside_farmer, outside_cattle)
+    outside_result = create_fusion(outside_farmer, outside_cattle)
 
     response = client.get("/api/agency/detection-monitoring", headers={"X-Agency-User-Id": "semarang-officer"})
 
     assert response.status_code == 200, response.text
     ids = {item["id"] for item in response.json()["detections"]}
     assert allowed_result["id"] in ids
+    assert outside_result["id"] not in ids
 
 
 def test_detection_monitoring_shows_conflict_and_evidence_breakdown():
@@ -57,7 +59,7 @@ def test_detection_monitoring_shows_conflict_and_evidence_breakdown():
 
 
 def test_detection_monitoring_ui_uses_safe_language():
-    source = open("apps/dashboard/app/agency/detections/page.tsx", encoding="utf-8").read()
+    source = repo_text("apps/dashboard/app/agency/detections/page.tsx")
 
     assert "Disease risk signals" in source
     assert "Risk signal" in source
