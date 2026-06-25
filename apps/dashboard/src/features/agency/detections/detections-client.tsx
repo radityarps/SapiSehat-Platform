@@ -19,18 +19,18 @@ import {
 import { Skeleton } from "@/src/shared/ui/skeleton";
 import { getDetectionMonitoring } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
+import { useDebouncedValue } from "@/src/shared/hooks/use-debounced-value";
 import {
 	EvidenceDetail,
 	EvidenceLabel,
 } from "@/src/features/agency/detections/evidence-label";
 import type { DetectionMonitoringItem } from "@/src/shared/types/api";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Eye, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
 	useReactTable,
 	getCoreRowModel,
-	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
 	flexRender,
@@ -42,22 +42,26 @@ export function DetectionsClient() {
 	const { token, agencyUserId } = useAgencySession();
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
+	const debouncedGlobalFilter = useDebouncedValue(globalFilter);
 	const [classFilter, setClassFilter] = useState("all");
 	const [selected, setSelected] = useState<DetectionMonitoringItem | null>(
 		null,
 	);
 
 	const query = useQuery({
-		queryKey: ["detections"],
-		queryFn: () => getDetectionMonitoring(token, agencyUserId),
+		queryKey: ["detections", debouncedGlobalFilter, classFilter],
+		queryFn: () =>
+			getDetectionMonitoring(token, agencyUserId, {
+				search: debouncedGlobalFilter,
+				diseaseClass: classFilter,
+			}),
 		enabled: Boolean(token && agencyUserId),
+		placeholderData: keepPreviousData,
 	});
 
 	const detections = useMemo(() => {
-		const list = query.data?.detections ?? [];
-		if (classFilter === "all") return list;
-		return list.filter((d) => d.disease_class === classFilter);
-	}, [query.data?.detections, classFilter]);
+		return query.data?.detections ?? [];
+	}, [query.data?.detections]);
 
 	const diseaseClasses = useMemo(() => {
 		const all = query.data?.detections ?? [];
@@ -146,11 +150,9 @@ export function DetectionsClient() {
 	const table = useReactTable({
 		data: detections,
 		columns,
-		state: { sorting, globalFilter },
+		state: { sorting },
 		onSortingChange: setSorting,
-		onGlobalFilterChange: setGlobalFilter,
 		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		initialState: { pagination: { pageSize: 10 } },
@@ -207,7 +209,7 @@ export function DetectionsClient() {
 						</SelectContent>
 					</Select>
 					<span className="text-sm text-muted-foreground ml-auto">
-						{table.getFilteredRowModel().rows.length} items
+						{table.getRowModel().rows.length} items
 					</span>
 				</div>
 

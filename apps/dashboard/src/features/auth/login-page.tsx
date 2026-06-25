@@ -15,6 +15,10 @@ import { useAgencySession } from "@/src/features/auth/session-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 
+const isDev = process.env.NODE_ENV === "development";
+const devAdminEmail = "admin@sapisehat.id";
+const devAdminPassword = "admin123";
+
 export default function LoginPage() {
 	return (
 		<Suspense fallback={null}>
@@ -28,8 +32,8 @@ function LoginForm() {
 	const { signIn } = useAgencySession();
 	const searchParams = useSearchParams();
 	const next = searchParams.get("next") || "/agency/overview";
-	const [email, setEmail] = useState("");
-	const [password, setPassword] = useState("");
+	const [email, setEmail] = useState(isDev ? devAdminEmail : "");
+	const [password, setPassword] = useState(isDev ? devAdminPassword : "");
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 

@@ -17,11 +17,12 @@ import {
 	getDetectionMonitoring,
 } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
+import { useDebouncedValue } from "@/src/shared/hooks/use-debounced-value";
 import type {
 	AgencyRegistryCattle,
 	DetectionMonitoringItem,
 } from "@/src/shared/types/api";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import {
 	ArrowLeft,
 	ChevronDown,
@@ -34,7 +35,6 @@ import { useRouter } from "next/navigation";
 import {
 	useReactTable,
 	getCoreRowModel,
-	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
 	flexRender,
@@ -46,17 +46,27 @@ export function FarmerDetailClient({ farmerId }: { farmerId: string }) {
 	const { token, agencyUserId } = useAgencySession();
 	const router = useRouter();
 	const enabled = Boolean(token && agencyUserId);
+	const [cattleSearch, setCattleSearch] = useState("");
+	const debouncedCattleSearch = useDebouncedValue(cattleSearch);
+	const [statusFilter, setStatusFilter] = useState("all");
 
 	const registryQuery = useQuery({
-		queryKey: ["registry"],
-		queryFn: () => getAgencyRegistry(token, agencyUserId),
+		queryKey: ["registry", farmerId, debouncedCattleSearch, statusFilter],
+		queryFn: () =>
+			getAgencyRegistry(token, agencyUserId, {
+				farmerId,
+				cattleSearch: debouncedCattleSearch,
+				cattleStatus: statusFilter,
+			}),
 		enabled,
+		placeholderData: keepPreviousData,
 	});
 
 	const detectionsQuery = useQuery({
-		queryKey: ["detections"],
-		queryFn: () => getDetectionMonitoring(token, agencyUserId),
+		queryKey: ["detections", farmerId],
+		queryFn: () => getDetectionMonitoring(token, agencyUserId, { farmerId }),
 		enabled,
+		placeholderData: keepPreviousData,
 	});
 
 	const farmer = useMemo(() => {
@@ -152,7 +162,14 @@ export function FarmerDetailClient({ farmerId }: { farmerId: string }) {
 			{/* Cattle table */}
 			<section className="space-y-3">
 				<h2 className="text-lg font-semibold">Cattle</h2>
-				<CattleTable cattle={cattle} detections={farmerDetections} />
+				<CattleTable
+					cattle={cattle}
+					detections={farmerDetections}
+					search={cattleSearch}
+					onSearchChange={setCattleSearch}
+					statusFilter={statusFilter}
+					onStatusFilterChange={setStatusFilter}
+				/>
 			</section>
 		</div>
 	);
@@ -170,21 +187,20 @@ function InfoBlock({ label, value }: { label: string; value: string }) {
 function CattleTable({
 	cattle,
 	detections,
+	search,
+	onSearchChange,
+	statusFilter,
+	onStatusFilterChange,
 }: {
 	cattle: AgencyRegistryCattle[];
 	detections: DetectionMonitoringItem[];
+	search: string;
+	onSearchChange: (value: string) => void;
+	statusFilter: string;
+	onStatusFilterChange: (value: string) => void;
 }) {
 	const [sorting, setSorting] = useState<SortingState>([]);
-	const [globalFilter, setGlobalFilter] = useState("");
-	const [statusFilter, setStatusFilter] = useState("all");
 	const [expandedCattleId, setExpandedCattleId] = useState<string | null>(null);
-
-	const filtered = useMemo(() => {
-		let list = cattle;
-		if (statusFilter !== "all")
-			list = list.filter((c) => c.status === statusFilter);
-		return list;
-	}, [cattle, statusFilter]);
 
 	const statuses = useMemo(
 		() => [...new Set(cattle.map((c) => c.status))].sort(),
@@ -253,13 +269,11 @@ function CattleTable({
 	);
 
 	const table = useReactTable({
-		data: filtered,
+		data: cattle,
 		columns,
-		state: { sorting, globalFilter },
+		state: { sorting },
 		onSortingChange: setSorting,
-		onGlobalFilterChange: setGlobalFilter,
 		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		initialState: { pagination: { pageSize: 10 } },
@@ -273,12 +287,12 @@ function CattleTable({
 					<Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
 					<Input
 						placeholder="Search cattle..."
-						value={globalFilter}
-						onChange={(e) => setGlobalFilter(e.target.value)}
+						value={search}
+						onChange={(e) => onSearchChange(e.target.value)}
 						className="pl-9"
 					/>
 				</div>
-				<Select value={statusFilter} onValueChange={setStatusFilter}>
+				<Select value={statusFilter} onValueChange={onStatusFilterChange}>
 					<SelectTrigger className="w-[150px]">
 						<SelectValue placeholder="All statuses" />
 					</SelectTrigger>
@@ -292,7 +306,7 @@ function CattleTable({
 					</SelectContent>
 				</Select>
 				<span className="text-sm text-muted-foreground ml-auto">
-					{table.getFilteredRowModel().rows.length} cattle
+					{table.getRowModel().rows.length} cattle
 				</span>
 			</div>
 

@@ -20,14 +20,14 @@ import {
 import { Skeleton } from "@/src/shared/ui/skeleton";
 import { getAuditLogs } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
+import { useDebouncedValue } from "@/src/shared/hooks/use-debounced-value";
 import type { AuditLogItem } from "@/src/shared/types/api";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { Eye, Search } from "lucide-react";
 import { useMemo, useState } from "react";
 import {
 	useReactTable,
 	getCoreRowModel,
-	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
 	flexRender,
@@ -43,20 +43,24 @@ export function AuditLogsClient() {
 		{ id: "created_at", desc: true },
 	]);
 	const [globalFilter, setGlobalFilter] = useState("");
+	const debouncedGlobalFilter = useDebouncedValue(globalFilter);
 	const [actionFilter, setActionFilter] = useState("all");
 	const [selected, setSelected] = useState<AuditLogItem | null>(null);
 
 	const query = useQuery({
-		queryKey: ["audit-logs"],
-		queryFn: () => getAuditLogs(token, agencyUserId),
+		queryKey: ["audit-logs", debouncedGlobalFilter, actionFilter],
+		queryFn: () =>
+			getAuditLogs(token, agencyUserId, {
+				search: debouncedGlobalFilter,
+				action: actionFilter,
+			}),
 		enabled,
+		placeholderData: keepPreviousData,
 	});
 
 	const logs = useMemo(() => {
-		const list = query.data?.logs ?? [];
-		if (actionFilter === "all") return list;
-		return list.filter((l) => l.action === actionFilter);
-	}, [query.data?.logs, actionFilter]);
+		return query.data?.logs ?? [];
+	}, [query.data?.logs]);
 
 	const actions = useMemo(() => {
 		const all = query.data?.logs ?? [];
@@ -124,11 +128,9 @@ export function AuditLogsClient() {
 	const table = useReactTable({
 		data: logs,
 		columns,
-		state: { sorting, globalFilter },
+		state: { sorting },
 		onSortingChange: setSorting,
-		onGlobalFilterChange: setGlobalFilter,
 		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		initialState: { pagination: { pageSize: 15 } },
@@ -179,7 +181,7 @@ export function AuditLogsClient() {
 						</SelectContent>
 					</Select>
 					<span className="text-sm text-muted-foreground ml-auto">
-						{table.getFilteredRowModel().rows.length} entries
+						{table.getRowModel().rows.length} entries
 					</span>
 				</div>
 

@@ -120,6 +120,15 @@ async function request<T>(
 	return (await response.json()) as T;
 }
 
+function withQuery(path: string, params: Record<string, string | undefined>) {
+	const query = new URLSearchParams();
+	Object.entries(params).forEach(([key, value]) => {
+		if (value && value !== "all") query.set(key, value);
+	});
+	const suffix = query.toString();
+	return suffix ? `${path}?${suffix}` : path;
+}
+
 export async function loginAgency(email: string, password: string) {
 	return request<{
 		access_token: string;
@@ -139,12 +148,23 @@ export async function getMe(token: string) {
 export async function getDetectionMonitoring(
 	token: string,
 	agencyUserId: string,
+	params: {
+		search?: string;
+		diseaseClass?: string;
+		farmerId?: string;
+		cattleId?: string;
+	} = {},
 ) {
 	const data = await request<{
 		detections: unknown[];
 		safe_language?: unknown;
 	}>(
-		"/api/agency/detection-monitoring",
+		withQuery("/api/agency/detection-monitoring", {
+			search: params.search,
+			disease_class: params.diseaseClass,
+			farmer_id: params.farmerId,
+			cattle_id: params.cattleId,
+		}),
 		{
 			headers: {
 				Authorization: `Bearer ${token}`,
@@ -162,12 +182,19 @@ export async function getDetectionMonitoring(
 	};
 }
 
-export async function getRiskSignals(token: string, agencyUserId: string) {
+export async function getRiskSignals(
+	token: string,
+	agencyUserId: string,
+	params: { search?: string; riskLevel?: string } = {},
+) {
 	const data = await request<{
 		signals: unknown[];
 		rule?: Record<string, unknown>;
 	}>(
-		"/api/agency/risk-signals",
+		withQuery("/api/agency/risk-signals", {
+			search: params.search,
+			risk_level: params.riskLevel,
+		}),
 		{
 			headers: {
 				Authorization: `Bearer ${token}`,
@@ -203,9 +230,16 @@ export async function getJurisdictions(token: string, agencyUserId: string) {
 	return { jurisdictions: data.jurisdictions };
 }
 
-export async function getAuditLogs(token: string, agencyUserId: string) {
+export async function getAuditLogs(
+	token: string,
+	agencyUserId: string,
+	params: { search?: string; action?: string } = {},
+) {
 	const data = await request<{ audit_logs: unknown[] }>(
-		"/api/agency/audit-logs",
+		withQuery("/api/agency/audit-logs", {
+			search: params.search,
+			action: params.action,
+		}),
 		{
 			headers: {
 				Authorization: `Bearer ${token}`,
@@ -218,14 +252,30 @@ export async function getAuditLogs(token: string, agencyUserId: string) {
 	return { logs: logs as AuditLogItem[] };
 }
 
-export async function getAgencyRegistry(token: string, agencyUserId: string) {
+export async function getAgencyRegistry(
+	token: string,
+	agencyUserId: string,
+	params: {
+		search?: string;
+		jurisdictionId?: string;
+		farmerId?: string;
+		cattleSearch?: string;
+		cattleStatus?: string;
+	} = {},
+) {
 	const data = await request<{
 		agency_user_id: string;
 		farmers: unknown[];
 		cattle: unknown[];
 		filters?: Record<string, unknown>;
 	}>(
-		"/api/agency/registry",
+		withQuery("/api/agency/registry", {
+			search: params.search,
+			jurisdiction_id: params.jurisdictionId,
+			farmer_id: params.farmerId,
+			cattle_search: params.cattleSearch,
+			cattle_status: params.cattleStatus,
+		}),
 		{
 			headers: {
 				Authorization: `Bearer ${token}`,
@@ -265,9 +315,16 @@ export async function getAgencyRegistry(token: string, agencyUserId: string) {
 	};
 }
 
-export async function getAgencyFollowUps(token: string, agencyUserId: string) {
+export async function getAgencyFollowUps(
+	token: string,
+	agencyUserId: string,
+	params: { search?: string; status?: string } = {},
+) {
 	const data = await request<unknown[]>(
-		"/api/agency/follow-ups",
+		withQuery("/api/agency/follow-ups", {
+			search: params.search,
+			status: params.status,
+		}),
 		{
 			headers: {
 				Authorization: `Bearer ${token}`,

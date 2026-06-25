@@ -1,6 +1,7 @@
 "use client";
 
 import { useAgencySession } from "@/src/features/auth/session-context";
+import { useDebouncedValue } from "@/src/shared/hooks/use-debounced-value";
 import {
 	AlertDialog,
 	AlertDialogAction,
@@ -31,13 +32,18 @@ import {
 	SelectValue,
 } from "@/src/shared/ui/select";
 import { Skeleton } from "@/src/shared/ui/skeleton";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+	keepPreviousData,
+	useMutation,
+	useQuery,
+	useQueryClient,
+} from "@tanstack/react-query";
 import { Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
 import {
 	useReactTable,
 	getCoreRowModel,
-	getFilteredRowModel,
 	getPaginationRowModel,
 	getSortedRowModel,
 	flexRender,
@@ -70,8 +76,15 @@ function roleVariant(role: string): "default" | "secondary" | "outline" {
 async function fetchUsers(
 	token: string,
 	agencyUserId: string,
+	params: { search?: string; role?: string } = {},
 ): Promise<{ users: AgencyUserItem[] }> {
-	const res = await fetch("/api/agency/users", {
+	const query = new URLSearchParams();
+	if (params.search) query.set("search", params.search);
+	if (params.role && params.role !== "all") query.set("role", params.role);
+	const path = query.toString()
+		? `/api/agency/users?${query.toString()}`
+		: "/api/agency/users";
+	const res = await fetch(path, {
 		headers: {
 			Authorization: `Bearer ${token}`,
 			"X-Agency-User-Id": agencyUserId,
@@ -151,15 +164,21 @@ export function UsersClient() {
 
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
+	const debouncedGlobalFilter = useDebouncedValue(globalFilter);
 	const [roleFilter, setRoleFilter] = useState("all");
 	const [formOpen, setFormOpen] = useState(false);
 	const [editing, setEditing] = useState<AgencyUserItem | null>(null);
 	const [deleteTarget, setDeleteTarget] = useState<AgencyUserItem | null>(null);
 
 	const usersQuery = useQuery({
-		queryKey: ["agency-users"],
-		queryFn: () => fetchUsers(token, agencyUserId),
+		queryKey: ["agency-users", debouncedGlobalFilter, roleFilter],
+		queryFn: () =>
+			fetchUsers(token, agencyUserId, {
+				search: debouncedGlobalFilter,
+				role: roleFilter,
+			}),
 		enabled,
+		placeholderData: keepPreviousData,
 	});
 	const jurisdictionsQuery = useQuery({
 		queryKey: ["jurisdictions"],
@@ -170,16 +189,18 @@ export function UsersClient() {
 	const deleteMutation = useMutation({
 		mutationFn: (userId: string) => deleteUser(token, agencyUserId, userId),
 		onSuccess: () => {
+			toast.success("User deleted.");
 			queryClient.invalidateQueries({ queryKey: ["agency-users"] });
 			setDeleteTarget(null);
+		},
+		onError: (error) => {
+			toast.error(error instanceof Error ? error.message : "Failed to delete user.");
 		},
 	});
 
 	const users = useMemo(() => {
-		const list = usersQuery.data?.users ?? [];
-		if (roleFilter === "all") return list;
-		return list.filter((u) => u.role === roleFilter);
-	}, [usersQuery.data?.users, roleFilter]);
+		return usersQuery.data?.users ?? [];
+	}, [usersQuery.data?.users]);
 
 	const roles = useMemo(() => {
 		const all = usersQuery.data?.users ?? [];
@@ -246,11 +267,9 @@ export function UsersClient() {
 	const table = useReactTable({
 		data: users,
 		columns,
-		state: { sorting, globalFilter },
+		state: { sorting },
 		onSortingChange: setSorting,
-		onGlobalFilterChange: setGlobalFilter,
 		getCoreRowModel: getCoreRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 		getPaginationRowModel: getPaginationRowModel(),
 		getSortedRowModel: getSortedRowModel(),
 		initialState: { pagination: { pageSize: 10 } },
@@ -501,7 +520,19 @@ function UserFormDialog({
 				jurisdiction_id: jurisdiction,
 			});
 		},
-		onSuccess: onSaved,
+		onSuccess: () => {
+			toast.success(isEdit ? "User updated." : "User added.");
+			onSaved();
+		},
+		onError: (error) => {
+			toast.error(
+				error instanceof Error
+					? error.message
+					: isEdit
+						? "Failed to update user."
+						: "Failed to add user.",
+			);
+		},
 	});
 
 	return (

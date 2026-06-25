@@ -23,6 +23,7 @@ import { useAgencySession } from "@/src/features/auth/session-context";
 import type { RiskSignalItem } from "@/src/shared/types/api";
 import { useMutation } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export function RecordFollowUpDialog({
 	signal,
@@ -64,7 +65,15 @@ export function RecordFollowUpDialog({
 				public_message: publicMessage,
 				internal_notes: internalNotes,
 			}),
-		onSuccess: onSaved,
+		onSuccess: () => {
+			toast.success("Follow-up created.");
+			onSaved();
+		},
+		onError: (error) => {
+			toast.error(
+				error instanceof Error ? error.message : "Failed to create follow-up.",
+			);
+		},
 	});
 
 	return (
