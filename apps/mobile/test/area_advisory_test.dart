@@ -58,7 +58,7 @@ void main() {
     );
   });
 
-  testWidgets('home shows generic area advisory without identity leakage', (
+  testWidgets('cattle page shows Indonesian area advisory without identity leakage', (
     tester,
   ) async {
     final transport = AdvisoryTransport();
@@ -85,11 +85,41 @@ void main() {
 
     expect(find.text('Imbauan area'), findsOneWidget);
     expect(
-      find.textContaining('Increased disease-risk reports'),
+      find.textContaining('Ada peningkatan laporan risiko penyakit'),
       findsOneWidget,
     );
+    expect(find.textContaining('Increased disease-risk reports'), findsNothing);
     expect(find.textContaining('Advisory Farmer'), findsNothing);
     expect(find.textContaining('confirmed'), findsNothing);
     expect(find.textContaining('outbreak'), findsNothing);
+  });
+
+  testWidgets('area advisory appears only on cattle page', (tester) async {
+    final transport = AdvisoryTransport();
+    final api = SapiSehatApiClient(transport: transport);
+    final sessionStore = MemorySessionStore();
+    final session = AccountSession(
+      token: 'token',
+      farmerId: 'farmer-1',
+      email: 'farmer@example.com',
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        child: MaterialApp(
+          home: HomeScreen(
+            apiClient: api,
+            session: session,
+            sessionStore: sessionStore,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Imbauan area'), findsOneWidget);
+
+    await tester.tap(find.text('Riwayat'));
+    await tester.pumpAndSettle();
+    expect(find.text('Imbauan area'), findsNothing);
   });
 }
