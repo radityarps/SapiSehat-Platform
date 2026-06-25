@@ -19,7 +19,7 @@ Web-dashboard user from livestock or animal-health service who monitors jurisdic
 _Avoid_: Farmer user, cattle record owner, public self-registered user
 
 **Farmer Account**:
-Mobile account registered by farmer using email/password or Google login. Phone number is optional contact information.
+Mobile account registered by farmer using email/password. Phone number is optional contact information. Google login was removed as overkill for tugas akhir scope.
 _Avoid_: Phone-primary identity, anonymous-only farmer, agency-created farmer identity
 
 **Agency Account**:
@@ -186,7 +186,7 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 
 - **Farmer User** uses **Flutter Farmer App** only; there is no farmer web dashboard in first release.
 - **Agency User** uses **Next.js TanStack Dashboard** only.
-- **Farmer Account** supports email/password and Google login.
+- **Farmer Account** supports email/password only; Google login is out of scope for tugas akhir.
 - Farmer email/password registration does not require email verification in first release.
 - **Agency Account** supports email/password only and is admin-seeded.
 - Agency password reset is manual/admin reset only in first release.
@@ -233,7 +233,7 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 
 - "mobile stack" means **Flutter Farmer App** for Android first release; native Android/Kotlin becomes **Legacy Android App**.
 - "backend architecture" means **FastAPI Platform Backend**, not Go gateway.
-- "farmer login" means **Farmer Account** with email/password and Google login; phone is optional contact.
+- "farmer login" means **Farmer Account** with email/password; phone is optional contact.
 - "same email on mobile and dashboard" means **Surface-Specific Account**; no automatic cross-surface access.
 - "combine Team 1 and Team 2 models" means **Weighted Evidence Fusion** with real **NLP Evidence** before release.
 - "Team 2 NLP not ready" means **Image-Only Evidence Result** plus **NLP Placeholder** temporarily; no fake NLP scores.
@@ -258,8 +258,28 @@ Flutter farmer app email/password account creation flow with name, email, passwo
 _Avoid_: Agency registration, email-verification blocker, hidden terms, fake Google success
 
 **Jurisdiction Autofill from GPS**:
-Registration/profile helper that proposes a district/subdistrict jurisdiction from device location and lets the farmer confirm or edit it. It is a convenience input aid, not a precise geofence truth source.
+Registration/profile helper that proposes a district/subdistrict jurisdiction and full address from device location via Nominatim reverse geocoding, letting the farmer confirm or edit it. It is a convenience input aid, not a precise geofence truth source. Requires `ACCESS_FINE_LOCATION` and `ACCESS_COARSE_LOCATION` Android permissions, requested at runtime with an explain-first dialog.
 _Avoid_: Silent auto-override, hard GPS lock, exact coordinate storage as profile identity
+
+**Farmer Address Field**:
+Optional free-text address on farmer account, populated via GPS auto-fill or manual entry. Stored in `AccountModel.address` and returned in auth responses. Used by agency dashboard registry to show farmer location.
+_Avoid_: Required registration field, precise GPS coordinate storage, address-as-identity
+
+**Agency Dashboard RBAC**:
+Role-based access control for agency dashboard with 5 roles: admin, province_officer, district_officer, village_officer, viewer. Each role determines which nav items, pages, and data are visible, scoped by jurisdiction assignment.
+_Avoid_: Single admin-only dashboard, no-role all-access, farmer RBAC
+
+**Agency Notification**:
+In-app notification for agency dashboard users, stored in `NotificationModel` and delivered via `GET /api/notifications`. Emitted by backend on follow-up status changes. Read/unread state tracked per account. Bell icon with unread badge in dashboard topbar opens a right-drawer sheet.
+_Avoid_: Email/SMS notification, push notification, farmer-facing agency notification
+
+**Dashboard Settings Page**:
+Agency dashboard page at `/agency/settings` with three sections: profile (edit display name), password change (auto-logout on success), and logout. All destructive actions guarded by AlertDialog confirmation.
+_Avoid_: Agency registration, admin-only settings, farmer settings page
+
+**Debug Mode Pre-fill**:
+Flutter `kDebugMode` flag that pre-fills login/register fields with seeded dev credentials (`farmer@example.com` / `strong-password`) in debug builds only. Empty in release builds.
+_Avoid_: Hardcoded production credentials, env-file credentials for mobile, release-time pre-fill
 
 **Farmer Account Archive**:
 Backend-supported soft delete for farmer account that disables future login while preserving existing records, scan images, and follow-up history. It is reversible only by admin policy, not by farmer self-service in first release.
@@ -272,3 +292,7 @@ _Avoid_: Legal-only onboarding, alarmist disease promises, diagnosis claims
 **Offline TFLite Model Asset**:
 Legacy Android asset `cattle_disease.tflite` under `apps/mobile-android-legacy/app/src/main/assets/` is the current offline image inference model source for Flutter migration.
 _Avoid_: Missing-model assumption, hardcoded fake offline scores
+
+**Complete Livestock Profile Fields**:
+Cattle profiles now store optional physical, reproductive, health, economic, and notes data: `name`, `color`, `weight_kg`, `reproductive_status`, `is_pregnant`, `last_calving_date`, `last_vaccination_date`, `last_deworming_date`, `health_notes`, `purchase_date`, `purchase_price_idr`, and `notes`. Timeline events remain separate for dated operational history, while profile fields store latest-known summary values. Development seeding includes realistic Indonesian cattle data for these fields.
+_Avoid_: diagnosis claims, required completion before scanning, replacing timeline events with summary-only data

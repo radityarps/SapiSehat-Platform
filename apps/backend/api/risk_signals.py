@@ -1,11 +1,17 @@
 """Disease risk signal summary tracer."""
 
 from dataclasses import dataclass
+from datetime import datetime, timedelta, timezone
 from typing import Iterable
 
 from api.database import SessionLocal, create_all_tables
 from api.db_models import ClusterRiskSignalModel
 from api.fusion_results import FusionResult
+
+
+HYBRID_ALERT_THRESHOLD = 3
+CLUSTER_WINDOW_DAYS = 7
+RISK_SIGNAL_RELIABILITY = {"reliable", "needs_review"}
 
 
 @dataclass(frozen=True)
@@ -21,15 +27,42 @@ class JurisdictionRiskSignal:
     source_result_ids: list[str]
 
 
-def summarize_risk_signals(results: Iterable[FusionResult], cattle_jurisdictions: dict[str, str]) -> list[JurisdictionRiskSignal]:
+def _parse_created_at(value: str) -> datetime | None:
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed.astimezone(timezone.utc)
+
+
+def _window_anchor(results: list[FusionResult]) -> datetime:
+    timestamps = [
+        parsed
+        for result in results
+        if (parsed := _parse_created_at(result.created_at)) is not None
+    ]
+    return max(timestamps) if timestamps else datetime.now(timezone.utc)
+
+
+def summarize_risk_signals(
+    results: Iterable[FusionResult], cattle_jurisdictions: dict[str, str]
+) -> list[JurisdictionRiskSignal]:
+    results = list(results)
+    window_end = _window_anchor(results)
+    window_start = window_end - timedelta(days=CLUSTER_WINDOW_DAYS)
     counts: dict[tuple[str, str], int] = {}
     source_ids: dict[tuple[str, str], list[str]] = {}
     for result in results:
         if result.cattle_id is None:
             continue
+        created_at = _parse_created_at(result.created_at)
+        if created_at is None or created_at < window_start or created_at > window_end:
+            continue
         if result.disease_class == "healthy":
             continue
-        if result.reliability not in {"reliable", "needs_review"}:
+        if result.reliability not in RISK_SIGNAL_RELIABILITY:
             continue
         jurisdiction_id = cattle_jurisdictions.get(result.cattle_id)
         if jurisdiction_id is None:
@@ -40,13 +73,13 @@ def summarize_risk_signals(results: Iterable[FusionResult], cattle_jurisdictions
 
     signals = []
     for (jurisdiction_id, disease_class), count in counts.items():
-        elevated = count >= 3
+        elevated = count >= HYBRID_ALERT_THRESHOLD
         signals.append(JurisdictionRiskSignal(
             id=f"cluster-risk-{jurisdiction_id}-{disease_class}".lower(),
             jurisdiction_id=jurisdiction_id,
             disease_class=disease_class,
             signal_count=count,
-            window_days=7,
+            window_days=CLUSTER_WINDOW_DAYS,
             risk_level="possible_increased_risk" if elevated else "baseline_monitoring",
             priority="follow_up_priority" if elevated else "routine_monitoring",
             summary_label="Possible increased disease risk signal" if elevated else "Routine monitoring signal",

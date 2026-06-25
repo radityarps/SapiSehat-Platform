@@ -158,13 +158,6 @@ class AuthResponse(BaseModel):
     account: AuthAccountResponse
 
 
-class FarmerGoogleLoginRequest(BaseModel):
-    """Farmer Google sign-in token exchange."""
-
-    id_token: str = Field(min_length=1)
-    jurisdiction_id: str = Field(min_length=1, max_length=120)
-
-
 class FollowUpCreateRequest(BaseModel):
     """Agency-created follow-up status with hidden internal notes."""
 

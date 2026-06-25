@@ -56,13 +56,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+## [3.0.0] — 2026-06-16
+
+### Added (Milestone 3 — Agency Dashboard)
+
+- **Full agency dashboard** (Next.js 16 + TypeScript + shadcn/ui + Tailwind v4 + Recharts + MapLibre GL):
+  - Pages: Overview (bento + Recharts pie/bar charts), Registry, Detections, Risk Signals, Follow-ups, Audit Logs, User Management, Settings
+  - Collapsible sidebar with RBAC-filtered nav, ⌘K command search, user dropdown with jurisdiction label
+  - MapLibre GL bubble map for risk signals with farmer follow-up cross-reference in detail modal
+- **RBAC**: 5 roles (admin, province_officer, district_officer, village_officer, viewer) with jurisdiction-scoped data access and route guard
+- **Notification system**: `GET /api/notifications`, `PATCH .../read`, `PATCH .../read-all`; bell with unread badge + right-drawer sheet; 30s polling; emits on follow-up status change
+- **Settings page**: profile edit, password change (auto-logout on success), logout — all with AlertDialog confirm + sonner toasts
+- **Follow-ups CRUD**: `PUT /api/agency/follow-ups/{id}`; table with search, status filter, quick-status dropdown, create/edit dialog, detail modal
+- **User management**: create/edit dialog, AlertDialog delete confirmation
+- **Audit logs**: data table with search, action filter, detail modal with JSON metadata
+- **Farmer address field**: optional address on `FarmerAccountModel` with idempotent SQLite migration
+- **Env-aware tiered seeding**: production (admin only), staging (all accounts), development (sample cattle/detections/risk signals/notifications)
+- **Session auto-redirect**: session guard and API client redirect to `/login?next=` on expiry or 401
+- **Backend profile/password endpoints**: `PUT /api/me/profile`, `POST /api/me/change-password`
+- **Risk signal badges**: human-readable labels (`possible_increased_risk` → "Possible increased risk")
+
+## [2.0.0] — 2026-06-11
+
+### Added (Milestone 2 — Flutter Farmer App)
+
+- **Flutter farmer app** at `apps/mobile` (Android-first, Riverpod state management)
+- **Legacy Android app** moved to `apps/mobile-android-legacy` as migration reference
+- **Farmer auth**: `POST /api/auth/farmer/login` and `/api/auth/farmer/register` with email/password
+- **Cattle CRUD**: list, create, edit, archive cattle profiles via `/api/farmers/{id}/cattle`
+- **Camera scan**: online inference → `/api/fusion/results`; offline TFLite fallback → `OfflineInferenceService`
+- **Detection history**: fusion results filtered by `farmer_id`
+- **Offline sync**: `PendingOfflineDetection.toSyncJson()` → `POST /api/offline/detections/sync` with `local_created_at`
+- **Profile screen** with name, district, address fields + real GPS auto-fill (Nominatim reverse geocode)
+- **GPS permission dialogs**: service-disabled, denied, denied-forever cases with explain-first flow and Settings shortcut
+- **Settings screen**: profile card (name, email, address, jurisdiction) with Edit profil button; notification preferences; logout; account archive
+- **4-tab bottom nav**: Sapi, Scan, Riwayat, Setelan (profile moved into Settings)
+- **Login/register improvements**: input validation, password eye icon, address field, terms checkbox required, `kDebugMode` pre-fills dev credentials
+- **Android permissions**: `ACCESS_FINE_LOCATION` + `ACCESS_COARSE_LOCATION` in manifest
+- **Farmer address**: optional `address` column on `AccountModel` and `FarmerAccountModel` with auto-migration; returned in auth responses
+
 - **FastAPI platform backend foundation**: Added surface-specific farmer and agency auth, PostgreSQL-backed accounts, farmer-owned cattle records, detection records, follow-up workflow, cluster risk signals, scan image storage notice gate, archive-only behavior, and dashboard-ready agency APIs.
 - **Private scan image object storage**: Added S3-compatible media upload path (`POST /api/media/uploads`), local MinIO development bucket, private object keys, media metadata persistence, and backend-issued signed URL endpoint for authorized agency image preview/download.
-- **Production backend hardening**: Added production config guards for JWT secret, CORS origins, S3 bucket/credentials, and Google client ID when Google auth is enabled.
+- **Production backend hardening**: Added production config guards for JWT secret, CORS origins, and S3 bucket/credentials. Google login was removed as overkill for tugas akhir scope; first release uses email/password auth only.
 - **Backend audit logs**: Added persistent audit events for predictions, media uploads, signed media URL issuance, and follow-up creation, plus admin-only `GET /api/agency/audit-logs` read API.
 - **Backend release smoke and root test entrypoint**: Added `apps/backend/scripts/release_smoke.sh`, optional real MinIO smoke test, and root `tests/test_backend_suite.py` so `python -m pytest tests -q` from repo root runs backend checks.
 - **NLP placeholder and farmer advisory APIs**: Added `POST /api/evidence/nlp/placeholder` with no scores/fusion/risk side effects, plus `GET /api/farmers/{farmer_id}/area-advisory` for safe district-level farmer advisory from cluster risk signals.
 - **Backend ops fixtures**: Added DB constraint/index audit tests, dashboard API contract fixture, and `apps/backend/scripts/backup_export.sh` for SQLite copy backup or PostgreSQL `pg_dump` export.
+- **Milestone 4/5 verification**: Marked PostgreSQL hardening and alerting/farmer advisory milestones as implemented and verified. Targeted checks pass for hardening migration, backup/export contract, DB constraint/index audit, farmer area advisory API, dashboard TypeScript, and Flutter area advisory UI.
 - **Retake/repeat scan feature**: Users can now press "Retake" on a scan result to re-scan and update the existing history entry instead of creating a duplicate. When retaking from history detail, the new scan replaces the old entry in the database. Implementation uses `NavigationViewModel` with StateFlow-based navigation triggers and `DetectionRepository.saveDetection(updateDetectionId)` to perform UPDATE (via Room's `OnConflictStrategy.REPLACE`) instead of INSERT.
 - **Postman API collection**: Created `docs/Postman/SapiSehat API.postman_collection.json` with pre-built requests for `/api/health` and `/api/predict`, automated test scripts, and example responses (200 FMD, 200 Healthy, 422, 503).
 - **Bruno API collection**: Replaced the legacy Postman JSON collection with `docs/system-integration/api-contracts/bruno/SapiSehat API.openapi.yaml`, a Bruno-importable OpenAPI YAML collection for `/api/health` and `/api/predict`.

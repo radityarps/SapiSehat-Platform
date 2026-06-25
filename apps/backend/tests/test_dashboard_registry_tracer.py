@@ -56,7 +56,8 @@ def test_dashboard_registry_component_contains_table_filter_and_permitted_sectio
     assert "@tanstack/react-table" in source
     assert "getAgencyRegistry" in source
     assert "X-Agency-User-Id" in repo_text("apps/dashboard/src/shared/api/client.ts")
-    assert "Search name, tag, district, consent" in source
-    assert "Farmers" in source
+    assert "Search farmers..." in source
+    assert "farmers" in source
     assert "Cattle" in source
-    assert "DataTable" in source
+    assert "useReactTable" in source
+    assert "Farmer records scoped to your jurisdiction" in page

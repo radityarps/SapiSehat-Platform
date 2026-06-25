@@ -10,7 +10,7 @@ Model-specific training details belong in Team 1 or Team 2 docs.
 
 - FastAPI platform backend is active direction; Go gateway rewrite is not current scope.
 - PostgreSQL is production target; SQLite remains dev/test fallback.
-- Farmer accounts use email/password plus Google-login endpoint placeholder.
+- Farmer accounts use email/password only. Google login was removed because OAuth setup and token verification are overkill for tugas akhir scope.
 - Agency accounts use email/password only and are admin seeded.
 - Cattle records are farmer-owned; agency dashboard is read/follow-up only.
 - Detection scan images require first-scan storage notice acknowledgement.

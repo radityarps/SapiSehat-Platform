@@ -19,20 +19,33 @@ Calm field operations: deep leaf green, warm ivory surfaces, soil neutrals, clea
 ## Typography
 - Screen headers: bold, large, direct.
 - Body text: plain operational copy.
-- Safety phrase: `Risk signal, not diagnosis` visible in app shell.
+- Safety phrase: `Sinyal risiko, bukan diagnosis` visible on onboarding and login.
 
 ## Layout
 - Android-first single-column flow.
-- Bottom navigation: `Sapi`, `Scan`, `Riwayat`.
+- Zero-height AppBar (`toolbarHeight: 0`) on main scaffold — status bar safe area only.
+- Bottom navigation: `Sapi`, `Scan`, `Riwayat`, `Setelan` (4 tabs).
 - Cards use rounded corners, low/no elevation, soft border.
 - Primary CTA on scan screen has strong leaf panel.
 
 ## Core screens
-### Login
-- Brand: `SapiSehat`.
-- Safe-language subtitle.
-- Email/password fields.
-- Primary `Masuk` CTA.
+
+### Onboarding
+- Brand: `SapiSehat` (text only, no icon).
+- 3 slides with SVG illustrations.
+- Dot page indicator + Lanjut / Mulai pakai SapiSehat CTA.
+- Skip button top-right.
+
+### Login / Register
+- Toggle between Masuk and Daftar via SegmentedButton.
+- Email, password fields with placeholder text.
+- Password visibility toggle (eye icon, end of field).
+- Register: name, district, address fields + GPS auto-fill button.
+- GPS fills address and district via Nominatim reverse geocode.
+- Permission dialogs before OS prompt; settings shortcut for denied-forever.
+- Input validation: primary CTA disabled until requirements met.
+- Terms & privacy checklist required for register.
+- In debug mode (`kDebugMode`): fields pre-filled with dev credentials.
 
 ### Cattle
 - Header: `Kandang Sapi`.
@@ -49,6 +62,20 @@ Calm field operations: deep leaf green, warm ivory surfaces, soil neutrals, clea
 - Header: `Riwayat Deteksi`.
 - Shows local pending and remote risk signals.
 - Preserves original capture time for local/offline results.
+
+### Settings
+- Profile card at top: avatar initial, name, email, address, jurisdiction.
+- "Edit profil" button → navigates to `ProfileScreen`.
+- Notification preference switches (scan, sync, area risk, follow-up, quiet hours).
+- Device permission info cards (camera, gallery, location).
+- Logout button.
+- Account archive with password confirmation.
+
+### Edit Profile (pushed from Settings)
+- AppBar with back button.
+- Name, email (read-only), district, address fields.
+- GPS button fills address + district from Nominatim.
+- Save → snackbar confirmation → pop.
 
 ## Accessibility
 - Large touch targets.

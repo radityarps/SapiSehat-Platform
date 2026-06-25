@@ -1,10 +1,19 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
 
 import '../../core/api_client.dart';
 import '../auth/auth.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, required this.apiClient, required this.session, required this.onSessionChanged});
+  const ProfileScreen({
+    super.key,
+    required this.apiClient,
+    required this.session,
+    required this.onSessionChanged,
+  });
   final SapiSehatApiClient apiClient;
   final AccountSession session;
   final ValueChanged<AccountSession> onSessionChanged;
@@ -14,35 +23,295 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  late final name = TextEditingController(text: widget.session.name.isEmpty ? 'Demo Farmer' : widget.session.name);
-  late final jurisdiction = TextEditingController(text: widget.session.jurisdictionId);
+  late final name = TextEditingController(
+    text: widget.session.name.isEmpty ? 'Demo Farmer' : widget.session.name,
+  );
+  late final jurisdiction = TextEditingController(
+    text: widget.session.jurisdictionId,
+  );
+  late final addressCtrl = TextEditingController(
+    text: widget.session.address ?? '',
+  );
   bool saving = false;
-
-  Future<void> save() async {
-    setState(() => saving = true);
-    final updated = await widget.apiClient.updateFarmerProfile(widget.session, FarmerProfileDraft(name: name.text, jurisdictionId: jurisdiction.text));
-    widget.onSessionChanged(updated);
-    if (mounted) setState(() => saving = false);
-  }
-
-  void suggestGps() => setState(() => jurisdiction.text = 'tembalang');
+  bool gpsLoading = false;
+  String? error;
 
   @override
-  Widget build(BuildContext context) => ListView(padding: const EdgeInsets.all(20), children: [
-        Text('Profil peternak', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900)),
-        const SizedBox(height: 8),
-        const Text('Wilayah dapat disarankan dari GPS, lalu tetap perlu dikonfirmasi manual.'),
-        const SizedBox(height: 16),
-        TextField(controller: name, decoration: const InputDecoration(labelText: 'Nama')),
+  void dispose() {
+    name.dispose();
+    jurisdiction.dispose();
+    addressCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> fetchGpsAddress() async {
+    setState(() {
+      gpsLoading = true;
+      error = null;
+    });
+    final ctx = context;
+    try {
+      // Check location service
+      final serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        setState(() => gpsLoading = false);
+        if (!mounted) return;
+        await showDialog(
+          context: ctx,
+          builder: (_) => AlertDialog(
+            title: const Text('Layanan lokasi tidak aktif'),
+            content: const Text(
+              'Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Geolocator.openLocationSettings();
+                },
+                child: const Text('Pengaturan'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+
+      // Permanently denied — open app settings
+      if (permission == LocationPermission.deniedForever) {
+        setState(() => gpsLoading = false);
+        if (!mounted) return;
+        await showDialog(
+          context: ctx,
+          builder: (_) => AlertDialog(
+            title: const Text('Izin lokasi ditolak'),
+            content: const Text(
+              'Izin lokasi telah ditolak secara permanen. Buka pengaturan aplikasi untuk mengizinkan akses lokasi.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  Geolocator.openAppSettings();
+                },
+                child: const Text('Pengaturan'),
+              ),
+            ],
+          ),
+        );
+        return;
+      }
+
+      // Not yet granted — explain then request
+      if (permission == LocationPermission.denied) {
+        setState(() => gpsLoading = false);
+        if (!mounted) return;
+        final confirmed = await showDialog<bool>(
+          context: ctx,
+          builder: (_) => AlertDialog(
+            title: const Text('Izin lokasi diperlukan'),
+            content: const Text(
+              'SapiSehat membutuhkan izin lokasi untuk mengisi alamat secara otomatis dari GPS. Izin ini hanya digunakan saat Anda menekan tombol lokasi.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('Batal'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('Izinkan'),
+              ),
+            ],
+          ),
+        );
+        if (confirmed != true) return;
+        setState(() => gpsLoading = true);
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          setState(() => error = 'Izin lokasi ditolak.');
+          return;
+        }
+        if (permission == LocationPermission.deniedForever) {
+          if (!mounted) return;
+          setState(() => gpsLoading = false);
+          await showDialog(
+            context: ctx,
+            builder: (_) => AlertDialog(
+              title: const Text('Izin lokasi ditolak'),
+              content: const Text(
+                'Buka pengaturan aplikasi untuk mengizinkan akses lokasi.',
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: const Text('Batal'),
+                ),
+                FilledButton(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    Geolocator.openAppSettings();
+                  },
+                  child: const Text('Pengaturan'),
+                ),
+              ],
+            ),
+          );
+          return;
+        }
+      }
+      final pos = await Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.medium,
+        ),
+      );
+      final uri = Uri.parse(
+        'https://nominatim.openstreetmap.org/reverse?lat=${pos.latitude}&lon=${pos.longitude}&format=json',
+      );
+      final resp = await http.get(
+        uri,
+        headers: {'User-Agent': 'SapiSehatApp/1.0'},
+      );
+      if (!mounted) return;
+      if (resp.statusCode == 200) {
+        final data = jsonDecode(resp.body) as Map<String, dynamic>;
+        final displayName = data['display_name'] as String? ?? '';
+        final addr = data['address'] as Map<String, dynamic>? ?? {};
+        // Extract district (kecamatan): subdistrict > suburb > city_district > city
+        final district =
+            (addr['subdistrict'] ??
+                    addr['suburb'] ??
+                    addr['city_district'] ??
+                    addr['city'] ??
+                    addr['town'] ??
+                    '')
+                as String;
+        setState(() {
+          addressCtrl.text = displayName;
+          if (district.isNotEmpty) jurisdiction.text = district;
+        });
+      }
+    } catch (e) {
+      setState(() => error = e.toString());
+    } finally {
+      if (mounted) setState(() => gpsLoading = false);
+    }
+  }
+
+  Future<void> save() async {
+    setState(() {
+      saving = true;
+      error = null;
+    });
+    try {
+      final updated = await widget.apiClient.updateFarmerProfile(
+        widget.session,
+        FarmerProfileDraft(
+          name: name.text,
+          jurisdictionId: jurisdiction.text,
+          address: addressCtrl.text.isEmpty ? null : addressCtrl.text,
+        ),
+      );
+      widget.onSessionChanged(updated);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Profil berhasil disimpan.')),
+        );
+        Navigator.of(context).pop();
+      }
+    } catch (e) {
+      setState(() => error = 'Gagal menyimpan profil.');
+    } finally {
+      if (mounted) setState(() => saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    appBar: AppBar(title: const Text('Edit profil')),
+    body: ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        TextField(
+          controller: name,
+          decoration: const InputDecoration(
+            labelText: 'Nama',
+            border: OutlineInputBorder(),
+          ),
+        ),
         const SizedBox(height: 12),
-        TextField(enabled: false, controller: TextEditingController(text: widget.session.email), decoration: const InputDecoration(labelText: 'Email')),
+        TextField(
+          enabled: false,
+          controller: TextEditingController(text: widget.session.email),
+          decoration: const InputDecoration(
+            labelText: 'Email',
+            border: OutlineInputBorder(),
+          ),
+        ),
         const SizedBox(height: 12),
-        TextField(controller: jurisdiction, decoration: const InputDecoration(labelText: 'Kecamatan/distrik')),
-        const SizedBox(height: 8),
-        OutlinedButton.icon(onPressed: suggestGps, icon: const Icon(Icons.my_location), label: const Text('Sarankan dari GPS')),
-        const SizedBox(height: 8),
-        const Text('Perubahan wilayah memengaruhi petugas kesehatan hewan lokal yang meninjau pengajuan berikutnya.'),
-        const SizedBox(height: 16),
-        FilledButton(onPressed: saving ? null : save, child: Text(saving ? 'Menyimpan...' : 'Simpan profil')),
-      ]);
+        TextField(
+          controller: jurisdiction,
+          decoration: const InputDecoration(
+            labelText: 'Kecamatan/distrik',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        const SizedBox(height: 12),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Expanded(
+              child: TextField(
+                controller: addressCtrl,
+                maxLines: 2,
+                decoration: const InputDecoration(
+                  labelText: 'Alamat',
+                  hintText: 'Kosongkan atau isi manual / gunakan GPS',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              height: 56,
+              child: OutlinedButton(
+                onPressed: gpsLoading ? null : fetchGpsAddress,
+                child: gpsLoading
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Icon(Icons.my_location),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        const Text(
+          'Tekan ikon lokasi untuk mengisi alamat otomatis dari GPS. Anda bisa mengedit hasilnya.',
+          style: TextStyle(fontSize: 12, color: Colors.grey),
+        ),
+        if (error != null) ...[
+          const SizedBox(height: 8),
+          Text(error!, style: const TextStyle(color: Colors.red, fontSize: 13)),
+        ],
+        const SizedBox(height: 20),
+        FilledButton(
+          onPressed: saving ? null : save,
+          child: Text(saving ? 'Menyimpan...' : 'Simpan profil'),
+        ),
+      ],
+    ),
+  );
 }
