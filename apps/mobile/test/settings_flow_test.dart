@@ -7,6 +7,7 @@ import 'package:sapisehat_mobile/main.dart';
 
 class SettingsTransport implements ApiTransport {
   ApiRequest? lastProfileUpdate;
+  ApiRequest? lastArchive;
 
   @override
   Future<ApiResponse> send(ApiRequest request) async {
@@ -38,6 +39,19 @@ class SettingsTransport implements ApiTransport {
         }),
       );
     }
+    if (request.method == 'POST' &&
+        request.path == '/api/farmers/farmer-1/account/archive') {
+      lastArchive = request;
+      return ApiResponse(
+        200,
+        jsonEncode({
+          'id': 'farmer-1',
+          'account_type': 'farmer',
+          'email': 'farmer@example.com',
+          'is_active': false,
+        }),
+      );
+    }
     return ApiResponse(404, '{}');
   }
 }
@@ -65,6 +79,29 @@ void main() {
       'Jl. Sapi Sehat 1',
     );
     expect(updated.address, 'Jl. Sapi Sehat 1');
+  });
+
+  test('delete account uses archive endpoint', () async {
+    final transport = SettingsTransport();
+    final archived = await SapiSehatApiClient(transport: transport)
+        .deleteFarmerAccount(
+          AccountSession(
+            token: 'token',
+            farmerId: 'farmer-1',
+            email: 'farmer@example.com',
+          ),
+          'strong-password',
+        );
+
+    expect(
+      transport.lastArchive?.path,
+      '/api/farmers/farmer-1/account/archive',
+    );
+    expect(
+      jsonDecode(transport.lastArchive!.body!)['password'],
+      'strong-password',
+    );
+    expect(archived.isActive, isFalse);
   });
 
   testWidgets('logout confirms and shows success toast', (tester) async {

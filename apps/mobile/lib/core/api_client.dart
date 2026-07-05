@@ -125,7 +125,7 @@ class SapiSehatApiClient {
     final response = await transport.send(
       ApiRequest(
         'POST',
-        '/api/farmers/${session.farmerId}/account/delete',
+        '/api/farmers/${session.farmerId}/account/archive',
         body: jsonEncode({'password': password}),
         headers: _auth(session),
       ),
