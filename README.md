@@ -143,6 +143,9 @@ Representative endpoints:
 - `POST /api/evidence/image`
 - `POST /api/evidence/nlp`
 - `POST /api/fusion/results`
+- `GET /api/fusion/results`
+- `PATCH /api/fusion/results/{result_id}/cattle`
+- `DELETE /api/fusion/results/{result_id}?farmer_id={farmer_id}`
 - `POST /api/offline/detections/sync`
 - `GET /api/agency/registry`
 - `GET /api/agency/detection-monitoring`
@@ -155,7 +158,7 @@ Model files are not committed because they are large.
 Expected local files:
 
 1. `apps/backend/model/mobilenetv2_best.keras` for server image inference prototype.
-2. `apps/mobile/app/src/main/assets/cattle_disease.tflite` for offline image evidence prototype.
+2. `apps/mobile/assets/model/` for Flutter on-device TFLite inference fallback (`.tflite` model plus `model_metadata.json`).
 
 Image model outputs are early detection signals only. They are not veterinary diagnosis.
 

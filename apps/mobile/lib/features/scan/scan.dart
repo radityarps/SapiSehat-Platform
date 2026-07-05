@@ -8,6 +8,8 @@ class ScanResult {
     required this.inferenceMode,
     required this.syncStatus,
     this.imagePath,
+    this.modelVersion,
+    this.scores,
   });
   final String localId;
   final String? cattleId;
@@ -17,6 +19,22 @@ class ScanResult {
   final String inferenceMode;
   final String syncStatus;
   final String? imagePath;
+  final String? modelVersion;
+  final Map<String, double>? scores;
+
+  ScanResult copyWith({String? cattleId, bool clearCattleId = false}) =>
+      ScanResult(
+        localId: localId,
+        cattleId: clearCattleId ? null : cattleId ?? this.cattleId,
+        label: label,
+        confidence: confidence,
+        capturedAt: capturedAt,
+        inferenceMode: inferenceMode,
+        syncStatus: syncStatus,
+        imagePath: imagePath,
+        modelVersion: modelVersion,
+        scores: scores,
+      );
 }
 
 class PendingOfflineDetection {

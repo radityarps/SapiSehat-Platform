@@ -56,6 +56,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Flutter mobile scan flow now runs online-first image inference, stores backend-primary fusion results, and falls back to on-device TFLite inference when backend/network prediction fails.
+- On-device mobile inference uses `tflite_flutter`, `image`, `assets/model/model_metadata.json`, EXIF orientation handling, `224x224` resize, and RGB `1/255` preprocessing.
+- Fusion result history supports cattle reassignment and deletion through backend endpoints: `PATCH /api/fusion/results/{result_id}/cattle` and `DELETE /api/fusion/results/{result_id}?farmer_id=...`.
+- Mobile detection result detail and history cards show delete success/failure toasts, close/refresh after successful delete, and keep failure state unchanged.
+- Mobile settings logout now requires confirmation and shows success/failure toasts.
+
+### Changed
+
+- Mobile history is backend-first when online, with pending local results as fallback and local scan image paths merged into backend result cards for thumbnails/detail previews.
+- Cattle UI now uses cattle name as primary label and tag as secondary label; selectors and detection result pages use `{name} ({tag})`.
+- Detection result cattle display and PDF export now use `Belum dikaitkan` for missing/unresolved cattle links and never expose raw cattle IDs.
+- Scan result `Edit sapi` now reassigns linked cattle instead of opening the cattle edit form; button is hidden for fresh scan flow and kept for history-opened results.
+- Backend cattle profile create/list serialization now persists and returns `name` and detail fields.
+- Android Gradle JVM targets are pinned per plugin group to avoid JDK 25 Java/Kotlin target mismatches.
+
+### Fixed
+
+- Fixed duplicate mobile history cards after scan by separating backend source-of-truth results from pending local fallback.
+- Fixed history refresh crash caused by returning a `Future` from a `setState` callback.
+- Fixed save dialog overflow, expanded cattle dropdown labels, and removed bad `Â` separator artifacts.
+- Fixed false failure toast after successful cattle reassignment by separating update failure from best-effort refresh failure.
+
 ## [3.0.0] — 2026-06-16
 
 ### Added (Milestone 3 — Agency Dashboard)

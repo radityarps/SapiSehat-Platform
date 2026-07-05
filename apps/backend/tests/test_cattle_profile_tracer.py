@@ -21,11 +21,12 @@ def create_farmer(client, phone="081234567890", name="Pak Tono", jurisdiction="t
     return response.json()
 
 
-def create_cattle(client, farmer_id, tag="SAPI-001", jurisdiction="tembalang"):
+def create_cattle(client, farmer_id, tag="SAPI-001", jurisdiction="tembalang", name=None):
     response = client.post(
         f"/api/farmers/{farmer_id}/cattle",
         json={
             "tag": tag,
+            "name": name,
             "sex": "female",
             "breed": "unknown",
             "age_months": 24,
@@ -41,11 +42,12 @@ def test_farmer_can_create_cattle_profile_linked_to_account():
     client = TestClient(app)
     farmer = create_farmer(client)
 
-    cattle = create_cattle(client, farmer["id"])
+    cattle = create_cattle(client, farmer["id"], name="Mawar")
 
     assert cattle["id"] == "cattle-1"
     assert cattle["farmer_id"] == farmer["id"]
     assert cattle["tag"] == "SAPI-001"
+    assert cattle["name"] == "Mawar"
     assert cattle["sex"] == "female"
     assert cattle["breed"] == "unknown"
     assert cattle["age_months"] == 24
@@ -63,8 +65,10 @@ def test_farmer_can_list_and_select_owned_cattle_for_detection():
 
     assert list_response.status_code == 200
     assert [item["id"] for item in list_response.json()["cattle"]] == [cattle["id"]]
+    assert list_response.json()["cattle"][0]["name"] == cattle["name"]
     assert select_response.status_code == 200
     assert select_response.json()["id"] == cattle["id"]
+    assert select_response.json()["name"] == cattle["name"]
 
 
 def test_farmer_cannot_select_other_farmer_cattle():

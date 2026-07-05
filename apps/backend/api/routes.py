@@ -55,6 +55,7 @@ from api.schemas import (
     NlpPlaceholderRequest,
     NlpPlaceholderResponse,
     FusionRequest,
+    FusionCattleLinkRequest,
     FusionResultResponse,
     FusionResultListResponse,
     OfflineDetectionSyncRequest,
@@ -519,11 +520,23 @@ def _serialize_cattle(profile):
         "id": profile.id,
         "farmer_id": profile.farmer_id,
         "tag": profile.tag,
+        "name": profile.name,
         "sex": profile.sex.value,
         "breed": profile.breed,
+        "color": profile.color,
         "age_months": profile.age_months,
+        "weight_kg": profile.weight_kg,
+        "reproductive_status": profile.reproductive_status,
+        "is_pregnant": profile.is_pregnant,
         "birth_year_estimate": profile.birth_year_estimate,
+        "last_calving_date": profile.last_calving_date,
+        "last_vaccination_date": profile.last_vaccination_date,
+        "last_deworming_date": profile.last_deworming_date,
+        "health_notes": profile.health_notes,
+        "purchase_date": profile.purchase_date,
+        "purchase_price_idr": profile.purchase_price_idr,
         "status": profile.status.value,
+        "notes": profile.notes,
         "jurisdiction_id": profile.jurisdiction_id,
     }
 
@@ -808,6 +821,18 @@ async def create_cattle_profile(
             birth_year_estimate=request.birth_year_estimate,
             status=CattleStatus(request.status),
             jurisdiction_id=request.jurisdiction_id,
+            name=request.name,
+            color=request.color,
+            weight_kg=request.weight_kg,
+            reproductive_status=request.reproductive_status,
+            is_pregnant=request.is_pregnant,
+            last_calving_date=request.last_calving_date,
+            last_vaccination_date=request.last_vaccination_date,
+            last_deworming_date=request.last_deworming_date,
+            health_notes=request.health_notes,
+            purchase_date=request.purchase_date,
+            purchase_price_idr=request.purchase_price_idr,
+            notes=request.notes,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -1055,6 +1080,41 @@ async def list_fusion_results():
             for result in fusion_result_store.list_all()
         ]
     }
+
+
+@router.patch("/fusion/results/{result_id}/cattle", response_model=FusionResultResponse)
+async def update_fusion_result_cattle(
+    request: FusionCattleLinkRequest, result_id: str = Path(...)
+):
+    """Change the cattle associated with an existing fusion result."""
+    if farmer_account_store.get_by_id(request.farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if (
+        request.cattle_id is not None
+        and cattle_profile_store.get_owned(
+            farmer_id=request.farmer_id, cattle_id=request.cattle_id
+        )
+        is None
+    ):
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    result = fusion_result_store.update_cattle(
+        result_id=result_id,
+        farmer_id=request.farmer_id,
+        cattle_id=request.cattle_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Fusion result not found")
+    return _serialize_fusion_result(result)
+
+
+@router.delete("/fusion/results/{result_id}")
+async def delete_fusion_result(result_id: str = Path(...), farmer_id: str = Query(...)):
+    """Delete a stored scan result owned by the farmer."""
+    if farmer_account_store.get_by_id(farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if not fusion_result_store.delete(result_id=result_id, farmer_id=farmer_id):
+        raise HTTPException(status_code=404, detail="Fusion result not found")
+    return {"status": "deleted"}
 
 
 @router.post("/offline/detections/sync", response_model=OfflineDetectionSyncResponse)

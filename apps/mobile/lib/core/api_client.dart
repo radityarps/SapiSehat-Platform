@@ -3,6 +3,7 @@ import 'dart:convert';
 import '../features/auth/auth.dart';
 import '../features/cattle/cattle.dart';
 import '../features/history/history.dart';
+import '../features/scan/offline_inference.dart';
 import '../features/scan/scan.dart';
 import '../features/settings/settings.dart';
 import 'api.dart';
@@ -33,9 +34,15 @@ class FarmerAreaAdvisory {
 }
 
 class SapiSehatApiClient {
-  SapiSehatApiClient({ApiTransport? transport})
-    : transport = transport ?? HttpApiTransport();
+  SapiSehatApiClient({
+    ApiTransport? transport,
+    OfflineInferenceService? offlineInferenceService,
+  }) : transport = transport ?? HttpApiTransport(),
+       offlineInferenceService =
+           offlineInferenceService ?? OfflineInferenceService();
+
   final ApiTransport transport;
+  final OfflineInferenceService offlineInferenceService;
 
   Map<String, String> _auth(AccountSession session) => {
     'Accept': 'application/json',
@@ -277,33 +284,51 @@ class SapiSehatApiClient {
   }
 
   Future<ScanResult> predictScan({required List<int> bytes}) async {
-    final prediction = await transport.send(
-      ApiRequest(
-        'POST',
-        '/api/predict',
-        fileField: 'image',
-        fileName: 'scan.jpg',
-        fileBytes: bytes,
-        fileContentType: 'image/jpeg',
-      ),
-    );
-    if (prediction.statusCode < 200 || prediction.statusCode >= 300) {
-      throw Exception('Prediction failed');
+    try {
+      final prediction = await transport.send(
+        ApiRequest(
+          'POST',
+          '/api/predict',
+          fileField: 'image',
+          fileName: 'scan.jpg',
+          fileBytes: bytes,
+          fileContentType: 'image/jpeg',
+        ),
+      );
+      if (prediction.statusCode >= 200 && prediction.statusCode < 300) {
+        final diseaseClass =
+            ((prediction.json['prediction'] as Map?)?['disease_class'] ??
+                    'needs_review')
+                as String;
+        final confidence =
+            (((prediction.json['prediction'] as Map?)?['confidence'] ?? 0.0)
+                    as num)
+                .toDouble();
+        return ScanResult(
+          localId: 'online-${DateTime.now().microsecondsSinceEpoch}',
+          label: diseaseClass,
+          confidence: confidence,
+          capturedAt: DateTime.now(),
+          inferenceMode: 'online',
+          syncStatus: 'unsaved',
+          modelVersion:
+              (prediction.json['model_info'] as Map?)?['version'] as String?,
+        );
+      }
+    } catch (_) {
+      // Network/server failures fall through to the on-device image model.
     }
-    final diseaseClass =
-        ((prediction.json['prediction'] as Map?)?['disease_class'] ??
-                'needs_review')
-            as String;
-    final confidence =
-        (((prediction.json['prediction'] as Map?)?['confidence'] ?? 0.0) as num)
-            .toDouble();
+
+    final offline = await offlineInferenceService.infer(bytes);
     return ScanResult(
-      localId: 'online-${DateTime.now().microsecondsSinceEpoch}',
-      label: diseaseClass,
-      confidence: confidence,
+      localId: 'offline-${DateTime.now().microsecondsSinceEpoch}',
+      label: offline.label,
+      confidence: offline.confidence,
       capturedAt: DateTime.now(),
-      inferenceMode: 'online',
+      inferenceMode: 'offline',
       syncStatus: 'unsaved',
+      modelVersion: offline.modelVersion,
+      scores: offline.scores,
     );
   }
 
@@ -321,13 +346,21 @@ class SapiSehatApiClient {
           'cattle_id': cattleId,
           'image_evidence': {
             'source': 'image',
-            'model_version': 'mobile-online',
-            'inference_mode': 'online',
-            'disease_scores': {
-              'healthy': result.label == 'healthy' ? result.confidence : 0.0,
-              'FMD': result.label == 'FMD' ? result.confidence : 0.0,
-              'LSD': result.label == 'LSD' ? result.confidence : 0.0,
-            },
+            'model_version':
+                result.modelVersion ??
+                (result.inferenceMode == 'offline'
+                    ? 'image-offline-1.0.0'
+                    : 'mobile-online'),
+            'inference_mode': result.inferenceMode,
+            'disease_scores':
+                result.scores ??
+                {
+                  'healthy': result.label == 'healthy'
+                      ? result.confidence
+                      : 0.0,
+                  'FMD': result.label == 'FMD' ? result.confidence : 0.0,
+                  'LSD': result.label == 'LSD' ? result.confidence : 0.0,
+                },
             'top_class': result.label,
             'confidence': result.confidence,
             'quality_status': 'accepted',
@@ -345,7 +378,7 @@ class SapiSehatApiClient {
     final fusedConfidence =
         ((fusion.json['confidence'] ?? result.confidence) as num).toDouble();
     return ScanResult(
-      localId: result.localId,
+      localId: fusion.json['id'] as String? ?? result.localId,
       cattleId: cattleId,
       label: fusedClass,
       confidence: fusedConfidence,
@@ -353,6 +386,8 @@ class SapiSehatApiClient {
       inferenceMode: result.inferenceMode,
       syncStatus: 'synced',
       imagePath: result.imagePath,
+      modelVersion: result.modelVersion,
+      scores: result.scores,
     );
   }
 
@@ -381,5 +416,38 @@ class SapiSehatApiClient {
         )
         .where((item) => item.farmerId == farmerId)
         .toList();
+  }
+
+  Future<void> updateDetectionHistoryCattle({
+    required String farmerId,
+    required String resultId,
+    String? cattleId,
+  }) async {
+    final response = await transport.send(
+      ApiRequest(
+        'PATCH',
+        '/api/fusion/results/$resultId/cattle',
+        body: jsonEncode({'farmer_id': farmerId, 'cattle_id': cattleId}),
+        headers: {'Accept': 'application/json'},
+      ),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Update detection cattle failed');
+    }
+  }
+
+  Future<void> deleteDetectionHistory({
+    required String farmerId,
+    required String resultId,
+  }) async {
+    final response = await transport.send(
+      ApiRequest(
+        'DELETE',
+        '/api/fusion/results/$resultId?farmer_id=${Uri.encodeQueryComponent(farmerId)}',
+      ),
+    );
+    if (response.statusCode != 200) {
+      throw Exception('Delete detection history failed');
+    }
   }
 }

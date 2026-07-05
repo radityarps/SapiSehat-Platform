@@ -99,7 +99,10 @@ class _CattleScreenState extends State<CattleScreen> {
     child: ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        AreaAdvisoryBanner(apiClient: widget.apiClient, session: widget.session),
+        AreaAdvisoryBanner(
+          apiClient: widget.apiClient,
+          session: widget.session,
+        ),
         const SizedBox(height: 16),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -119,11 +122,6 @@ class _CattleScreenState extends State<CattleScreen> {
           ],
         ),
         const SizedBox(height: 16),
-        const Text(
-          'Sinyal risiko, bukan diagnosis',
-          style: TextStyle(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 12),
         if (loading)
           const Center(
             child: Padding(
@@ -190,6 +188,12 @@ class _CattleCard extends StatelessWidget {
   const _CattleCard({super.key, required this.cattle, required this.onTap});
   final CattleProfile cattle;
   final VoidCallback onTap;
+
+  String? get name {
+    final value = cattle.name?.trim();
+    return value == null || value.isEmpty ? null : value;
+  }
+
   @override
   Widget build(BuildContext context) => Card(
     child: ListTile(
@@ -199,13 +203,12 @@ class _CattleCard extends StatelessWidget {
         child: Icon(Icons.pets, color: Color(0xFF2E6B4F)),
       ),
       title: Text(
-        cattle.name?.isNotEmpty == true
-            ? '${cattle.tag} · ${cattle.name}'
-            : cattle.tag,
+        name ?? cattle.tag,
         style: const TextStyle(fontWeight: FontWeight.w700),
       ),
       subtitle: Text(
         [
+          if (name != null) cattle.tag,
           'Status: ${cattle.status}',
           if (cattle.breed.isNotEmpty) 'Ras: ${cattle.breed}',
           if (cattle.weightKg != null) 'Bobot: ${cattle.weightKg} kg',

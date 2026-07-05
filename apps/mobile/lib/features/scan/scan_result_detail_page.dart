@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -8,7 +9,6 @@ import 'package:pdf/widgets.dart' as pw;
 import '../../core/api_client.dart';
 import '../../features/auth/auth.dart';
 import '../cattle/cattle.dart';
-import '../cattle/cattle_form_page.dart';
 import 'scan.dart';
 
 class ScanResultDetailPage extends StatefulWidget {
@@ -22,6 +22,7 @@ class ScanResultDetailPage extends StatefulWidget {
     this.skipAutoSave = false,
     this.onChanged,
     this.onDelete,
+    this.onChangeCattle,
   });
 
   final SapiSehatApiClient apiClient;
@@ -30,8 +31,9 @@ class ScanResultDetailPage extends StatefulWidget {
   final XFile? image;
   final List<CattleProfile> cattle;
   final bool skipAutoSave;
-  final VoidCallback? onChanged;
+  final FutureOr<void> Function()? onChanged;
   final Future<void> Function()? onDelete;
+  final Future<void> Function(String? cattleId)? onChangeCattle;
 
   @override
   State<ScanResultDetailPage> createState() => _ScanResultDetailPageState();
@@ -111,33 +113,47 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
         inferenceMode: result.inferenceMode,
         syncStatus: 'pending_sync',
         imagePath: widget.image?.path ?? result.imagePath,
+        modelVersion: result.modelVersion,
+        scores: result.scores,
       );
       closeWith(local);
     }
   }
 
   Future<void> editLinkedCow() async {
-    final cow = await showDialog<CattleProfile>(
+    final choice = await showDialog<_CowLinkChoice>(
       context: context,
       builder: (_) =>
           _LinkedCowDialog(cattle: widget.cattle, cattleId: result.cattleId),
     );
-    if (cow == null || !mounted) return;
-    final updated = await Navigator.of(context).push<CattleProfile>(
-      MaterialPageRoute(
-        builder: (_) => CattleFormPage(
-          apiClient: widget.apiClient,
-          session: widget.session,
-          cattle: cow,
-        ),
-      ),
+    if (choice == null || !mounted) return;
+    try {
+      await widget.onChangeCattle?.call(choice.cattleId);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Gagal memperbarui sapi terkait.')),
+      );
+      return;
+    }
+    if (!mounted) return;
+    setState(() {
+      result = result.copyWith(
+        cattleId: choice.cattleId,
+        clearCattleId: choice.cattleId == null,
+      );
+    });
+    try {
+      await widget.onChanged?.call();
+    } catch (_) {
+      // Best-effort refresh; link update already succeeded.
+    }
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Sapi terkait berhasil diperbarui.')),
     );
-    if (updated != null) widget.onChanged?.call();
   }
 
   Future<void> deleteResult() async {
-    final delete = widget.onDelete;
-    if (delete == null) return;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
@@ -158,8 +174,19 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
       ),
     );
     if (confirmed != true) return;
-    await delete();
+    try {
+      await widget.onDelete?.call();
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Gagal menghapus riwayat.')));
+      return;
+    }
     if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Riwayat berhasil dihapus.')));
     closeWith('deleted');
   }
 
@@ -193,7 +220,9 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
               pw.Text('Keyakinan: ${(result.confidence * 100).round()}%'),
               pw.Text('Mode: ${result.inferenceMode}'),
               pw.Text('Waktu: ${result.capturedAt.toIso8601String()}'),
-              pw.Text('Sapi: ${result.cattleId ?? 'Tidak dikaitkan'}'),
+              pw.Text(
+                'Sapi: ${_linkedCowLabel(widget.cattle, result.cattleId)}',
+              ),
               pw.SizedBox(height: 12),
               pw.Text(
                 'Tindakan pencegahan:',
@@ -271,7 +300,7 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
                   ),
                   _Info(
                     label: 'Sapi',
-                    value: result.cattleId ?? 'Belum dikaitkan',
+                    value: _linkedCowLabel(widget.cattle, result.cattleId),
                   ),
                 ],
               ),
@@ -315,7 +344,7 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
             ),
             const SizedBox(height: 8),
           ],
-          if (widget.cattle.isNotEmpty) ...[
+          if (widget.skipAutoSave && widget.cattle.isNotEmpty) ...[
             OutlinedButton.icon(
               onPressed: editLinkedCow,
               icon: const Icon(Icons.edit_outlined),
@@ -323,14 +352,12 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
             ),
             const SizedBox(height: 8),
           ],
-          if (widget.onDelete != null) ...[
-            OutlinedButton.icon(
-              onPressed: deleteResult,
-              icon: const Icon(Icons.delete_outline),
-              label: const Text('Hapus'),
-            ),
-            const SizedBox(height: 8),
-          ],
+          OutlinedButton.icon(
+            onPressed: deleteResult,
+            icon: const Icon(Icons.delete_outline),
+            label: const Text('Hapus'),
+          ),
+          const SizedBox(height: 8),
           OutlinedButton.icon(
             onPressed: sharePdf,
             icon: const Icon(Icons.picture_as_pdf),
@@ -442,6 +469,15 @@ class _LinkedCowDialog extends StatelessWidget {
       child: ListView(
         shrinkWrap: true,
         children: [
+          ListTile(
+            leading: Icon(
+              cattleId == null
+                  ? Icons.radio_button_checked
+                  : Icons.radio_button_unchecked,
+            ),
+            title: const Text('Tidak dikaitkan'),
+            onTap: () => Navigator.of(context).pop(const _CowLinkChoice(null)),
+          ),
           for (final cow in cattle)
             ListTile(
               leading: Icon(
@@ -449,9 +485,9 @@ class _LinkedCowDialog extends StatelessWidget {
                     ? Icons.radio_button_checked
                     : Icons.radio_button_unchecked,
               ),
-              title: Text(cow.tag),
-              subtitle: Text(cow.name ?? cow.breed),
-              onTap: () => Navigator.of(context).pop(cow),
+              title: Text(_formatCowName(cow)),
+              subtitle: Text(cow.tag),
+              onTap: () => Navigator.of(context).pop(_CowLinkChoice(cow.id)),
             ),
         ],
       ),
@@ -463,6 +499,27 @@ class _LinkedCowDialog extends StatelessWidget {
       ),
     ],
   );
+}
+
+class _CowLinkChoice {
+  const _CowLinkChoice(this.cattleId);
+  final String? cattleId;
+}
+
+String _formatCowName(CattleProfile cow) {
+  final name = cow.name?.trim();
+  return name == null || name.isEmpty ? cow.tag : name;
+}
+
+String _formatCowWithTag(CattleProfile cow) =>
+    '${_formatCowName(cow)} (${cow.tag})';
+
+String _linkedCowLabel(List<CattleProfile> cattle, String? cattleId) {
+  if (cattleId == null) return 'Belum dikaitkan';
+  for (final cow in cattle) {
+    if (cow.id == cattleId) return _formatCowWithTag(cow);
+  }
+  return 'Belum dikaitkan';
 }
 
 class _CowSaveChoice {
@@ -480,36 +537,53 @@ class _CowSelectDialog extends StatefulWidget {
 
 class _CowSelectDialogState extends State<_CowSelectDialog> {
   CattleProfile? selected;
+
+  String _cowLabel(CattleProfile cow) {
+    final name = cow.name?.trim();
+    final displayName = name == null || name.isEmpty ? cow.tag : name;
+    return '$displayName (${cow.tag})';
+  }
+
   @override
   Widget build(BuildContext context) => AlertDialog(
     title: const Text('Simpan hasil scan'),
-    content: Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Kaitkan ke sapi bila perlu. Pilihan ini opsional.'),
-        const SizedBox(height: 12),
-        DropdownButtonFormField<CattleProfile?>(
-          initialValue: selected,
-          decoration: const InputDecoration(
-            labelText: 'Sapi (opsional)',
-            border: OutlineInputBorder(),
-          ),
-          items: [
-            const DropdownMenuItem<CattleProfile?>(
-              value: null,
-              child: Text('Tidak dikaitkan'),
-            ),
-            ...widget.cattle.map(
-              (item) => DropdownMenuItem<CattleProfile?>(
-                value: item,
-                child: Text('${item.tag} Â· ${item.name ?? item.breed}'),
+    actionsOverflowDirection: VerticalDirection.down,
+    content: SingleChildScrollView(
+      child: SizedBox(
+        width: double.maxFinite,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Kaitkan ke sapi bila perlu. Pilihan ini opsional.'),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<CattleProfile?>(
+              initialValue: selected,
+              isExpanded: true,
+              decoration: const InputDecoration(
+                labelText: 'Sapi (opsional)',
+                border: OutlineInputBorder(),
               ),
+              items: [
+                const DropdownMenuItem<CattleProfile?>(
+                  value: null,
+                  child: Text('Tidak dikaitkan'),
+                ),
+                ...widget.cattle.map(
+                  (item) => DropdownMenuItem<CattleProfile?>(
+                    value: item,
+                    child: Text(
+                      _cowLabel(item),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                ),
+              ],
+              onChanged: (value) => setState(() => selected = value),
             ),
           ],
-          onChanged: (value) => setState(() => selected = value),
         ),
-      ],
+      ),
     ),
     actions: [
       TextButton(
