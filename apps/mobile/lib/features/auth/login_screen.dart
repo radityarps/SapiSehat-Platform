@@ -219,6 +219,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 email: email.text.trim(),
                 password: password.text,
                 jurisdictionId: jurisdiction.text.trim(),
+                address: address.text.trim().isEmpty
+                    ? null
+                    : address.text.trim(),
               ),
             )
           : await widget.apiClient.loginFarmer(

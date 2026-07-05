@@ -332,6 +332,7 @@ class DeleteAccountPage extends StatefulWidget {
 class _DeleteAccountPageState extends State<DeleteAccountPage> {
   final password = TextEditingController();
   bool deleting = false;
+  bool showPassword = false;
 
   @override
   void dispose() {
@@ -401,11 +402,20 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
         const SizedBox(height: 16),
         TextField(
           controller: password,
-          obscureText: true,
-          decoration: const InputDecoration(
+          obscureText: !showPassword,
+          decoration: InputDecoration(
             labelText: 'Password',
             hintText: 'Masukkan password untuk konfirmasi',
             border: OutlineInputBorder(),
+            suffixIcon: IconButton(
+              tooltip: showPassword
+                  ? 'Sembunyikan password'
+                  : 'Tampilkan password',
+              icon: Icon(
+                showPassword ? Icons.visibility_off : Icons.visibility,
+              ),
+              onPressed: () => setState(() => showPassword = !showPassword),
+            ),
           ),
         ),
         const SizedBox(height: 16),

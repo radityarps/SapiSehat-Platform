@@ -63,15 +63,15 @@ Profile editing is accessed from Settings → "Edit profil" button.
 
 ## Features
 
-- **Farmer login / register** — email/password with input validation and terms checkbox
-- **GPS address auto-fill** — Nominatim reverse geocode fills address + district on edit profile and register
+- **Farmer login / register** — email/password with input validation, terms checkbox, and optional address persisted to profile
+- **GPS address auto-fill** — Nominatim reverse geocode fills address + district on edit profile and register; saved address is returned in profile/session responses
 - **Cattle CRUD** — list, create, edit, archive cattle profiles
 - **Camera scan** — online-first flow: `/api/predict` produces image evidence, then `/api/fusion/results` stores backend-primary result. If online save fails, result is kept as local `pending_sync` fallback.
 - **Offline TFLite fallback** — on-device inference when backend/network prediction fails. Assets live under `assets/model/` and include `model_metadata.json`. Preprocessing decodes image, applies EXIF orientation, resizes to `224x224`, and rescales RGB to `1/255`.
 - **Detection history** — backend results are source of truth when reachable; pending local results appear as fallback. Matching local image paths are merged into backend cards so scan thumbnails remain visible. Manual pull-to-refresh is supported.
 - **Result management** — detection result detail and history cards can reassign linked cattle, delete scan results with success/failure toasts, and export/share PDF without exposing raw cattle IDs.
 - **Cattle display** — cattle name is primary text, tag is secondary; selectors and detection results use `{name} ({tag})`, with `Belum dikaitkan` when no linked cattle is available.
-- **Settings** — notification preferences, profile card, logout confirmation with success/failure toasts, and account archive.
+- **Settings** — notification preferences, profile card, logout confirmation with success/failure toasts, password-visible account deletion confirmation, and account archive.
 
 ## Permissions (Android)
 

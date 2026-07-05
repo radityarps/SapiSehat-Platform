@@ -79,6 +79,7 @@ class FarmerRegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     name: str = Field(min_length=1, max_length=120)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
+    address: Optional[str] = Field(default=None, max_length=300)
 
 
 class FarmerLoginRequest(BaseModel):
@@ -104,6 +105,7 @@ class AuthAccountResponse(BaseModel):
     is_active: bool = True
     name: str = ""
     jurisdiction_id: str = ""
+    address: Optional[str] = None
     role: Optional[str] = None
 
 
@@ -123,6 +125,7 @@ class ChangePasswordRequest(BaseModel):
 class FarmerProfileUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
+    address: Optional[str] = Field(default=None, max_length=300)
 
 
 class FarmerArchiveRequest(BaseModel):

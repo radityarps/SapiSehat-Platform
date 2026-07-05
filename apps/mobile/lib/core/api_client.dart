@@ -111,6 +111,7 @@ class SapiSehatApiClient {
     return session.copyWith(
       name: account['name'] as String? ?? draft.name,
       address: account['address'] as String? ?? draft.address,
+      clearAddress: (account['address'] as String? ?? draft.address) == null,
       jurisdictionId:
           account['jurisdiction_id'] as String? ?? draft.jurisdictionId,
       isActive: account['is_active'] as bool? ?? true,

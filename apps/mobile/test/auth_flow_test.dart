@@ -22,11 +22,47 @@ class StubTransport implements ApiTransport {
         }),
       );
     }
+    if (request.path == '/api/auth/farmer/register') {
+      return ApiResponse(
+        200,
+        jsonEncode({
+          'access_token': 'register-token',
+          'account': {
+            'id': 'farmer-1',
+            'account_type': 'farmer',
+            'email': 'new@example.com',
+            'name': 'Pak Baru',
+            'jurisdiction_id': 'tembalang',
+            'address': 'Jl. Sapi Sehat 1',
+          },
+        }),
+      );
+    }
     return ApiResponse(404, '{}');
   }
 }
 
 void main() {
+  test('farmer register sends and reads address', () async {
+    final transport = StubTransport();
+    final session = await SapiSehatApiClient(transport: transport)
+        .registerFarmer(
+          FarmerRegistrationDraft(
+            name: 'Pak Baru',
+            email: 'new@example.com',
+            password: 'strong-password',
+            jurisdictionId: 'tembalang',
+            address: 'Jl. Sapi Sehat 1',
+          ),
+        );
+
+    final request = transport.requests.singleWhere(
+      (request) => request.path == '/api/auth/farmer/register',
+    );
+    expect(jsonDecode(request.body!)['address'], 'Jl. Sapi Sehat 1');
+    expect(session.address, 'Jl. Sapi Sehat 1');
+  });
+
   testWidgets('farmer logs in against FastAPI and reaches cattle home', (
     tester,
   ) async {

@@ -13,7 +13,13 @@ def create_farmer(consent, jurisdiction_id):
     suffix = uuid4().hex[:8]
     response = client.post(
         "/api/farmers/accounts",
-        json={"phone_number": f"08444{suffix[:5]}", "name": f"Registry {suffix}", "jurisdiction_id": jurisdiction_id, "consent_state": consent},
+        json={
+            "phone_number": f"08444{suffix[:5]}",
+            "name": f"Registry {suffix}",
+            "address": f"Jl. Registry {suffix}",
+            "jurisdiction_id": jurisdiction_id,
+            "consent_state": consent,
+        },
     )
     assert response.status_code == 200, response.text
     return response.json()
@@ -42,10 +48,12 @@ def test_registry_api_filters_farmers_and_cattle_by_authorization_scope():
     body = response.json()
     cattle_tags = {item["tag"] for item in body["cattle"]}
     cattle_ids = {item["id"] for item in body["cattle"]}
+    farmers_by_id = {item["id"]: item for item in body["farmers"]}
     assert allowed_cattle["id"] in cattle_ids
     assert "REG-ALLOWED" in cattle_tags
     assert "REG-PRIVATE" not in cattle_tags
     assert "REG-OUTSIDE" not in cattle_tags
+    assert farmers_by_id[allowed["id"]]["address"] == allowed["address"]
     assert body["filters"]["table_pattern"] == "TanStack Table compatible columns"
 
 

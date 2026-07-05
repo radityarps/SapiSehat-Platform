@@ -12,7 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"phone_number":"+6281234567890","name":"Demo Farmer","jurisdiction_id":"tembalang","consent_state":"research_and_monitoring"}
+      {"phone_number":"+6281234567890","name":"Demo Farmer","address":"Jl. Ngesrep Timur V No. 12, Tembalang","jurisdiction_id":"tembalang","consent_state":"research_and_monitoring"}
 settings:
   encodeUrl: true
   timeout: 0

@@ -12,7 +12,7 @@ http:
   body:
     type: json
     json: |-
-      {"email":"new-farmer@example.com","password":"strong-password","name":"Demo Farmer","jurisdiction_id":"tembalang"}
+      {"email":"new-farmer@example.com","password":"strong-password","name":"Demo Farmer","jurisdiction_id":"tembalang","address":"Jl. Ngesrep Timur V No. 12, Tembalang"}
 settings:
   encodeUrl: true
   timeout: 0

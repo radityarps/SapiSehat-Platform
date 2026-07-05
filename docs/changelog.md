@@ -61,6 +61,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fusion result history supports cattle reassignment and deletion through backend endpoints: `PATCH /api/fusion/results/{result_id}/cattle` and `DELETE /api/fusion/results/{result_id}?farmer_id=...`.
 - Mobile detection result detail and history cards show delete success/failure toasts, close/refresh after successful delete, and keep failure state unchanged.
 - Mobile settings logout now requires confirmation and shows success/failure toasts.
+- Farmer register/profile address is persisted, returned in profile/session responses, and included in agency registry/farmer list records.
+- Delete-account password confirmation now has a show/hide password icon.
 
 ### Changed
 
@@ -70,6 +72,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Scan result `Edit sapi` now reassigns linked cattle instead of opening the cattle edit form; button is hidden for fresh scan flow and kept for history-opened results.
 - Backend cattle profile create/list serialization now persists and returns `name` and detail fields.
 - Android Gradle JVM targets are pinned per plugin group to avoid JDK 25 Java/Kotlin target mismatches.
+- Development seed farmer accounts now include addresses for profile and registry smoke data.
 
 ### Fixed
 
