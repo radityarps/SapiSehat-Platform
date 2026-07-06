@@ -38,16 +38,33 @@ class SurfaceAccountStore:
     def __init__(self) -> None:
         create_all_tables()
 
-    def register_farmer(self, *, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+    def register_farmer(
+        self,
+        *,
+        email: str,
+        password: str,
+        name: str,
+        jurisdiction_id: str,
+        address: str | None = None,
+    ) -> SurfaceAccount:
         return self._create(
             account_type="farmer",
             email=email,
             password=password,
             name=name,
             jurisdiction_id=jurisdiction_id,
+            address=address,
         )
 
-    def seed_farmer(self, *, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+    def seed_farmer(
+        self,
+        *,
+        email: str,
+        password: str,
+        name: str,
+        jurisdiction_id: str,
+        address: str | None = None,
+    ) -> SurfaceAccount:
         existing = self.get(account_type="farmer", email=email)
         if existing is not None:
             return existing
@@ -57,6 +74,7 @@ class SurfaceAccountStore:
             password=password,
             name=name,
             jurisdiction_id=jurisdiction_id,
+            address=address,
         )
 
     def seed_agency(self, *, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
@@ -71,7 +89,16 @@ class SurfaceAccountStore:
             jurisdiction_id=jurisdiction_id,
         )
 
-    def _create(self, *, account_type: str, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+    def _create(
+        self,
+        *,
+        account_type: str,
+        email: str,
+        password: str,
+        name: str,
+        jurisdiction_id: str,
+        address: str | None = None,
+    ) -> SurfaceAccount:
         normalized_email = normalize_email(email)
         if self.get(account_type=account_type, email=normalized_email) is not None:
             raise ValueError(f"{account_type} account already exists")
@@ -83,6 +110,7 @@ class SurfaceAccountStore:
                 email=normalized_email,
                 name=name,
                 jurisdiction_id=jurisdiction_id,
+                address=address,
                 password_hash=hash_password(password),
             )
             session.add(AccountModel(**account.__dict__))
@@ -181,12 +209,14 @@ def seed_default_farmer_accounts() -> None:
         password="strong-password",
         name="Demo Farmer",
         jurisdiction_id="tembalang",
+        address="Jl. Ngesrep Timur V No. 12, Tembalang",
     )
     surface_account_store.seed_farmer(
         email="farmer2@example.com",
         password="strong-password",
         name="Demo Farmer Two",
         jurisdiction_id="banyumanik",
+        address="Jl. Banyumanik Raya No. 22, Banyumanik",
     )
 
 def seed_default_agency_accounts() -> None:

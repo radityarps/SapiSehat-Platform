@@ -85,6 +85,58 @@ def test_matching_medium_high_evidence_produces_reliable_result_and_stores_break
     assert "diagnosis" not in result["handling_advice_key"]
 
 
+def test_fusion_result_cattle_association_can_be_changed():
+    farmer_id, cattle_id = create_farmer_and_cattle()
+    suffix = uuid4().hex[:8]
+    second_cattle = client.post(
+        f"/api/farmers/{farmer_id}/cattle",
+        json={
+            "tag": f"FUSION-NEW-{suffix}",
+            "sex": "female",
+            "breed": "sapi bali",
+            "jurisdiction_id": "district-bandung-1",
+            "age_months": 30,
+        },
+    )
+    assert second_cattle.status_code == 200, second_cattle.text
+    result = fuse(
+        {
+            "farmer_id": farmer_id,
+            "cattle_id": cattle_id,
+            "image_evidence": image(),
+            "nlp_evidence": nlp(),
+        }
+    )
+
+    updated = client.patch(
+        f"/api/fusion/results/{result['id']}/cattle",
+        json={"farmer_id": farmer_id, "cattle_id": second_cattle.json()["id"]},
+    )
+
+    assert updated.status_code == 200, updated.text
+    assert updated.json()["id"] == result["id"]
+    assert updated.json()["cattle_id"] == second_cattle.json()["id"]
+
+
+def test_fusion_result_can_be_deleted():
+    farmer_id, cattle_id = create_farmer_and_cattle()
+    result = fuse(
+        {
+            "farmer_id": farmer_id,
+            "cattle_id": cattle_id,
+            "image_evidence": image(),
+            "nlp_evidence": nlp(),
+        }
+    )
+
+    deleted = client.delete(
+        f"/api/fusion/results/{result['id']}", params={"farmer_id": farmer_id}
+    )
+
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json() == {"status": "deleted"}
+
+
 def test_conflicting_top_classes_need_review():
     farmer_id, cattle_id = create_farmer_and_cattle()
 

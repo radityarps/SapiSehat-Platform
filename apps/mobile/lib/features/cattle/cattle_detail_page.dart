@@ -26,6 +26,11 @@ class _CattleDetailPageState extends State<CattleDetailPage> {
   late CattleProfile cattle = widget.cattle;
   late Future<List<DetectionHistoryItem>> historyFuture = _loadHistory();
 
+  String? get cattleName {
+    final value = cattle.name?.trim();
+    return value == null || value.isEmpty ? null : value;
+  }
+
   Future<List<DetectionHistoryItem>> _loadHistory() async {
     final all = await widget.apiClient.listDetectionHistory(
       widget.session.farmerId,
@@ -98,7 +103,7 @@ class _CattleDetailPageState extends State<CattleDetailPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text(cattle.tag)),
+    appBar: AppBar(title: const Text('Informasi Sapi')),
     body: ListView(
       padding: const EdgeInsets.all(20),
       children: [
@@ -126,16 +131,15 @@ class _CattleDetailPageState extends State<CattleDetailPage> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            cattle.name?.isNotEmpty == true
-                                ? cattle.name!
-                                : cattle.tag,
+                            cattleName ?? cattle.tag,
                             style: Theme.of(context).textTheme.titleLarge
                                 ?.copyWith(fontWeight: FontWeight.w900),
                           ),
-                          Text(
-                            cattle.tag,
-                            style: const TextStyle(color: Color(0xFF5B645B)),
-                          ),
+                          if (cattleName != null)
+                            Text(
+                              cattle.tag,
+                              style: const TextStyle(color: Color(0xFF5B645B)),
+                            ),
                         ],
                       ),
                     ),

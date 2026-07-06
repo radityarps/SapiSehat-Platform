@@ -79,6 +79,7 @@ class FarmerRegisterRequest(BaseModel):
     password: str = Field(min_length=8, max_length=128)
     name: str = Field(min_length=1, max_length=120)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
+    address: Optional[str] = Field(default=None, max_length=300)
 
 
 class FarmerLoginRequest(BaseModel):
@@ -104,6 +105,7 @@ class AuthAccountResponse(BaseModel):
     is_active: bool = True
     name: str = ""
     jurisdiction_id: str = ""
+    address: Optional[str] = None
     role: Optional[str] = None
 
 
@@ -123,6 +125,7 @@ class ChangePasswordRequest(BaseModel):
 class FarmerProfileUpdateRequest(BaseModel):
     name: str = Field(min_length=1, max_length=120)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
+    address: Optional[str] = Field(default=None, max_length=300)
 
 
 class FarmerArchiveRequest(BaseModel):
@@ -281,6 +284,7 @@ class FarmerAccountResponse(BaseModel):
     id: str
     phone_number: str
     name: str
+    address: Optional[str] = None
     jurisdiction_id: str
     consent_state: str
     created: bool
@@ -303,11 +307,23 @@ class CattleProfileRequest(BaseModel):
     """Create cattle profile linked to farmer account."""
 
     tag: str = Field(min_length=1, max_length=80)
+    name: Optional[str] = Field(default=None, max_length=120)
     sex: str
     breed: str = Field(default="unknown", max_length=120)
+    color: Optional[str] = Field(default=None, max_length=80)
     age_months: Optional[int] = Field(default=None, ge=0)
+    weight_kg: Optional[float] = Field(default=None, ge=0)
+    reproductive_status: Optional[str] = Field(default=None, max_length=40)
+    is_pregnant: Optional[bool] = None
     birth_year_estimate: Optional[int] = Field(default=None, ge=1900, le=2100)
+    last_calving_date: Optional[str] = Field(default=None, max_length=40)
+    last_vaccination_date: Optional[str] = Field(default=None, max_length=40)
+    last_deworming_date: Optional[str] = Field(default=None, max_length=40)
+    health_notes: Optional[str] = Field(default=None, max_length=1000)
+    purchase_date: Optional[str] = Field(default=None, max_length=40)
+    purchase_price_idr: Optional[int] = Field(default=None, ge=0)
     status: str = "active"
+    notes: Optional[str] = Field(default=None, max_length=1000)
     jurisdiction_id: str = Field(min_length=1, max_length=120)
 
 
@@ -317,11 +333,23 @@ class CattleProfileResponse(BaseModel):
     id: str
     farmer_id: str
     tag: str
+    name: Optional[str] = None
     sex: str
     breed: str
+    color: Optional[str] = None
     age_months: Optional[int]
+    weight_kg: Optional[float] = None
+    reproductive_status: Optional[str] = None
+    is_pregnant: Optional[bool] = None
     birth_year_estimate: Optional[int]
+    last_calving_date: Optional[str] = None
+    last_vaccination_date: Optional[str] = None
+    last_deworming_date: Optional[str] = None
+    health_notes: Optional[str] = None
+    purchase_date: Optional[str] = None
+    purchase_price_idr: Optional[int] = None
     status: str
+    notes: Optional[str] = None
     jurisdiction_id: str
 
 
@@ -521,6 +549,13 @@ class FusionRequest(BaseModel):
     cattle_id: Optional[str] = None
     image_evidence: Optional[ImageEvidenceRequest] = None
     nlp_evidence: Optional[NlpEvidenceRequest] = None
+
+
+class FusionCattleLinkRequest(BaseModel):
+    """Update cattle association for an existing fusion result."""
+
+    farmer_id: str = Field(min_length=1, max_length=120)
+    cattle_id: Optional[str] = None
 
 
 class FusionResultResponse(BaseModel):

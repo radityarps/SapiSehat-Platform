@@ -16,11 +16,13 @@ class HistoryScreen extends StatefulWidget {
     required this.apiClient,
     required this.session,
     required this.localHistory,
+    required this.onUpdateLocal,
     required this.onDeleteLocal,
   });
   final SapiSehatApiClient apiClient;
   final AccountSession session;
   final List<ScanResult> localHistory;
+  final ValueChanged<ScanResult> onUpdateLocal;
   final ValueChanged<ScanResult> onDeleteLocal;
 
   @override
@@ -29,6 +31,21 @@ class HistoryScreen extends StatefulWidget {
 
 class _HistoryScreenState extends State<HistoryScreen> {
   late Future<_HistoryData> historyFuture = loadHistory();
+  final _remoteCattleOverrides = <String, String?>{};
+
+  @override
+  void didUpdateWidget(covariant HistoryScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final oldLatest = oldWidget.localHistory.isEmpty
+        ? null
+        : oldWidget.localHistory.first.localId;
+    final latest = widget.localHistory.isEmpty
+        ? null
+        : widget.localHistory.first.localId;
+    if (oldLatest != latest) {
+      historyFuture = loadHistory();
+    }
+  }
 
   Future<_HistoryData> loadHistory() async {
     final results = await Future.wait([
@@ -41,72 +58,104 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  void refresh() => setState(() => historyFuture = loadHistory());
+  Future<void> refresh() async {
+    final future = loadHistory();
+    setState(() {
+      historyFuture = future;
+    });
+    await future;
+  }
 
   @override
-  Widget build(BuildContext context) => ListView(
-    padding: const EdgeInsets.all(20),
-    children: [
-      Text(
-        'Riwayat deteksi',
-        style: Theme.of(
-          context,
-        ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
-      ),
-      const SizedBox(height: 8),
-      const Text('Sinyal risiko tersimpan dengan waktu tangkap asli.'),
-      const SizedBox(height: 16),
-      FutureBuilder<_HistoryData>(
-        future: historyFuture,
-        builder: (context, snapshot) {
-          final data = snapshot.data ?? const _HistoryData();
-          final cattleById = {for (final cow in data.cattle) cow.id: cow};
-          final cards = <Widget>[
-            ...widget.localHistory.map(
-              (item) => _LocalResultCard(
-                result: item,
-                cattle: data.cattle,
-                cow: item.cattleId == null ? null : cattleById[item.cattleId],
-                apiClient: widget.apiClient,
-                session: widget.session,
-                onChanged: refresh,
-                onDelete: () => widget.onDeleteLocal(item),
-              ),
-            ),
-            ...data.remote.map(
-              (item) => _RemoteHistoryCard(
-                item: item,
-                cattle: data.cattle,
-                cow: item.cattleId == null ? null : cattleById[item.cattleId],
-                apiClient: widget.apiClient,
-                session: widget.session,
-                onChanged: refresh,
-              ),
-            ),
-          ];
-          if (snapshot.connectionState != ConnectionState.done &&
-              cards.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: CircularProgressIndicator(),
-              ),
-            );
-          }
-          if (cards.isEmpty) {
-            return const Card(
-              child: Padding(
-                padding: EdgeInsets.all(24),
-                child: Text(
-                  'Belum ada riwayat. Hasil scan muncul sebagai sinyal risiko, bukan diagnosis.',
+  Widget build(BuildContext context) => RefreshIndicator(
+    onRefresh: refresh,
+    child: ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          'Riwayat deteksi',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
+        ),
+        const SizedBox(height: 8),
+        const Text('Sinyal risiko tersimpan dengan waktu tangkap asli.'),
+        const SizedBox(height: 16),
+        FutureBuilder<_HistoryData>(
+          future: historyFuture,
+          builder: (context, snapshot) {
+            if (snapshot.connectionState != ConnectionState.done &&
+                !snapshot.hasData) {
+              return const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: CircularProgressIndicator(),
+                ),
+              );
+            }
+            final data = snapshot.data ?? const _HistoryData();
+            final cattleById = {for (final cow in data.cattle) cow.id: cow};
+            final localById = {
+              for (final item in widget.localHistory) item.localId: item,
+            };
+            final localItems = snapshot.hasError
+                ? widget.localHistory
+                : widget.localHistory.where(
+                    (item) => item.syncStatus != 'synced',
+                  );
+            final cards = <Widget>[
+              ...data.remote.map((item) {
+                final effectiveCattleId =
+                    _remoteCattleOverrides.containsKey(item.id)
+                    ? _remoteCattleOverrides[item.id]
+                    : item.cattleId;
+                return _RemoteHistoryCard(
+                  item: item,
+                  effectiveCattleId: effectiveCattleId,
+                  cattle: data.cattle,
+                  cow: effectiveCattleId == null
+                      ? null
+                      : cattleById[effectiveCattleId],
+                  apiClient: widget.apiClient,
+                  session: widget.session,
+                  imagePath: localById[item.id]?.imagePath,
+                  onLinkedCowChanged: (cattleId) {
+                    setState(() {
+                      _remoteCattleOverrides[item.id] = cattleId;
+                    });
+                  },
+                  onChanged: refresh,
+                );
+              }),
+              ...localItems.map(
+                (item) => _LocalResultCard(
+                  result: item,
+                  cattle: data.cattle,
+                  cow: item.cattleId == null ? null : cattleById[item.cattleId],
+                  apiClient: widget.apiClient,
+                  session: widget.session,
+                  onUpdate: widget.onUpdateLocal,
+                  onChanged: refresh,
+                  onDelete: () => widget.onDeleteLocal(item),
                 ),
               ),
-            );
-          }
-          return Column(children: cards);
-        },
-      ),
-    ],
+            ];
+            if (cards.isEmpty) {
+              return const Card(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text(
+                    'Belum ada riwayat. Hasil scan muncul sebagai sinyal risiko, bukan diagnosis.',
+                  ),
+                ),
+              );
+            }
+            return Column(children: cards);
+          },
+        ),
+      ],
+    ),
   );
 }
 
@@ -116,6 +165,7 @@ class _LocalResultCard extends StatelessWidget {
     required this.cattle,
     required this.apiClient,
     required this.session,
+    required this.onUpdate,
     required this.onChanged,
     required this.onDelete,
     this.cow,
@@ -126,7 +176,8 @@ class _LocalResultCard extends StatelessWidget {
   final CattleProfile? cow;
   final SapiSehatApiClient apiClient;
   final AccountSession session;
-  final VoidCallback onChanged;
+  final ValueChanged<ScanResult> onUpdate;
+  final Future<void> Function() onChanged;
   final VoidCallback onDelete;
 
   @override
@@ -145,12 +196,35 @@ class _LocalResultCard extends StatelessWidget {
           image: result.imagePath == null ? null : XFile(result.imagePath!),
           cattle: cattle,
           skipAutoSave: true,
+          onChangeCattle: (cattleId) async {
+            onUpdate(
+              result.copyWith(
+                cattleId: cattleId,
+                clearCattleId: cattleId == null,
+              ),
+            );
+          },
           onChanged: onChanged,
           onDelete: () async => onDelete(),
         ),
       ),
     ),
-    onEditCow: () => _openLinkedCowSelection(context, cattle, result.cattleId),
+    onEditCow: () async {
+      final cattleId = await _openLinkedCowSelection(
+        context,
+        cattle,
+        result.cattleId,
+      );
+      if (cattleId == _unchangedCattleSelection) return;
+      onUpdate(
+        result.copyWith(cattleId: cattleId, clearCattleId: cattleId == null),
+      );
+      await onChanged();
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sapi terkait berhasil diperbarui.')),
+      );
+    },
     onDelete: () => _confirmDelete(
       context,
       title: 'Hapus riwayat ini?',
@@ -163,28 +237,35 @@ class _LocalResultCard extends StatelessWidget {
 class _RemoteHistoryCard extends StatelessWidget {
   const _RemoteHistoryCard({
     required this.item,
+    required this.effectiveCattleId,
     required this.cattle,
     required this.apiClient,
     required this.session,
+    required this.onLinkedCowChanged,
     required this.onChanged,
+    this.imagePath,
     this.cow,
   });
 
   final DetectionHistoryItem item;
+  final String? effectiveCattleId;
   final List<CattleProfile> cattle;
   final CattleProfile? cow;
   final SapiSehatApiClient apiClient;
   final AccountSession session;
-  final VoidCallback onChanged;
+  final String? imagePath;
+  final ValueChanged<String?> onLinkedCowChanged;
+  final Future<void> Function() onChanged;
 
   @override
   Widget build(BuildContext context) => _HistoryTile(
-    title: cow?.tag ?? item.label,
+    title: cow == null ? item.label : _cowDisplayName(cow!),
     subtitle:
         item.createdAt?.toLocal().toString().split('.').first ??
         item.inferenceMode,
     label: item.label,
     confidence: item.confidence,
+    imagePath: imagePath,
     onTap: () => Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ScanResultDetailPage(
@@ -192,40 +273,84 @@ class _RemoteHistoryCard extends StatelessWidget {
           session: session,
           result: ScanResult(
             localId: item.id,
-            cattleId: item.cattleId,
+            cattleId: effectiveCattleId,
             label: item.label,
             confidence: item.confidence,
             capturedAt: item.createdAt ?? DateTime.now(),
             inferenceMode: item.inferenceMode,
             syncStatus: 'synced',
+            imagePath: imagePath,
           ),
-          image: null,
+          image: imagePath == null ? null : XFile(imagePath!),
           cattle: cattle,
           skipAutoSave: true,
+          onChangeCattle: (cattleId) async {
+            await apiClient.updateDetectionHistoryCattle(
+              farmerId: session.farmerId,
+              resultId: item.id,
+              cattleId: cattleId,
+            );
+            onLinkedCowChanged(cattleId);
+          },
           onChanged: onChanged,
-          onDelete: cow == null
-              ? null
-              : () async {
-                  await apiClient.archiveCattle(session.farmerId, cow!.id);
-                  onChanged();
-                },
+          onDelete: () async {
+            await apiClient.deleteDetectionHistory(
+              farmerId: session.farmerId,
+              resultId: item.id,
+            );
+            await onChanged();
+          },
         ),
       ),
     ),
-    onEditCow: () => _openLinkedCowSelection(context, cattle, item.cattleId),
-    onDelete: cow == null
-        ? null
-        : () => _confirmDelete(
-            context,
-            title: 'Hapus sapi dari kandang?',
-            message:
-                'Data sapi akan diarsipkan, bukan dihapus permanen. Riwayat deteksi tetap tersimpan.',
-            onConfirm: () async {
-              await apiClient.archiveCattle(session.farmerId, cow!.id);
-              onChanged();
-            },
-          ),
+    onEditCow: () async {
+      final cattleId = await _openLinkedCowSelection(
+        context,
+        cattle,
+        effectiveCattleId,
+      );
+      if (cattleId == _unchangedCattleSelection) return;
+      try {
+        await apiClient.updateDetectionHistoryCattle(
+          farmerId: session.farmerId,
+          resultId: item.id,
+          cattleId: cattleId,
+        );
+        onLinkedCowChanged(cattleId);
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Gagal memperbarui sapi terkait.')),
+        );
+        return;
+      }
+      await _refreshAfterLinkChange(onChanged);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sapi terkait berhasil diperbarui.')),
+      );
+    },
+    onDelete: () => _confirmDelete(
+      context,
+      title: 'Hapus riwayat ini?',
+      message: 'Riwayat deteksi akan dihapus dari daftar.',
+      onConfirm: () async {
+        await apiClient.deleteDetectionHistory(
+          farmerId: session.farmerId,
+          resultId: item.id,
+        );
+        await onChanged();
+      },
+    ),
   );
+}
+
+Future<void> _refreshAfterLinkChange(Future<void> Function() refresh) async {
+  try {
+    await refresh();
+  } catch (_) {
+    // Best-effort refresh; link update already succeeded.
+  }
 }
 
 class _HistoryTile extends StatelessWidget {
@@ -317,12 +442,14 @@ class _HistoryPreview extends StatelessWidget {
   }
 }
 
-Future<void> _openLinkedCowSelection(
+const _unchangedCattleSelection = '__unchanged_cattle_selection__';
+
+Future<String?> _openLinkedCowSelection(
   BuildContext context,
   List<CattleProfile> cattle,
   String? cattleId,
 ) async {
-  await showDialog<CattleProfile>(
+  final choice = await showDialog<_HistoryCowLinkChoice>(
     context: context,
     builder: (dialogContext) => AlertDialog(
       title: const Text('Sapi terkait'),
@@ -331,6 +458,17 @@ Future<void> _openLinkedCowSelection(
         child: ListView(
           shrinkWrap: true,
           children: [
+            ListTile(
+              leading: Icon(
+                cattleId == null
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+              ),
+              title: const Text('Tidak dikaitkan'),
+              onTap: () => Navigator.of(
+                dialogContext,
+              ).pop(const _HistoryCowLinkChoice(null)),
+            ),
             for (final cow in cattle)
               ListTile(
                 leading: Icon(
@@ -338,9 +476,11 @@ Future<void> _openLinkedCowSelection(
                       ? Icons.radio_button_checked
                       : Icons.radio_button_unchecked,
                 ),
-                title: Text(cow.tag),
-                subtitle: Text(cow.name ?? cow.breed),
-                onTap: () => Navigator.of(dialogContext).pop(cow),
+                title: Text(_cowDisplayName(cow)),
+                subtitle: Text(cow.tag),
+                onTap: () => Navigator.of(
+                  dialogContext,
+                ).pop(_HistoryCowLinkChoice(cow.id)),
               ),
           ],
         ),
@@ -353,6 +493,17 @@ Future<void> _openLinkedCowSelection(
       ],
     ),
   );
+  return choice == null ? _unchangedCattleSelection : choice.cattleId;
+}
+
+class _HistoryCowLinkChoice {
+  const _HistoryCowLinkChoice(this.cattleId);
+  final String? cattleId;
+}
+
+String _cowDisplayName(CattleProfile cow) {
+  final name = cow.name?.trim();
+  return name == null || name.isEmpty ? cow.tag : name;
 }
 
 Future<void> _confirmDelete(
@@ -379,7 +530,19 @@ Future<void> _confirmDelete(
     ),
   );
   if (confirmed != true) return;
-  await onConfirm();
+  try {
+    await onConfirm();
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Gagal menghapus riwayat.')));
+    return;
+  }
+  if (!context.mounted) return;
+  ScaffoldMessenger.of(
+    context,
+  ).showSnackBar(const SnackBar(content: Text('Riwayat berhasil dihapus.')));
 }
 
 class _HistoryData {

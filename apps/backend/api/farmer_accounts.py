@@ -93,6 +93,25 @@ class FarmerAccountStore:
             row = session.get(FarmerAccountModel, farmer_id)
             return None if row is None else _farmer_from_row(row)
 
+    def update_profile(
+        self,
+        *,
+        farmer_id: str,
+        name: str,
+        jurisdiction_id: str,
+        address: str | None,
+    ) -> FarmerAccount | None:
+        with SessionLocal() as session:
+            row = session.get(FarmerAccountModel, farmer_id)
+            if row is None:
+                return None
+            row.name = name
+            row.jurisdiction_id = jurisdiction_id
+            row.address = address
+            session.commit()
+            session.refresh(row)
+            return _farmer_from_row(row)
+
     def all_by_id(self) -> dict[str, FarmerAccount]:
         with SessionLocal() as session:
             rows = (

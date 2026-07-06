@@ -39,6 +39,10 @@ final localHistoryProvider =
 class LocalHistoryController extends StateNotifier<List<ScanResult>> {
   LocalHistoryController() : super(const []);
   void add(ScanResult result) => state = [result, ...state];
+
+  void update(ScanResult result) => state = state
+      .map((item) => item.localId == result.localId ? result : item)
+      .toList();
   void remove(ScanResult result) =>
       state = state.where((item) => item.localId != result.localId).toList();
 }

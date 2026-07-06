@@ -20,7 +20,7 @@ class SettingsScreen extends StatefulWidget {
   final SessionStore sessionStore;
   final ValueChanged<AccountSession> onSessionChanged;
   final VoidCallback onArchived;
-  final VoidCallback onLogout;
+  final Future<void> Function() onLogout;
 
   @override
   State<SettingsScreen> createState() => _SettingsScreenState();
@@ -53,6 +53,38 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (deleted == true) widget.onArchived();
+  }
+
+  Future<void> confirmLogout() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Keluar dari akun?'),
+        content: const Text(
+          'Anda perlu masuk lagi untuk menggunakan SapiSehat.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final messenger = ScaffoldMessenger.of(context);
+    try {
+      await widget.onLogout();
+      messenger.showSnackBar(const SnackBar(content: Text('Berhasil keluar.')));
+    } catch (_) {
+      messenger.showSnackBar(
+        const SnackBar(content: Text('Gagal keluar. Coba lagi.')),
+      );
+    }
   }
 
   void openChangePassword() {
@@ -252,7 +284,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       const SizedBox(height: 12),
-      OutlinedButton(onPressed: widget.onLogout, child: const Text('Keluar')),
+      OutlinedButton(onPressed: confirmLogout, child: const Text('Keluar')),
       const SizedBox(height: 12),
       FilledButton.tonalIcon(
         onPressed: openDeleteAccount,
@@ -300,6 +332,7 @@ class DeleteAccountPage extends StatefulWidget {
 class _DeleteAccountPageState extends State<DeleteAccountPage> {
   final password = TextEditingController();
   bool deleting = false;
+  bool showPassword = false;
 
   @override
   void dispose() {
@@ -369,11 +402,20 @@ class _DeleteAccountPageState extends State<DeleteAccountPage> {
         const SizedBox(height: 16),
         TextField(
           controller: password,
-          obscureText: true,
-          decoration: const InputDecoration(
+          obscureText: !showPassword,
+          decoration: InputDecoration(
             labelText: 'Password',
             hintText: 'Masukkan password untuk konfirmasi',
             border: OutlineInputBorder(),
+            suffixIcon: IconButton(
+              tooltip: showPassword
+                  ? 'Sembunyikan password'
+                  : 'Tampilkan password',
+              icon: Icon(
+                showPassword ? Icons.visibility_off : Icons.visibility,
+              ),
+              onPressed: () => setState(() => showPassword = !showPassword),
+            ),
           ),
         ),
         const SizedBox(height: 16),

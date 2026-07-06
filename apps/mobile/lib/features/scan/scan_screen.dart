@@ -239,6 +239,8 @@ class _ScanScreenState extends State<ScanScreen> {
         inferenceMode: prediction.inferenceMode,
         syncStatus: prediction.syncStatus,
         imagePath: file.path,
+        modelVersion: prediction.modelVersion,
+        scores: prediction.scores,
       );
       if (!mounted) return;
       final saved = await Navigator.of(context).push<ScanResult?>(

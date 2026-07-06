@@ -97,6 +97,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         apiClient: widget.apiClient,
         session: session,
         localHistory: ref.watch(localHistoryProvider),
+        onUpdateLocal: (result) =>
+            ref.read(localHistoryProvider.notifier).update(result),
         onDeleteLocal: (result) =>
             ref.read(localHistoryProvider.notifier).remove(result),
       ),

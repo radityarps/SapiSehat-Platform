@@ -150,6 +150,36 @@ Executable tracer: `POST /api/fusion/results`. Backend accepts Team 1 image evid
 - handling advice keys must avoid diagnosis or confirmed outbreak wording.
 
 
+### Result History and Cattle Link Endpoints
+
+Mobile treats backend fusion history as the online source of truth. Local mobile history is a fallback/cache for pending or temporarily unreachable backend results.
+
+Supported tracer endpoints:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| `GET` | `/api/fusion/results` | List stored fusion results. Mobile filters by `farmer_id`. |
+| `PATCH` | `/api/fusion/results/{result_id}/cattle` | Reassign or clear linked cattle for one detection result. |
+| `DELETE` | `/api/fusion/results/{result_id}?farmer_id={farmer_id}` | Delete one detection result owned by farmer. |
+
+`PATCH /api/fusion/results/{result_id}/cattle` request:
+
+```json
+{
+  "farmer_id": "farmer-uuid",
+  "cattle_id": "cattle-uuid|null"
+}
+```
+
+Validation rules:
+
+- farmer must exist.
+- when `cattle_id` is non-null, cattle must belong to same farmer.
+- response returns serialized fusion result.
+- mobile must display cattle as `{cattle name} ({cattle tag})` when available.
+- missing or unresolved cattle link must display `Belum dikaitkan`, never raw `cattle_id`.
+- delete/reassign failures must keep existing UI state and surface farmer-safe failure message.
+
 ## Offline Detection Sync Tracer
 
 Executable tracer: `POST /api/offline/detections/sync`. Mobile may create an offline fused result and sync when connectivity returns. Backend rules:

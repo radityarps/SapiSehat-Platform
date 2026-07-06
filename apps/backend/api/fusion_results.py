@@ -60,6 +60,27 @@ class FusionResultStore:
             )
             return [_fusion_from_row(row) for row in rows]
 
+    def update_cattle(
+        self, *, result_id: str, farmer_id: str, cattle_id: Optional[str]
+    ) -> FusionResult | None:
+        with SessionLocal() as session:
+            row = session.get(FusionResultModel, result_id)
+            if row is None or row.farmer_id != farmer_id:
+                return None
+            row.cattle_id = cattle_id
+            session.commit()
+            session.refresh(row)
+            return _fusion_from_row(row)
+
+    def delete(self, *, result_id: str, farmer_id: str) -> bool:
+        with SessionLocal() as session:
+            row = session.get(FusionResultModel, result_id)
+            if row is None or row.farmer_id != farmer_id:
+                return False
+            session.delete(row)
+            session.commit()
+            return True
+
 
 def confidence_level(confidence: float) -> str:
     if confidence >= 0.75:

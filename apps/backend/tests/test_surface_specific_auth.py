@@ -20,6 +20,7 @@ def test_farmer_registers_with_email_password_and_reads_current_account():
             "password": "strong-password",
             "name": "Pak Tono",
             "jurisdiction_id": "tembalang",
+            "address": "Jl. Sapi Sehat 1",
         },
     )
 
@@ -34,6 +35,7 @@ def test_farmer_registers_with_email_password_and_reads_current_account():
     assert current.json()["id"] == register.json()["account"]["id"]
     assert current.json()["name"] == "Pak Tono"
     assert current.json()["jurisdiction_id"] == "tembalang"
+    assert current.json()["address"] == "Jl. Sapi Sehat 1"
     assert current.json()["is_active"] is True
 
 
@@ -171,12 +173,17 @@ def test_farmer_updates_profile_and_jurisdiction_with_same_account_token():
     update = client.put(
         f"/api/farmers/{farmer_id}/profile",
         headers={"Authorization": f"Bearer {token}"},
-        json={"name": "New Name", "jurisdiction_id": "banyumanik"},
+        json={
+            "name": "New Name",
+            "jurisdiction_id": "banyumanik",
+            "address": "Jl. Sapi Sehat 1",
+        },
     )
 
     assert update.status_code == 200
     assert update.json()["name"] == "New Name"
     assert update.json()["jurisdiction_id"] == "banyumanik"
+    assert update.json()["address"] == "Jl. Sapi Sehat 1"
 
 
 def test_farmer_preferences_are_backend_backed():

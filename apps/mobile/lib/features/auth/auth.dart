@@ -20,6 +20,7 @@ class AccountSession {
   AccountSession copyWith({
     String? name,
     String? address,
+    bool clearAddress = false,
     String? jurisdictionId,
     bool? isActive,
   }) => AccountSession(
@@ -27,7 +28,7 @@ class AccountSession {
     farmerId: farmerId,
     email: email,
     name: name ?? this.name,
-    address: address ?? this.address,
+    address: clearAddress ? null : address ?? this.address,
     jurisdictionId: jurisdictionId ?? this.jurisdictionId,
     isActive: isActive ?? this.isActive,
   );
@@ -39,17 +40,20 @@ class FarmerRegistrationDraft {
     required this.email,
     required this.password,
     required this.jurisdictionId,
+    this.address,
   });
   final String name;
   final String email;
   final String password;
   final String jurisdictionId;
+  final String? address;
 
   Map<String, dynamic> toJson() => {
     'name': name,
     'email': email,
     'password': password,
     'jurisdiction_id': jurisdictionId,
+    'address': address,
   };
 }
 
@@ -65,7 +69,7 @@ class FarmerProfileDraft {
   Map<String, dynamic> toJson() => {
     'name': name,
     'jurisdiction_id': jurisdictionId,
-    if (address != null) 'address': address,
+    'address': address,
   };
 }
 

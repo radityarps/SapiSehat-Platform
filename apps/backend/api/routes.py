@@ -55,6 +55,7 @@ from api.schemas import (
     NlpPlaceholderRequest,
     NlpPlaceholderResponse,
     FusionRequest,
+    FusionCattleLinkRequest,
     FusionResultResponse,
     FusionResultListResponse,
     OfflineDetectionSyncRequest,
@@ -78,7 +79,11 @@ from api.schemas import (
 )
 from config import settings
 from utils.logger import get_logger
-from api.farmer_accounts import FarmerConsentState, farmer_account_store
+from api.farmer_accounts import (
+    FarmerAccount,
+    FarmerConsentState,
+    farmer_account_store,
+)
 from api.cattle_profiles import (
     CattleEventType,
     CattleSex,
@@ -135,12 +140,34 @@ def _serialize_auth_account(account):
         "is_active": account.is_active,
         "name": account.name,
         "jurisdiction_id": account.jurisdiction_id,
+        "address": account.address,
     }
     if account.account_type == "agency":
         agency_user = _agency_user_store.get(account.id)
         if agency_user:
             result["role"] = agency_user.role.value
     return result
+
+
+def _farmer_record_from_account(account: FarmerAccount) -> FarmerRecord:
+    return FarmerRecord(
+        account.id,
+        account.name,
+        account.jurisdiction_id,
+        ConsentTier(account.consent_state.value),
+        account.address,
+    )
+
+
+def _registry_farmer_records() -> list[FarmerRecord]:
+    records = {farmer.id: farmer for farmer in DEMO_FARMERS}
+    records.update(
+        {
+            farmer.id: _farmer_record_from_account(farmer)
+            for farmer in farmer_account_store.all_by_id().values()
+        }
+    )
+    return list(records.values())
 
 
 def _get_farmer_preferences(farmer_id: str):
@@ -279,6 +306,7 @@ async def register_farmer_surface_account(request: FarmerRegisterRequest):
             password=request.password,
             name=request.name,
             jurisdiction_id=request.jurisdiction_id,
+            address=request.address,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -421,6 +449,13 @@ async def update_farmer_profile(
             account_id=farmer_id,
             name=request.name,
             jurisdiction_id=request.jurisdiction_id,
+            address=request.address,
+        )
+        farmer_account_store.update_profile(
+            farmer_id=farmer_id,
+            name=request.name,
+            jurisdiction_id=request.jurisdiction_id,
+            address=request.address,
         )
     except ValueError as exc:
         raise HTTPException(status_code=404, detail=str(exc))
@@ -519,11 +554,23 @@ def _serialize_cattle(profile):
         "id": profile.id,
         "farmer_id": profile.farmer_id,
         "tag": profile.tag,
+        "name": profile.name,
         "sex": profile.sex.value,
         "breed": profile.breed,
+        "color": profile.color,
         "age_months": profile.age_months,
+        "weight_kg": profile.weight_kg,
+        "reproductive_status": profile.reproductive_status,
+        "is_pregnant": profile.is_pregnant,
         "birth_year_estimate": profile.birth_year_estimate,
+        "last_calving_date": profile.last_calving_date,
+        "last_vaccination_date": profile.last_vaccination_date,
+        "last_deworming_date": profile.last_deworming_date,
+        "health_notes": profile.health_notes,
+        "purchase_date": profile.purchase_date,
+        "purchase_price_idr": profile.purchase_price_idr,
         "status": profile.status.value,
+        "notes": profile.notes,
         "jurisdiction_id": profile.jurisdiction_id,
     }
 
@@ -722,7 +769,9 @@ async def list_agency_visible_farmers(
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
     visible_farmers = filter_visible_farmers(
-        agency=agency, farmers=DEMO_FARMERS, jurisdictions=DEMO_JURISDICTIONS
+        agency=agency,
+        farmers=_registry_farmer_records(),
+        jurisdictions=DEMO_JURISDICTIONS,
     )
     return {
         "agency_user_id": agency_user_id,
@@ -808,6 +857,18 @@ async def create_cattle_profile(
             birth_year_estimate=request.birth_year_estimate,
             status=CattleStatus(request.status),
             jurisdiction_id=request.jurisdiction_id,
+            name=request.name,
+            color=request.color,
+            weight_kg=request.weight_kg,
+            reproductive_status=request.reproductive_status,
+            is_pregnant=request.is_pregnant,
+            last_calving_date=request.last_calving_date,
+            last_vaccination_date=request.last_vaccination_date,
+            last_deworming_date=request.last_deworming_date,
+            health_notes=request.health_notes,
+            purchase_date=request.purchase_date,
+            purchase_price_idr=request.purchase_price_idr,
+            notes=request.notes,
         )
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
@@ -1055,6 +1116,41 @@ async def list_fusion_results():
             for result in fusion_result_store.list_all()
         ]
     }
+
+
+@router.patch("/fusion/results/{result_id}/cattle", response_model=FusionResultResponse)
+async def update_fusion_result_cattle(
+    request: FusionCattleLinkRequest, result_id: str = Path(...)
+):
+    """Change the cattle associated with an existing fusion result."""
+    if farmer_account_store.get_by_id(request.farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if (
+        request.cattle_id is not None
+        and cattle_profile_store.get_owned(
+            farmer_id=request.farmer_id, cattle_id=request.cattle_id
+        )
+        is None
+    ):
+        raise HTTPException(status_code=404, detail="Cattle not found for farmer")
+    result = fusion_result_store.update_cattle(
+        result_id=result_id,
+        farmer_id=request.farmer_id,
+        cattle_id=request.cattle_id,
+    )
+    if result is None:
+        raise HTTPException(status_code=404, detail="Fusion result not found")
+    return _serialize_fusion_result(result)
+
+
+@router.delete("/fusion/results/{result_id}")
+async def delete_fusion_result(result_id: str = Path(...), farmer_id: str = Query(...)):
+    """Delete a stored scan result owned by the farmer."""
+    if farmer_account_store.get_by_id(farmer_id) is None:
+        raise HTTPException(status_code=404, detail="Farmer not found")
+    if not fusion_result_store.delete(result_id=result_id, farmer_id=farmer_id):
+        raise HTTPException(status_code=404, detail="Fusion result not found")
+    return {"status": "deleted"}
 
 
 @router.post("/offline/detections/sync", response_model=OfflineDetectionSyncResponse)
@@ -1479,7 +1575,9 @@ async def get_agency_dashboard_registry(
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
     visible_demo_farmers = filter_visible_farmers(
-        agency=agency, farmers=DEMO_FARMERS, jurisdictions=DEMO_JURISDICTIONS
+        agency=agency,
+        farmers=_registry_farmer_records(),
+        jurisdictions=DEMO_JURISDICTIONS,
     )
     visible_cattle = cattle_profile_store.list_visible_to_agency(
         agency=agency,
@@ -1568,7 +1666,16 @@ async def get_agency_dashboard_registry(
     ]
     return {
         "agency_user_id": agency_user_id,
-        "farmers": [farmer.__dict__ for farmer in visible_demo_farmers],
+        "farmers": [
+            {
+                "id": farmer.id,
+                "name": farmer.name,
+                "address": farmer.address,
+                "jurisdiction_id": farmer.jurisdiction_id,
+                "consent_tier": farmer.consent_tier.value,
+            }
+            for farmer in visible_demo_farmers
+        ],
         "cattle": [_serialize_cattle(profile) for profile in visible_cattle],
         "filters": {
             "search": "name/tag",
