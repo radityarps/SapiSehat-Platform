@@ -1666,7 +1666,16 @@ async def get_agency_dashboard_registry(
     ]
     return {
         "agency_user_id": agency_user_id,
-        "farmers": [farmer.__dict__ for farmer in visible_demo_farmers],
+        "farmers": [
+            {
+                "id": farmer.id,
+                "name": farmer.name,
+                "address": farmer.address,
+                "jurisdiction_id": farmer.jurisdiction_id,
+                "consent_tier": farmer.consent_tier.value,
+            }
+            for farmer in visible_demo_farmers
+        ],
         "cattle": [_serialize_cattle(profile) for profile in visible_cattle],
         "filters": {
             "search": "name/tag",
