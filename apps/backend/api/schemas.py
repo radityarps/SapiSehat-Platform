@@ -284,6 +284,7 @@ class FarmerAccountResponse(BaseModel):
     id: str
     phone_number: str
     name: str
+    address: Optional[str] = None
     jurisdiction_id: str
     consent_state: str
     created: bool
