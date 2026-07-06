@@ -151,7 +151,8 @@ class SurfaceAccountStore:
                 raise ValueError("farmer account not found")
             row.name = name
             row.jurisdiction_id = jurisdiction_id
-            row.address = address
+            if address is not None:
+                row.address = address
             session.commit()
             session.refresh(row)
             return _account_from_row(row)

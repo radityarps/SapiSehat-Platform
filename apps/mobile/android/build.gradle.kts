@@ -25,7 +25,7 @@ subprojects {
         compilerOptions {
             jvmTarget.set(
                 if (project.name == "app" || project.name == "tflite_flutter") {
-                    JvmTarget.JVM_11
+                    JvmTarget.JVM_17
                 } else {
                     JvmTarget.JVM_17
                 }
