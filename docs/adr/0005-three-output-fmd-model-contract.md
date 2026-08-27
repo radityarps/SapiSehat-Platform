@@ -1,0 +1,3 @@
+# Adopt a three-output FMD model contract
+
+SapiSehat will replace active backend and Flutter inference with the available MobileNetV3 Float32 model whose ordered outputs are `FMD`, `healthy`, and `non_cattle`, using RGB 224×224 Float32 input in `[0,255]` with internal rescaling. `non_cattle` is rejected before fusion, while active image/NLP evidence contains only `FMD` and `healthy`; retired `LSD` results remain unchanged and available only through admin/export compatibility paths. This avoids fabricating `LSD=0`, keeps online/offline inference equivalent, and preserves historical evidence without continuing active LSD classification.
