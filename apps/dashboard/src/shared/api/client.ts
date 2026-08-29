@@ -24,6 +24,8 @@ const agencyMeSchema = z.object({
 	jurisdiction_id: z.string().optional(),
 });
 
+const activeDetectionClassSchema = z.enum(["FMD", "healthy"]);
+
 const safeLanguageSchema = z.object({
 	title: z.string().optional(),
 	description: z.string().optional(),
@@ -34,7 +36,7 @@ const detectionSchema = z.object({
 	id: z.string(),
 	cattle_id: z.string().optional(),
 	farmer_id: z.string(),
-	disease_class: z.string(),
+	disease_class: activeDetectionClassSchema,
 	confidence: z.number(),
 	confidence_level: z.string().optional(),
 	reliability: z.string().optional(),
@@ -48,7 +50,7 @@ const detectionSchema = z.object({
 const riskSignalSchema = z.object({
 	id: z.string(),
 	jurisdiction_id: z.string(),
-	disease_class: z.string(),
+	disease_class: activeDetectionClassSchema,
 	signal_count: z.number(),
 	risk_level: z.string(),
 	priority: z.string(),

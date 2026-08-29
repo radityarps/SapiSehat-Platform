@@ -7,9 +7,11 @@ import asyncio
 import io
 from unittest.mock import MagicMock, patch
 
-import httpx
+import httpx  # type: ignore[import-not-found]
+import pytest  # type: ignore[import-not-found]
 from PIL import Image
 
+from api.schemas import PredictResponse
 from config import settings
 from main import app
 
@@ -28,12 +30,11 @@ MOCK_SUCCESS_RESULT = {
     "prediction": {
         "disease_class": "FMD",
         "display_label_key": "disease.fmd",
-        "confidence": 0.8734,
+        "confidence": 0.944,
         "is_reliable": True,
         "scores": {
-            "FMD": 0.8734,
-            "LSD": 0.0745,
-            "healthy": 0.0521,
+            "FMD": 0.944,
+            "healthy": 0.056,
         },
     },
     "model_info": {"version": "1.0.0"},
@@ -244,9 +245,9 @@ def test_rate_limit_returns_429_with_retry_after():
     Validates: Requirements 3.8
     """
     from api.rate_limiter import RateLimiterMiddleware
-    from fastapi import FastAPI
-    from starlette.requests import Request
-    from starlette.responses import JSONResponse
+    from fastapi import FastAPI  # type: ignore[import-not-found]
+    from starlette.requests import Request  # type: ignore[import-not-found]
+    from starlette.responses import JSONResponse  # type: ignore[import-not-found]
 
     async def _run():
         # Create a fresh app with a very low rate limit
@@ -306,14 +307,7 @@ def test_health_ok_state():
     """
 
     async def _run():
-        with patch(
-            "api.routes.get_model_status",
-            return_value={
-                "model_loaded": True,
-                "model_path": "./model/test.pth",
-                "error": None,
-            },
-        ):
+        with patch("api.routes.is_model_ready", return_value=True):
             async with httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=app), base_url="http://testserver"
             ) as client:
@@ -338,11 +332,6 @@ def test_health_ok_state():
         assert body["model_loaded"] is True
         assert body["model_version"] == settings.model_version
 
-        # Assert model_version follows selected model artifact versioning.
-        assert body["model_version"].startswith("cattle-disease-mobilenetv2-")
-        assert "v20260601" in body["model_version"]
-        assert "s42" in body["model_version"]
-
     asyncio.run(_run())
 
 
@@ -359,14 +348,7 @@ def test_health_degraded_state():
     """
 
     async def _run():
-        with patch(
-            "api.routes.get_model_status",
-            return_value={
-                "model_loaded": False,
-                "model_path": "./model/test.pth",
-                "error": "Model file not found",
-            },
-        ):
+        with patch("api.routes.is_model_ready", return_value=False):
             async with httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=app), base_url="http://testserver"
             ) as client:
@@ -408,14 +390,7 @@ def test_health_endpoint_not_rate_limited():
         # Send more requests than the rate limit allows
         num_requests = settings.rate_limit_max_requests + 20
 
-        with patch(
-            "api.routes.get_model_status",
-            return_value={
-                "model_loaded": True,
-                "model_path": "./model/test.pth",
-                "error": None,
-            },
-        ):
+        with patch("api.routes.is_model_ready", return_value=True):
             async with httpx.AsyncClient(
                 transport=httpx.ASGITransport(app=app), base_url="http://testserver"
             ) as client:
@@ -434,8 +409,15 @@ def test_health_endpoint_not_rate_limited():
 # --- Task 8.3: Success response and no-localized-text tests ---
 
 
-def test_success_response_contains_all_required_fields():
-    """Test success response contains all required fields with correct types.
+@pytest.mark.parametrize(
+    ("disease_class", "scores"),
+    [
+        ("FMD", {"FMD": 0.944, "healthy": 0.056}),
+        ("healthy", {"FMD": 0.056, "healthy": 0.944}),
+    ],
+)
+def test_success_response_contains_all_required_fields(disease_class, scores):
+    """Test both accepted classes return schema-valid HTTP 200 responses.
 
     Validates: Requirements 1.1, 7.1
     """
@@ -446,7 +428,15 @@ def test_success_response_contains_all_required_fields():
             patch("api.routes.get_inference_service") as mock_get_service,
         ):
             mock_service = MagicMock()
-            mock_service.predict.return_value = MOCK_SUCCESS_RESULT
+            mock_service.predict.return_value = {
+                **MOCK_SUCCESS_RESULT,
+                "prediction": {
+                    **MOCK_SUCCESS_RESULT["prediction"],
+                    "disease_class": disease_class,
+                    "display_label_key": f"disease.{disease_class.lower()}",
+                    "scores": scores,
+                },
+            }
             mock_get_service.return_value = mock_service
 
             async with httpx.AsyncClient(
@@ -461,6 +451,10 @@ def test_success_response_contains_all_required_fields():
 
         assert response.status_code == 200
         data = response.json()
+        validated = PredictResponse.model_validate(data)
+        assert validated.prediction.disease_class.value == disease_class
+        assert set(validated.prediction.scores) == {"FMD", "healthy"}
+        assert "non_cattle" not in validated.prediction.scores
 
         # Verify all required top-level fields exist
         required_top_level = [
@@ -491,13 +485,13 @@ def test_success_response_contains_all_required_fields():
 
         # Verify types
         assert isinstance(prediction["disease_class"], str)
-        assert prediction["disease_class"] in ["FMD", "LSD", "healthy"]
+        assert prediction["disease_class"] in ["FMD", "healthy"]
         assert isinstance(prediction["display_label_key"], str)
         assert isinstance(prediction["confidence"], float)
         assert 0.0 <= prediction["confidence"] <= 1.0
         assert isinstance(prediction["is_reliable"], bool)
         assert isinstance(prediction["scores"], dict)
-        assert len(prediction["scores"]) == 3
+        assert len(prediction["scores"]) == 2
 
         # Verify model_info
         assert "version" in data["model_info"]
@@ -586,9 +580,9 @@ def test_rate_limit_configurable_via_env_vars():
     Validates: Requirements 4.4, 4.5
     """
     from api.rate_limiter import RateLimiterMiddleware
-    from fastapi import FastAPI
-    from starlette.requests import Request
-    from starlette.responses import JSONResponse
+    from fastapi import FastAPI  # type: ignore[import-not-found]
+    from starlette.requests import Request  # type: ignore[import-not-found]
+    from starlette.responses import JSONResponse  # type: ignore[import-not-found]
 
     custom_max_requests = 3
     custom_window_seconds = 30

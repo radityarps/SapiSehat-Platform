@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/shared/ui/card";
 import { Skeleton } from "@/src/shared/ui/skeleton";
 import { Button } from "@/src/shared/ui/button";
-import { ChartContainer, ChartTooltipContent } from "@/src/shared/ui/chart";
+import { ChartTooltipContent } from "@/src/shared/ui/chart";
 import {
 	getAgencyFollowUps,
 	getAgencyRegistry,
@@ -34,8 +34,6 @@ import {
 	Tooltip,
 	XAxis,
 	YAxis,
-	Area,
-	AreaChart,
 } from "recharts";
 
 const CHART_COLORS = [
@@ -115,16 +113,6 @@ export function OverviewClient() {
 	const barData = Object.entries(jurisdictionBreakdown).map(
 		([name, signals]) => ({ name, signals }),
 	);
-
-	// Risk level distribution for area chart
-	const riskLevels: Record<string, number> = {};
-	riskSignals.data?.signals.forEach((s) => {
-		riskLevels[s.risk_level] = (riskLevels[s.risk_level] ?? 0) + 1;
-	});
-	const riskAreaData = Object.entries(riskLevels).map(([level, count]) => ({
-		level,
-		count,
-	}));
 
 	// Follow-up status distribution
 	const followUpStatuses: Record<string, number> = {};
@@ -250,10 +238,7 @@ export function OverviewClient() {
 											dataKey="value"
 										>
 											{pieData.map((_, i) => (
-												<Cell
-													key={i}
-													fill={CHART_COLORS[i % CHART_COLORS.length]}
-												/>
+												<Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
 											))}
 										</Pie>
 										<Tooltip content={<ChartTooltipContent />} />
@@ -261,20 +246,14 @@ export function OverviewClient() {
 								</ResponsiveContainer>
 								<div className="flex flex-wrap gap-2 justify-center mt-2">
 									{pieData.map((d, i) => (
-										<div
-											key={d.name}
-											className="flex items-center gap-1 text-xs"
-										>
+										<div key={d.name} className="flex items-center gap-1 text-xs">
 											<span
 												className="h-2 w-2 rounded-full"
 												style={{
-													backgroundColor:
-														CHART_COLORS[i % CHART_COLORS.length],
+													backgroundColor: CHART_COLORS[i % CHART_COLORS.length],
 												}}
 											/>
-											<span className="capitalize text-muted-foreground">
-												{d.name}
-											</span>
+											<span className="capitalize text-muted-foreground">{d.name}</span>
 										</div>
 									))}
 								</div>
@@ -286,9 +265,7 @@ export function OverviewClient() {
 				{/* Signal density bar chart */}
 				<Card className="lg:col-span-1">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">
-							Signal Density
-						</CardTitle>
+						<CardTitle className="text-sm font-medium">Signal Density</CardTitle>
 					</CardHeader>
 					<CardContent>
 						{barData.length === 0 ? (
@@ -307,19 +284,13 @@ export function OverviewClient() {
 										data={barData}
 										margin={{ top: 5, right: 5, left: -10, bottom: 5 }}
 									>
-										<CartesianGrid
-											strokeDasharray="3 3"
-											className="stroke-border"
-										/>
+										<CartesianGrid strokeDasharray="3 3" className="stroke-border" />
 										<XAxis
 											dataKey="name"
 											tick={{ fontSize: 11 }}
 											className="fill-muted-foreground"
 										/>
-										<YAxis
-											tick={{ fontSize: 11 }}
-											className="fill-muted-foreground"
-										/>
+										<YAxis tick={{ fontSize: 11 }} className="fill-muted-foreground" />
 										<Tooltip content={<ChartTooltipContent />} />
 										<Bar
 											dataKey="signals"
@@ -336,9 +307,7 @@ export function OverviewClient() {
 				{/* Follow-up status breakdown */}
 				<Card className="lg:col-span-1">
 					<CardHeader className="pb-2">
-						<CardTitle className="text-sm font-medium">
-							Follow-up Status
-						</CardTitle>
+						<CardTitle className="text-sm font-medium">Follow-up Status</CardTitle>
 					</CardHeader>
 					<CardContent>
 						{followUpBarData.length === 0 ? (
@@ -358,10 +327,7 @@ export function OverviewClient() {
 										layout="vertical"
 										margin={{ top: 5, right: 5, left: 10, bottom: 5 }}
 									>
-										<CartesianGrid
-											strokeDasharray="3 3"
-											className="stroke-border"
-										/>
+										<CartesianGrid strokeDasharray="3 3" className="stroke-border" />
 										<XAxis
 											type="number"
 											tick={{ fontSize: 11 }}
@@ -404,9 +370,7 @@ export function OverviewClient() {
 						{pendingFollowUps.length === 0 ? (
 							<div className="flex flex-col items-center justify-center py-6 text-center">
 								<TrendingUp className="h-8 w-8 text-muted-foreground/40 mb-2" />
-								<p className="text-sm text-muted-foreground">
-									No pending follow-ups
-								</p>
+								<p className="text-sm text-muted-foreground">No pending follow-ups</p>
 							</div>
 						) : (
 							<div className="space-y-2">
@@ -436,9 +400,7 @@ export function OverviewClient() {
 				{/* Recent activity */}
 				<Card>
 					<CardHeader className="flex flex-row items-center justify-between pb-3">
-						<CardTitle className="text-sm font-medium">
-							Recent Activity
-						</CardTitle>
+						<CardTitle className="text-sm font-medium">Recent Activity</CardTitle>
 						<Button variant="ghost" size="sm" asChild>
 							<Link href="/agency/audit-logs" className="gap-1 text-xs">
 								View all <ArrowRight className="h-3 w-3" />
@@ -449,9 +411,7 @@ export function OverviewClient() {
 						{recentLogs.length === 0 ? (
 							<div className="flex flex-col items-center justify-center py-6 text-center">
 								<Activity className="h-8 w-8 text-muted-foreground/40 mb-2" />
-								<p className="text-sm text-muted-foreground">
-									No recent activity
-								</p>
+								<p className="text-sm text-muted-foreground">No recent activity</p>
 							</div>
 						) : (
 							<div className="space-y-2">
@@ -463,11 +423,8 @@ export function OverviewClient() {
 										<Activity className="h-4 w-4 shrink-0 text-muted-foreground" />
 										<div className="flex-1 space-y-0.5 overflow-hidden">
 											<p className="truncate text-sm">
-												<span className="font-medium">{log.actor_id}</span>{" "}
-												{log.action}{" "}
-												<span className="text-muted-foreground">
-													{log.resource_type}
-												</span>
+												<span className="font-medium">{log.actor_id}</span> {log.action}{" "}
+												<span className="text-muted-foreground">{log.resource_type}</span>
 											</p>
 											<p className="text-xs text-muted-foreground">
 												{new Date(log.created_at).toLocaleString()}

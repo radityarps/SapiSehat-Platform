@@ -1,28 +1,46 @@
 import os
 from pathlib import Path
 
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic_settings import BaseSettings, SettingsConfigDict  # type: ignore[import-not-found]
+
+
+def env_int(name: str, default: int) -> int:
+    """Parse integer configuration with a named error."""
+    raw = os.getenv(name)
+    if raw is None:
+        return default
+    try:
+        return int(raw)
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer") from exc
 
 
 def resolve_cors_origins(*, fastapi_env: str, cors_origins: str) -> list[str]:
     """Resolve CORS origins with production wildcard guard."""
     origins = [origin.strip() for origin in cors_origins.split(",") if origin.strip()]
-    if not origins:
-        origins = ["*"] if fastapi_env in {"development", "test"} else []
-    if fastapi_env == "production" and "*" in origins:
-        raise ValueError("CORS_ORIGINS must not contain wildcard in production")
+    if not origins and fastapi_env in {"development", "test"}:
+        origins = [
+            "http://localhost:3000",
+            "http://127.0.0.1:3000",
+            "http://10.0.2.2:3000",
+        ]
+    if "*" in origins:
+        raise ValueError("CORS_ORIGINS must not contain wildcard origins")
     return origins
+
+
+MODEL_CLASS_ORDER = ("FMD", "healthy", "non_cattle")
+ACTIVE_DETECTION_CLASSES = ("FMD", "healthy")
 
 
 def resolve_backend_path(path_value: str) -> str:
     """Resolve model paths from repo root or backend app directory."""
     path = Path(path_value)
-    if path.is_absolute() or path.exists():
+    if path.is_absolute():
         return str(path)
-    backend_relative = Path(__file__).resolve().parent / path
-    if backend_relative.exists():
-        return str(backend_relative)
-    return path_value
+    if path.exists():
+        return str(path)
+    return str(Path(__file__).resolve().parent / path)
 
 
 UNSAFE_JWT_SECRETS = {"", "sapisehat-dev-token-secret", "change-me", "dev-secret"}
@@ -58,8 +76,13 @@ class Settings(BaseSettings):
 
     # Model
     model_path: str = resolve_backend_path(
-        os.getenv("MODEL_PATH", "./model/tes1_best.keras")
+        os.getenv("MODEL_PATH", "./model/fmd_mobilenetv3.keras")
     )
+    model_metadata_path: str = resolve_backend_path(
+        os.getenv("MODEL_METADATA_PATH", "./model/metadata.json")
+    )
+    # Kept as a legacy setting for compatibility; active loading uses the
+    # verified metadata manifest and never reads the old class-name file.
     model_class_names_path: str = resolve_backend_path(
         os.getenv("MODEL_CLASS_NAMES_PATH", "./model/class_names.json")
     )
@@ -67,13 +90,13 @@ class Settings(BaseSettings):
 
     # Server
     host: str = os.getenv("HOST", "0.0.0.0")
-    port: int = int(os.getenv("PORT", "8000"))
-    workers: int = int(os.getenv("WORKERS", "4"))
-    request_timeout: int = int(os.getenv("REQUEST_TIMEOUT", "60"))
+    port: int = env_int("PORT", 8000)
+    workers: int = env_int("WORKERS", 4)
+    request_timeout: int = env_int("REQUEST_TIMEOUT", 60)
     cors_origins: str = os.getenv("CORS_ORIGINS", "")
     jwt_secret: str = os.getenv("JWT_SECRET", "sapisehat-dev-token-secret")
-    media_max_upload_bytes: int = int(
-        os.getenv("MEDIA_MAX_UPLOAD_BYTES", str(10 * 1024 * 1024))
+    media_max_upload_bytes: int = env_int(
+        "MEDIA_MAX_UPLOAD_BYTES", 10 * 1024 * 1024
     )
     s3_endpoint_url: str = os.getenv("S3_ENDPOINT_URL", "http://localhost:9000")
     s3_bucket: str = os.getenv("S3_BUCKET", "sapisehat-scan-images")
@@ -98,12 +121,15 @@ class Settings(BaseSettings):
     )
 
     # Rate limiting
-    rate_limit_max_requests: int = int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "1000"))
-    rate_limit_window_seconds: int = int(os.getenv("RATE_LIMIT_WINDOW_SECONDS", "60"))
+    rate_limit_max_requests: int = env_int("RATE_LIMIT_MAX_REQUESTS", 1000)
+    rate_limit_window_seconds: int = env_int("RATE_LIMIT_WINDOW_SECONDS", 60)
 
-    # Model metadata
-    model_version: str = "cattle-disease-mobilenetv2-v20260601-s42"
-    labels: list = ["FMD", "LSD", "healthy"]
+    # Model metadata. The pending version keeps the service visibly gated until
+    # the verified MobileNetV3 manifest and matching artifacts are supplied.
+    model_version: str = os.getenv(
+        "MODEL_VERSION", "fmd-mobilenetv3-three-output-pending"
+    )
+    labels: list[str] = list(MODEL_CLASS_ORDER)
     confidence_threshold: float = 0.60
     field_confidence_threshold: float = 0.70
     field_margin_threshold: float = 0.15

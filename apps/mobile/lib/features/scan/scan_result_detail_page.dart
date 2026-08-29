@@ -27,7 +27,7 @@ class ScanResultDetailPage extends StatefulWidget {
 
   final SapiSehatApiClient apiClient;
   final AccountSession session;
-  final ScanResult result;
+  final ScanDisplayResult result;
   final XFile? image;
   final List<CattleProfile> cattle;
   final bool skipAutoSave;
@@ -40,7 +40,7 @@ class ScanResultDetailPage extends StatefulWidget {
 }
 
 class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
-  late ScanResult result = widget.result;
+  late ScanDisplayResult result = widget.result;
   var saving = false;
   var saved = false;
   var allowPop = false;
@@ -56,7 +56,7 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
     final savedResult = await widget.apiClient.saveScanResult(
       farmerId: widget.session.farmerId,
       cattleId: cattleId,
-      result: result,
+      result: result as ScanResult,
     );
     result = savedResult;
     saved = true;
@@ -148,6 +148,7 @@ class _ScanResultDetailPageState extends State<ScanResultDetailPage> {
     } catch (_) {
       // Best-effort refresh; link update already succeeded.
     }
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Sapi terkait berhasil diperbarui.')),
     );
@@ -427,16 +428,6 @@ Future<pw.Font?> _loadPdfFont(String path) async {
 
 List<String> _preventiveMeasures(String label) {
   final normalized = label.toLowerCase();
-  if (normalized.contains('lsd') ||
-      normalized.contains('lumpy') ||
-      normalized.contains('kulit')) {
-    return const [
-      'Pisahkan sapi bergejala dari ternak sehat dan batasi perpindahan ternak.',
-      'Kendalikan lalat, nyamuk, dan caplak dengan sanitasi kandang serta pengendalian vektor.',
-      'Bersihkan dan disinfeksi kandang, peralatan, dan kendaraan pengangkut ternak.',
-      'Hubungi petugas kesehatan hewan untuk pemeriksaan dan arahan vaksinasi LSD.',
-    ];
-  }
   if (normalized.contains('fmd') ||
       normalized.contains('pmk') ||
       normalized.contains('mulut') ||

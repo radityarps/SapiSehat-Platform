@@ -7,8 +7,8 @@ import time
 from datetime import datetime, timezone
 
 from jose import JWTError, jwt
-from passlib.context import CryptContext
-from sqlalchemy import func, select
+from passlib.context import CryptContext  # type: ignore[import-not-found]
+from sqlalchemy import func, select  # type: ignore[import-not-found]
 
 from api.database import SessionLocal, create_all_tables
 from api.db_models import AccountModel
@@ -289,7 +289,10 @@ def issue_token(account: SurfaceAccount) -> str:
         "email": account.email,
         "iat": int(time.time()),
     }
-    return jwt.encode(payload, settings.jwt_secret, algorithm=TOKEN_ALGORITHM)
+    try:
+        return jwt.encode(payload, settings.jwt_secret, algorithm=TOKEN_ALGORITHM)
+    except Exception as exc:
+        raise ValueError("could not issue token") from exc
 
 
 def read_token(token: str) -> dict[str, object]:

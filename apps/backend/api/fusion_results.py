@@ -8,6 +8,7 @@ from uuid import uuid4
 from api.database import SessionLocal, create_all_tables
 from api.db_models import FusionResultModel
 from api.schemas import ImageEvidenceRequest, NlpEvidenceRequest
+from config import ACTIVE_DETECTION_CLASSES
 
 @dataclass(frozen=True)
 class FusionResult:
@@ -48,13 +49,28 @@ class FusionResultStore:
             rows = session.query(FusionResultModel).order_by(FusionResultModel.created_at).all()
             return [_fusion_from_row(row) for row in rows]
 
+    def list_active(self) -> list[FusionResult]:
+        # ponytail: ORM query is intentionally scoped to the two active classes;
+        # add a repository-level historical export instead of widening this read.
+        with SessionLocal() as session:  # noqa: S608
+            rows = (
+                session.query(FusionResultModel)
+                .filter(FusionResultModel.disease_class.in_(ACTIVE_DETECTION_CLASSES))
+                .order_by(FusionResultModel.created_at)
+                .all()
+            )
+            return [_fusion_from_row(row) for row in rows]
+
     def list_by_cattle_ids(self, cattle_ids: set[str]) -> list[FusionResult]:
         if not cattle_ids:
             return []
         with SessionLocal() as session:
             rows = (
                 session.query(FusionResultModel)
-                .filter(FusionResultModel.cattle_id.in_(cattle_ids))
+                .filter(
+                    FusionResultModel.cattle_id.in_(cattle_ids),
+                    FusionResultModel.disease_class.in_(ACTIVE_DETECTION_CLASSES),
+                )
                 .order_by(FusionResultModel.created_at)
                 .all()
             )
@@ -83,9 +99,9 @@ class FusionResultStore:
 
 
 def confidence_level(confidence: float) -> str:
-    if confidence >= 0.75:
+    if confidence >= 0.8:
         return "high"
-    if confidence >= 0.5:
+    if confidence >= 0.6:
         return "medium"
     return "low"
 
@@ -102,9 +118,25 @@ def _evidence_dump(evidence):
     return evidence.model_dump() if evidence is not None else None
 
 
+
+def _validate_active_evidence(evidence, name: str) -> None:
+    if evidence is None:
+        return
+    if evidence.top_class not in ACTIVE_DETECTION_CLASSES:
+        raise ValueError(f"{name} top_class must be FMD or healthy")
+    if set(evidence.disease_scores) != set(ACTIVE_DETECTION_CLASSES):
+        raise ValueError(f"{name} must contain exactly FMD and healthy scores")
+    if evidence.top_class != max(
+        evidence.disease_scores, key=lambda key: evidence.disease_scores[key]
+    ):
+        raise ValueError(f"{name} top_class must match the highest active score")
+
+
 def fuse_evidence(*, farmer_id: str, cattle_id: Optional[str], image_evidence: Optional[ImageEvidenceRequest], nlp_evidence: Optional[NlpEvidenceRequest]) -> FusionResult:
     if image_evidence is None and nlp_evidence is None:
         raise ValueError("image_evidence or nlp_evidence is required")
+    _validate_active_evidence(image_evidence, "image_evidence")
+    _validate_active_evidence(nlp_evidence, "nlp_evidence")
 
     usable_image = image_evidence is not None and image_evidence.quality_status.value != "rejected"
     usable_nlp = nlp_evidence is not None

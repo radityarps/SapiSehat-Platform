@@ -1,7 +1,8 @@
 """Unit tests for inference service."""
 
 import unittest
-import numpy as np
+from unittest.mock import patch
+import numpy as np  # type: ignore[import-not-found]
 from PIL import Image
 from inference_server import inference_service, InferenceService
 from preprocessing.model_preprocessor import ModelPreprocessor
@@ -27,13 +28,24 @@ class TestModelPreprocessor(unittest.TestCase):
         arr2 = ModelPreprocessor.process(img2)
         self.assertTrue(np.allclose(arr1, arr2))
 
-    def test_preprocessing_normalizes_values(self):
-        """Test that preprocessing rescales pixel values to [0,1]."""
+    def test_preprocessing_keeps_float32_pixels_in_model_range(self):
+        """The model performs its own rescaling from raw [0, 255] pixels."""
         img = Image.new('RGB', (224, 224), color=(128, 128, 128))
         arr = ModelPreprocessor.process(img)
-        # Values should be in [0,1] after rescale (no ImageNet normalization)
+        self.assertEqual(arr.dtype, np.float32)
         self.assertGreaterEqual(arr.min(), 0.0)
-        self.assertLessEqual(arr.max(), 1.0)
+        self.assertLessEqual(arr.max(), 255.0)
+        self.assertTrue(np.allclose(arr, 128.0))
+
+    def test_preprocessing_uses_bilinear_resize(self):
+        """Resize output matches Pillow's bilinear implementation."""
+        img = Image.new('RGB', (2, 2))
+        img.putdata([(0, 0, 0), (255, 0, 0), (0, 255, 0), (0, 0, 255)])
+        expected = np.asarray(
+            img.resize((224, 224), Image.Resampling.BILINEAR), dtype=np.float32
+        )
+        actual = ModelPreprocessor.process(img)[0]
+        self.assertTrue(np.array_equal(actual, expected))
 
     def test_preprocessing_handles_different_formats(self):
         """Test that preprocessing handles different image formats."""
@@ -54,7 +66,10 @@ class TestInferenceService(unittest.TestCase):
 
     def setUp(self):
         """Set up test fixtures."""
-        self.service = inference_service
+        service = inference_service
+        if service is None:
+            self.skipTest("verified model artifact is not available")
+        self.service: InferenceService = service
 
     def test_predict_returns_valid_response_structure(self):
         """Test that predict returns properly structured response."""
@@ -127,9 +142,15 @@ class TestSingletonModel(unittest.TestCase):
     def test_model_is_singleton(self):
         """Test that model is loaded only once."""
         from model.loader import ModelLoader
-        loader1 = ModelLoader()
-        loader2 = ModelLoader()
+
+        ModelLoader._instance = None
+        ModelLoader._initialized = False
+        with patch.object(ModelLoader, "_load_model") as load_model:
+            loader1 = ModelLoader("verified-test.keras")
+            loader2 = ModelLoader("verified-test.keras")
+
         self.assertIs(loader1, loader2)
+        load_model.assert_called_once_with("verified-test.keras")
 
 
 class TestErrorHandling(unittest.TestCase):

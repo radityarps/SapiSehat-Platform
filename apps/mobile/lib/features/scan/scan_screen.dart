@@ -9,6 +9,7 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/api_client.dart';
 import '../../features/auth/auth.dart';
 import '../cattle/cattle.dart';
+import 'offline_inference.dart';
 import 'scan.dart';
 import 'scan_result_detail_page.dart';
 
@@ -255,6 +256,12 @@ class _ScanScreenState extends State<ScanScreen> {
         ),
       );
       if (saved != null) widget.onScan(saved);
+    } on NonCattleImageException catch (exception) {
+      if (!mounted) return;
+      setState(() => error = exception.message);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(exception.message)));
     } catch (_) {
       if (!mounted) return;
       setState(() => error = 'Deteksi gagal. Coba ambil gambar ulang.');

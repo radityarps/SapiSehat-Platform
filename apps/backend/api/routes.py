@@ -3,10 +3,10 @@
 import asyncio
 import hashlib
 import io
-from pydantic import BaseModel as BaseModel
+from pydantic import BaseModel as BaseModel  # type: ignore[import-not-found]
 from datetime import datetime, timezone
 from uuid import uuid4
-from fastapi import (
+from fastapi import (  # type: ignore[import-not-found]
     APIRouter,
     UploadFile,
     File,
@@ -16,9 +16,13 @@ from fastapi import (
     Header,
     Path,
 )
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse  # type: ignore[import-not-found]
 from PIL import Image
-from inference_server import get_inference_service, is_model_ready, get_model_status
+from inference_server import (
+    get_inference_service,
+    is_model_ready,
+)
+from utils.errors import InferenceError, NonCattleImageError
 from api.schemas import (
     PredictResponse,
     HealthResponse,
@@ -77,7 +81,7 @@ from api.schemas import (
     NotificationMarkReadResponse,
     NotificationResponse,
 )
-from config import settings
+from config import ACTIVE_DETECTION_CLASSES, settings
 from utils.logger import get_logger
 from api.farmer_accounts import (
     FarmerAccount,
@@ -722,10 +726,20 @@ async def predict(
         raise HTTPException(
             status_code=408, detail="Request processing exceeded timeout"
         )
+    except NonCattleImageError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except InferenceError as exc:
+        logger.error("Inference failed: %s", exc)
+        raise HTTPException(status_code=500, detail="Inference failed") from exc
 
     if result["status"] == "error":
         raise HTTPException(
             status_code=500, detail=result.get("message", "Inference failed")
+        )
+    if result.get("prediction", {}).get("disease_class") == "non_cattle":
+        raise HTTPException(
+            status_code=422,
+            detail="Image was rejected because it is not a cattle image",
         )
     audit_log_store.record(
         actor_type="system",
@@ -742,10 +756,10 @@ async def predict(
 async def health():
     """Health check endpoint."""
     try:
-        model_status = get_model_status()
+        model_loaded = is_model_ready()
         return {
-            "status": "ok" if model_status["model_loaded"] else "degraded",
-            "model_loaded": model_status["model_loaded"],
+            "status": "ok" if model_loaded else "degraded",
+            "model_loaded": model_loaded,
             "model_version": settings.model_version,
         }
     except Exception as e:
@@ -982,6 +996,11 @@ async def create_quick_scan_detection(request: QuickScanDetectionRequest):
     """Create unattached emergency quick-scan detection."""
     if farmer_account_store.get_by_id(request.farmer_id) is None:
         raise HTTPException(status_code=404, detail="Farmer not found")
+    if request.result_label not in ACTIVE_DETECTION_CLASSES:
+        raise HTTPException(
+            status_code=422,
+            detail="result_label must be FMD or healthy for active detections",
+        )
     event = detection_event_store.create_quick_scan(
         farmer_id=request.farmer_id,
         result_label=request.result_label,
@@ -1113,7 +1132,7 @@ async def list_fusion_results():
     return {
         "results": [
             _serialize_fusion_result(result)
-            for result in fusion_result_store.list_all()
+            for result in fusion_result_store.list_active()
         ]
     }
 
@@ -1829,6 +1848,7 @@ async def get_farmer_area_advisory(farmer_id: str = Path(...)):
         signal
         for signal in cluster_risk_signal_store.list_all()
         if signal.jurisdiction_id == farmer.jurisdiction_id
+        and signal.disease_class == "FMD"
         and signal.risk_level == "possible_increased_risk"
     ]
     return {

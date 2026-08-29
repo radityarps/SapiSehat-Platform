@@ -38,6 +38,8 @@ import {
 	type SortingState,
 } from "@tanstack/react-table";
 
+const activeDetectionClasses = ["FMD", "healthy"] as const;
+
 export function DetectionsClient() {
 	const { token, agencyUserId } = useAgencySession();
 	const [sorting, setSorting] = useState<SortingState>([]);
@@ -65,7 +67,9 @@ export function DetectionsClient() {
 
 	const diseaseClasses = useMemo(() => {
 		const all = query.data?.detections ?? [];
-		return [...new Set(all.map((d) => d.disease_class))].sort();
+		return activeDetectionClasses.filter((diseaseClass) =>
+			all.some((item) => item.disease_class === diseaseClass),
+		);
 	}, [query.data?.detections]);
 
 	const columns: ColumnDef<DetectionMonitoringItem>[] = useMemo(

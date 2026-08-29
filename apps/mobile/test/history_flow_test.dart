@@ -155,6 +155,8 @@ void main() {
               inferenceMode: 'online',
               syncStatus: 'synced',
               imagePath: image.path,
+              modelVersion: 'fmd-mobilenetv3-test',
+              scores: const {'FMD': 0.72, 'healthy': 0.28},
             ),
             ScanResult(
               localId: 'fusion-new',
@@ -163,14 +165,8 @@ void main() {
               capturedAt: DateTime(2026, 6, 6, 9, 30),
               inferenceMode: 'online',
               syncStatus: 'synced',
-            ),
-            ScanResult(
-              localId: 'pending-1',
-              label: 'LSD',
-              confidence: 0.61,
-              capturedAt: DateTime(2026, 6, 6, 8, 30),
-              inferenceMode: 'offline',
-              syncStatus: 'pending_sync',
+              modelVersion: 'fmd-mobilenetv3-test',
+              scores: const {'FMD': 0.09, 'healthy': 0.91},
             ),
           ],
           onUpdateLocal: (_) {},
@@ -183,7 +179,7 @@ void main() {
     expect(find.byType(ListTile), findsNWidgets(2));
     expect(find.byType(Image), findsOneWidget);
     expect(find.textContaining('FMD'), findsWidgets);
-    expect(find.textContaining('healthy'), findsNothing);
-    expect(find.textContaining('LSD'), findsWidgets);
+    expect(find.textContaining('healthy'), findsNWidgets(2));
+    expect(find.textContaining('LSD'), findsNothing);
   });
 }

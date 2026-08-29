@@ -39,7 +39,7 @@ class ClientPreprocessor:
         """
         try:
             # Try to get EXIF data
-            exif_data = image._getexif() if hasattr(image, '_getexif') else None
+            exif_data = getattr(image, "_getexif", lambda: None)()
             
             if exif_data is None:
                 return image
@@ -87,17 +87,16 @@ class ClientPreprocessor:
         Returns:
             Resized PIL Image
         """
-        width, height = image.size
-        
-        if width <= max_dimension and height <= max_dimension:
-            return image
-        
-        # Calculate scaling ratio
-        ratio = min(max_dimension / width, max_dimension / height)
-        new_width = int(width * ratio)
-        new_height = int(height * ratio)
-        
-        return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        try:
+            width, height = image.size
+            if width <= max_dimension and height <= max_dimension:
+                return image
+            ratio = min(max_dimension / width, max_dimension / height)
+            new_width = int(width * ratio)
+            new_height = int(height * ratio)
+            return image.resize((new_width, new_height), Image.Resampling.LANCZOS)
+        except (TypeError, ValueError, ZeroDivisionError, OSError) as exc:
+            raise PreprocessingError("Image resize failed") from exc
     
     @staticmethod
     def compress_jpeg(image: Image.Image, quality: int = JPEG_QUALITY) -> bytes:

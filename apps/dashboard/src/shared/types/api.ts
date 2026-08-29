@@ -3,6 +3,8 @@ export type ApiError = {
 	message?: string;
 };
 
+export type ActiveDetectionClass = "FMD" | "healthy";
+
 export type AgencyRole =
 	| "admin"
 	| "province_officer"
@@ -49,7 +51,7 @@ export type DetectionMonitoringItem = {
 	id: string;
 	cattle_id?: string;
 	farmer_id: string;
-	disease_class: string;
+	disease_class: ActiveDetectionClass;
 	confidence: number;
 	confidence_level?: string;
 	reliability?: string;
@@ -63,7 +65,7 @@ export type DetectionMonitoringItem = {
 export type RiskSignalItem = {
 	id: string;
 	jurisdiction_id: string;
-	disease_class: string;
+	disease_class: ActiveDetectionClass;
 	signal_count: number;
 	risk_level: string;
 	priority: string;

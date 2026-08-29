@@ -76,14 +76,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed != true) return;
-    final messenger = ScaffoldMessenger.of(context);
     try {
       await widget.onLogout();
-      messenger.showSnackBar(const SnackBar(content: Text('Berhasil keluar.')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Berhasil keluar.')));
     } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Gagal keluar. Coba lagi.')),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Gagal keluar. Coba lagi.')));
     }
   }
 

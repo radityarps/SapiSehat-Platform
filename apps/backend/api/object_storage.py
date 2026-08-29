@@ -9,8 +9,8 @@ class S3CompatibleMediaStorage:
     backend = "s3-compatible"
 
     def __init__(self) -> None:
-        import boto3
-        from botocore.client import Config
+        import boto3  # type: ignore[import-not-found]
+        from botocore.client import Config  # type: ignore[import-not-found]
 
         self.bucket = settings.s3_bucket
         self.client = boto3.client(

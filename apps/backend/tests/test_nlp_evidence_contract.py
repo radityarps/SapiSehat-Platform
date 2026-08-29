@@ -1,7 +1,8 @@
 """Team 2 NLP evidence contract tracer tests."""
 
-from pydantic import ValidationError
-from fastapi.testclient import TestClient
+import pytest  # type: ignore[import-not-found]
+from pydantic import ValidationError  # type: ignore[import-not-found]
+from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 
 from main import app
 from api.schemas import NlpEvidenceRequest
@@ -14,7 +15,7 @@ def valid_payload(**overrides):
         "inference_mode": "online",
         "questionnaire_answers": {"mouth_lesion": True, "skin_nodule": False},
         "notes_present": True,
-        "disease_scores": {"healthy": 0.1, "FMD": 0.75, "LSD": 0.15},
+        "disease_scores": {"healthy": 0.25, "FMD": 0.75},
         "top_class": "FMD",
         "confidence": 0.75,
         "evidence_terms": ["mouth_lesion", "fever"],
@@ -32,24 +33,24 @@ def test_valid_nlp_evidence_contract_accepts_questionnaire_notes_and_metadata():
     assert evidence.inference_mode == "online"
     assert evidence.questionnaire_answers["mouth_lesion"] is True
     assert evidence.notes_present is True
-    assert evidence.disease_scores == {"healthy": 0.1, "FMD": 0.75, "LSD": 0.15}
+    assert evidence.disease_scores == {"healthy": 0.25, "FMD": 0.75}
     assert evidence.top_class == "FMD"
     assert evidence.evidence_terms == ["mouth_lesion", "fever"]
 
 
 def test_nlp_evidence_rejects_missing_disease_score_key():
-    payload = valid_payload(disease_scores={"healthy": 0.2, "FMD": 0.8})
+    payload = valid_payload(disease_scores={"healthy": 0.2, "FMD": 0.8, "LSD": 0.0})
 
     try:
         NlpEvidenceRequest(**payload)
     except ValidationError as exc:
-        assert "disease_scores must contain exactly healthy, FMD, and LSD" in str(exc)
+        assert "disease_scores must contain exactly healthy and FMD" in str(exc)
     else:
         raise AssertionError("Expected ValidationError")
 
 
 def test_nlp_evidence_rejects_top_class_mismatch():
-    payload = valid_payload(top_class="LSD")
+    payload = valid_payload(top_class="healthy")
 
     try:
         NlpEvidenceRequest(**payload)
@@ -69,6 +70,10 @@ def test_nlp_evidence_requires_questionnaire_or_notes():
     else:
         raise AssertionError("Expected ValidationError")
 
+
+def test_nlp_evidence_rejects_confidence_not_matching_top_score():
+    with pytest.raises(ValidationError, match="confidence must match"):
+        NlpEvidenceRequest(**valid_payload(confidence=0.7))
 
 def test_nlp_evidence_endpoint_accepts_offline_mode_for_mobile_fusion():
     client = TestClient(app)

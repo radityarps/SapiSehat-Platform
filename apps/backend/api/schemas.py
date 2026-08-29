@@ -1,15 +1,18 @@
 """Pydantic schemas for API requests/responses."""
 
-from pydantic import BaseModel, Field
-from typing import Dict, List, Optional
+import math
 from enum import Enum
+from typing import Dict, List, Optional
+
+from pydantic import BaseModel, Field  # type: ignore[import-not-found]
+
+from config import ACTIVE_DETECTION_CLASSES
 
 
 class DiseaseClass(str, Enum):
     """Disease classification labels."""
 
     FMD = "FMD"
-    LSD = "LSD"
     HEALTHY = "healthy"
     INSUFFICIENT_VISUAL_EVIDENCE = "INSUFFICIENT_VISUAL_EVIDENCE"
 
@@ -32,10 +35,21 @@ class PredictionResult(BaseModel):
     display_label_key: str  # e.g., "disease.pmk"
     confidence: float = Field(ge=0.0, le=1.0)
     is_reliable: bool
-    scores: Dict[str, float]  # Exactly 3 entries
+    scores: Dict[str, float]  # Accepted-result scores for active classes only
     outcome: str = "DISEASE_CLASS"
     needs_review: bool = False
     symptom_regions_debug: Optional[List[SymptomRegionDebug]] = None
+
+    def model_post_init(self, __context):
+        if set(self.scores) != set(ACTIVE_DETECTION_CLASSES):
+            raise ValueError("scores must contain exactly FMD and healthy")
+        if any(
+            not math.isfinite(score) or score < 0.0 or score > 1.0
+            for score in self.scores.values()
+        ):
+            raise ValueError("scores must be finite probabilities between 0 and 1")
+        if not math.isclose(sum(self.scores.values()), 1.0, abs_tol=1e-3):
+            raise ValueError("scores must sum to 1")
 
 
 class ModelInfo(BaseModel):
@@ -447,22 +461,29 @@ class ImageEvidenceRequest(BaseModel):
     debug: Dict[str, object] = Field(default_factory=dict)
 
     @classmethod
-    def _required_score_keys(cls) -> set[str]:
-        return {"healthy", "FMD", "LSD"}
+    def _required_score_keys(cls) -> frozenset[str]:
+        return frozenset(ACTIVE_DETECTION_CLASSES)
 
     def model_post_init(self, __context):
         if self.source != "image":
             raise ValueError("source must be image")
         if set(self.disease_scores.keys()) != self._required_score_keys():
             raise ValueError(
-                "disease_scores must contain exactly healthy, FMD, and LSD"
+                "disease_scores must contain exactly healthy and FMD"
             )
-        if any(score < 0.0 or score > 1.0 for score in self.disease_scores.values()):
-            raise ValueError("disease_scores values must be between 0 and 1")
+        if any(
+            not math.isfinite(score) or score < 0.0 or score > 1.0
+            for score in self.disease_scores.values()
+        ):
+            raise ValueError("disease_scores values must be finite and between 0 and 1")
         if self.top_class not in self._required_score_keys():
-            raise ValueError("top_class must be healthy, FMD, or LSD")
-        if self.top_class != max(self.disease_scores, key=self.disease_scores.get):
+            raise ValueError("top_class must be healthy or FMD")
+        if self.top_class != max(self.disease_scores, key=lambda key: self.disease_scores[key]):
             raise ValueError("top_class must match highest disease score")
+        if not math.isclose(
+            self.confidence, self.disease_scores[self.top_class], abs_tol=1e-3
+        ):
+            raise ValueError("confidence must match the top active disease score")
         if (
             self.quality_status == ImageEvidenceQualityStatus.REJECTED
             and not self.rejection_reasons
@@ -496,8 +517,8 @@ class NlpEvidenceRequest(BaseModel):
     debug: Dict[str, object] = Field(default_factory=dict)
 
     @classmethod
-    def _required_score_keys(cls) -> set[str]:
-        return {"healthy", "FMD", "LSD"}
+    def _required_score_keys(cls) -> frozenset[str]:
+        return frozenset(ACTIVE_DETECTION_CLASSES)
 
     def model_post_init(self, __context):
         if self.source != "nlp":
@@ -505,15 +526,20 @@ class NlpEvidenceRequest(BaseModel):
         if not self.questionnaire_answers and not self.notes_present:
             raise ValueError("questionnaire_answers or notes_present is required")
         if set(self.disease_scores.keys()) != self._required_score_keys():
-            raise ValueError(
-                "disease_scores must contain exactly healthy, FMD, and LSD"
-            )
-        if any(score < 0.0 or score > 1.0 for score in self.disease_scores.values()):
-            raise ValueError("disease_scores values must be between 0 and 1")
+            raise ValueError("disease_scores must contain exactly healthy and FMD")
+        if any(
+            not math.isfinite(score) or score < 0.0 or score > 1.0
+            for score in self.disease_scores.values()
+        ):
+            raise ValueError("disease_scores values must be finite and between 0 and 1")
         if self.top_class not in self._required_score_keys():
-            raise ValueError("top_class must be healthy, FMD, or LSD")
-        if self.top_class != max(self.disease_scores, key=self.disease_scores.get):
+            raise ValueError("top_class must be healthy or FMD")
+        if self.top_class != max(self.disease_scores, key=lambda key: self.disease_scores[key]):
             raise ValueError("top_class must match highest disease score")
+        if not math.isclose(
+            self.confidence, self.disease_scores[self.top_class], abs_tol=1e-3
+        ):
+            raise ValueError("confidence must match the top active disease score")
 
 
 class NlpEvidenceResponse(NlpEvidenceRequest):
@@ -584,7 +610,7 @@ class FusionResultListResponse(BaseModel):
 
 
 class OfflineDetectionSyncRequest(BaseModel):
-    """Offline fused detection sync request from mobile."""
+    """Offline image-evidence sync request from mobile."""
 
     local_detection_id: str = Field(min_length=1, max_length=160)
     farmer_id: str = Field(min_length=1, max_length=120)
@@ -593,6 +619,13 @@ class OfflineDetectionSyncRequest(BaseModel):
     image_evidence: Optional[ImageEvidenceRequest] = None
     nlp_evidence: Optional[NlpEvidenceRequest] = None
     offline_fused_result: Dict[str, object] = Field(default_factory=dict)
+
+    def model_post_init(self, __context):
+        if self.image_evidence is None and self.nlp_evidence is None:
+            raise ValueError("image_evidence or nlp_evidence is required")
+        declared_class = self.offline_fused_result.get("disease_class")
+        if declared_class is not None and declared_class not in ACTIVE_DETECTION_CLASSES:
+            raise ValueError("offline_fused_result must use FMD or healthy")
 
 
 class OfflineDetectionSyncResponse(BaseModel):

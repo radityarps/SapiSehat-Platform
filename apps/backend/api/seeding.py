@@ -13,9 +13,17 @@ through the real API flow so records are valid and scope-correct.
 from __future__ import annotations
 
 from api.notifications import notification_store
+from config import ACTIVE_DETECTION_CLASSES
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def _scores(top_class: str, confidence: float) -> dict[str, float]:
+    if top_class not in ACTIVE_DETECTION_CLASSES:
+        raise ValueError("seed top_class must be FMD or healthy")
+    other_class = next(label for label in ACTIVE_DETECTION_CLASSES if label != top_class)
+    return {top_class: confidence, other_class: round(1.0 - confidence, 4)}
 
 
 def _image(top_class: str, confidence: float = 0.82) -> dict:
@@ -23,11 +31,7 @@ def _image(top_class: str, confidence: float = 0.82) -> dict:
         "source": "image",
         "model_version": "image-seed",
         "inference_mode": "online",
-        "disease_scores": {
-            "healthy": 0.1,
-            "FMD": confidence if top_class == "FMD" else 0.1,
-            "LSD": confidence if top_class == "LSD" else 0.1,
-        },
+        "disease_scores": _scores(top_class, confidence),
         "top_class": top_class,
         "confidence": confidence,
         "quality_status": "accepted",
@@ -42,11 +46,7 @@ def _nlp(top_class: str, confidence: float = 0.78) -> dict:
         "inference_mode": "online",
         "questionnaire_answers": {"mouth_lesion": True},
         "notes_present": False,
-        "disease_scores": {
-            "healthy": 0.1,
-            "FMD": confidence if top_class == "FMD" else 0.1,
-            "LSD": confidence if top_class == "LSD" else 0.1,
-        },
+        "disease_scores": _scores(top_class, confidence),
         "top_class": top_class,
         "confidence": confidence,
         "evidence_terms": ["mouth_lesion"],
@@ -61,7 +61,7 @@ def seed_development_sample_data() -> None:
         return
 
     # Local import to avoid circular import at module load.
-    from fastapi.testclient import TestClient
+    from fastapi.testclient import TestClient  # type: ignore[import-not-found]
     from main import app
 
     client = TestClient(app)
@@ -114,17 +114,17 @@ def seed_development_sample_data() -> None:
             "tembalang",
             "Jl. Bukit Agung Raya No. 8, Tembalang",
             "FMD",
-            "LSD",
+            "healthy",
         ),
         (
             "Pak Slamet",
             "banyumanik",
             "Jl. Banyumanik Raya No. 22, Banyumanik",
-            "LSD",
-            "LSD",
+            "healthy",
+            "healthy",
         ),
-        ("Bu Rina", "banyumanik", "Jl. Setiabudi No. 44, Banyumanik", "LSD", "LSD"),
-        ("Pak Agus", "banyumanik", "Jl. Pudak Payung No. 3, Banyumanik", "LSD", "LSD"),
+        ("Bu Rina", "banyumanik", "Jl. Setiabudi No. 44, Banyumanik", "healthy", "healthy"),
+        ("Pak Agus", "banyumanik", "Jl. Pudak Payung No. 3, Banyumanik", "FMD", "healthy"),
         (
             "Bu Sri",
             "semarang-city",

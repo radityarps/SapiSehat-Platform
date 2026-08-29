@@ -35,12 +35,12 @@ class _GuideScreenState extends State<GuideScreen> {
         ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w900),
       ),
       const SizedBox(height: 8),
-      const Text('Panduan penggunaan aplikasi, PMK, LSD, dan sapi sehat.'),
+      const Text('Panduan penggunaan aplikasi, PMK, dan sapi sehat.'),
       const SizedBox(height: 16),
       TextField(
         decoration: const InputDecoration(
           labelText: 'Cari panduan',
-          hintText: 'Cari PMK, LSD, scan, biosekuriti...',
+          hintText: 'Cari PMK, scan, biosekuriti...',
           prefixIcon: Icon(Icons.search),
           border: OutlineInputBorder(),
         ),
@@ -217,7 +217,6 @@ class GuideArticle {
 enum GuideCategory {
   app('Penggunaan', Color(0xFF2E6B4F)),
   fmd('PMK', Color(0xFFE4572E)),
-  lsd('LSD', Color(0xFFF59E0B)),
   healthy('Sapi Sehat', Color(0xFF22A06B));
 
   const GuideCategory(this.label, this.color);
@@ -254,20 +253,6 @@ const guideArticles = [
     summary: 'Biosekuriti dan tindakan awal PMK.',
     body:
         'Isolasi sapi bergejala, batasi lalu lintas kandang, lakukan desinfeksi, vaksinasi sesuai arahan, dan hubungi petugas kesehatan hewan.',
-  ),
-  GuideArticle(
-    category: GuideCategory.lsd,
-    title: 'Mengenal LSD',
-    summary: 'Informasi dasar Lumpy Skin Disease.',
-    body:
-        'LSD menyebabkan benjolan kulit pada sapi. Penyakit menyebar terutama lewat nyamuk, lalat penghisap darah, dan caplak.',
-  ),
-  GuideArticle(
-    category: GuideCategory.lsd,
-    title: 'Pencegahan LSD',
-    summary: 'Pengendalian vektor dan kandang.',
-    body:
-        'Kendalikan serangga, bersihkan genangan air, semprot kandang, karantina ternak baru, dan laporkan gejala ke petugas.',
   ),
   GuideArticle(
     category: GuideCategory.healthy,

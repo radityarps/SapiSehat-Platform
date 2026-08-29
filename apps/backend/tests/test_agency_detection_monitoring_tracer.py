@@ -1,7 +1,7 @@
 """Agency detection monitoring dashboard tracer tests."""
 
 from uuid import uuid4
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 
 from main import app
 from tests.conftest import repo_text
@@ -18,11 +18,17 @@ def farmer_cattle(consent="agency_monitoring", jurisdiction_id="tembalang", tag=
 
 
 def image(top_class="FMD", confidence=0.8):
-    return {"source": "image", "model_version": "image-1", "inference_mode": "online", "disease_scores": {"healthy": 0.1, "FMD": confidence if top_class == "FMD" else 0.1, "LSD": confidence if top_class == "LSD" else 0.1}, "top_class": top_class, "confidence": confidence, "quality_status": "accepted", "rejection_reasons": []}
+    scores = {"FMD": confidence, "healthy": 1 - confidence}
+    if top_class == "healthy":
+        scores = {"FMD": 1 - confidence, "healthy": confidence}
+    return {"source": "image", "model_version": "image-1", "inference_mode": "online", "disease_scores": scores, "top_class": top_class, "confidence": confidence, "quality_status": "accepted", "rejection_reasons": []}
 
 
 def nlp(top_class="FMD", confidence=0.78):
-    return {"source": "nlp", "model_version": "nlp-1", "inference_mode": "online", "questionnaire_answers": {"mouth_lesion": True}, "notes_present": False, "disease_scores": {"healthy": 0.1, "FMD": confidence if top_class == "FMD" else 0.1, "LSD": confidence if top_class == "LSD" else 0.1}, "top_class": top_class, "confidence": confidence, "evidence_terms": ["mouth_lesion"]}
+    scores = {"FMD": confidence, "healthy": 1 - confidence}
+    if top_class == "healthy":
+        scores = {"FMD": 1 - confidence, "healthy": confidence}
+    return {"source": "nlp", "model_version": "nlp-1", "inference_mode": "online", "questionnaire_answers": {"mouth_lesion": True}, "notes_present": False, "disease_scores": scores, "top_class": top_class, "confidence": confidence, "evidence_terms": ["mouth_lesion"]}
 
 
 def create_fusion(farmer_id, cattle_id, image_top="FMD", nlp_top="FMD"):
@@ -47,7 +53,7 @@ def test_detection_monitoring_lists_only_authorized_scope():
 
 def test_detection_monitoring_shows_conflict_and_evidence_breakdown():
     farmer_id, cattle_id = farmer_cattle(tag="CONFLICT")
-    conflict = create_fusion(farmer_id, cattle_id, image_top="FMD", nlp_top="LSD")
+    conflict = create_fusion(farmer_id, cattle_id, image_top="FMD", nlp_top="healthy")
 
     response = client.get("/api/agency/detection-monitoring", headers={"X-Agency-User-Id": "semarang-officer"})
     row = next(item for item in response.json()["detections"] if item["id"] == conflict["id"])

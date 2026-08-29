@@ -3,7 +3,7 @@
 import io
 from uuid import uuid4
 
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 from PIL import Image
 
 from main import app
@@ -12,6 +12,7 @@ from api.farmer_accounts import farmer_account_store
 from api.follow_ups import follow_up_store
 from api.media_governance import media_store
 import api.routes as routes
+from utils.errors import NonCattleImageError
 
 client = TestClient(app)
 
@@ -24,6 +25,10 @@ class FakeObjectStorage:
     def presigned_get_url(self, *, object_key, expires_seconds=900):
         return f"https://minio.local/{object_key}?expires={expires_seconds}"
 
+class NonCattleInferenceService:
+    def predict(self, image):
+        raise NonCattleImageError("Image was rejected because it is not a cattle image")
+
 class FakeInferenceService:
     def predict(self, image):
         return {
@@ -33,7 +38,7 @@ class FakeInferenceService:
                 "display_label_key": "disease.healthy",
                 "confidence": 0.91,
                 "is_reliable": True,
-                "scores": {"FMD": 0.01, "LSD": 0.08, "healthy": 0.91},
+                "scores": {"FMD": 0.09, "healthy": 0.91},
                 "outcome": "DISEASE_CLASS",
                 "needs_review": False,
             },
@@ -89,6 +94,23 @@ def test_media_upload_and_signed_url_write_audit_logs(monkeypatch):
     assert url_events[0].actor_type == "agency"
     assert url_events[0].actor_id == "semarang-officer"
     assert url_events[0].resource_id == media_id
+
+def test_non_cattle_prediction_is_rejected_without_audit_event(monkeypatch):
+    monkeypatch.setattr(routes, "is_model_ready", lambda: True)
+    monkeypatch.setattr(routes, "get_inference_service", lambda: NonCattleInferenceService())
+    image = Image.new("RGB", (1, 1), color="white")
+    buffer = io.BytesIO()
+    image.save(buffer, format="PNG")
+
+    prediction = client.post(
+        "/api/predict",
+        files={"image": ("scan.png", buffer.getvalue(), "image/png")},
+    )
+
+    assert prediction.status_code == 422, prediction.text
+    assert prediction.json()["error_code"] == "NON_CATTLE_IMAGE"
+    assert audit_log_store.list_by_action("prediction.created") == []
+
 
 def test_prediction_and_follow_up_write_audit_logs(monkeypatch):
     monkeypatch.setattr(routes, "is_model_ready", lambda: True)

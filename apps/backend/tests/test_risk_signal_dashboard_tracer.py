@@ -1,7 +1,7 @@
 """Disease risk signal dashboard tracer tests."""
 
 from uuid import uuid4
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 
 from main import app
 from tests.conftest import repo_text
@@ -18,7 +18,9 @@ def farmer_cattle(jurisdiction_id="tembalang", tag="RISK"):
 
 
 def evidence(kind="image", disease="FMD", confidence=0.8):
-    scores = {"healthy": 0.1, "FMD": confidence if disease == "FMD" else 0.1, "LSD": confidence if disease == "LSD" else 0.1}
+    scores = {"FMD": confidence, "healthy": 1 - confidence}
+    if disease == "healthy":
+        scores = {"FMD": 1 - confidence, "healthy": confidence}
     if kind == "image":
         return {"source": "image", "model_version": "image-risk", "inference_mode": "online", "disease_scores": scores, "top_class": disease, "confidence": confidence, "quality_status": "accepted", "rejection_reasons": []}
     return {"source": "nlp", "model_version": "nlp-risk", "inference_mode": "online", "questionnaire_answers": {"mouth_lesion": True}, "notes_present": False, "disease_scores": scores, "top_class": disease, "confidence": confidence, "evidence_terms": ["mouth_lesion"]}
@@ -51,7 +53,7 @@ def test_three_signal_threshold_marks_possible_increased_risk():
 
 
 def test_risk_signal_summary_filters_out_unauthorized_jurisdiction():
-    create_signal(jurisdiction_id="west-java", disease="LSD")
+    create_signal(jurisdiction_id="west-java")
 
     response = client.get("/api/agency/risk-signals", headers={"X-Agency-User-Id": "semarang-officer"})
 

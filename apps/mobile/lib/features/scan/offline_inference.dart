@@ -1,10 +1,20 @@
 import 'dart:convert';
-import 'dart:math' as math;
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image/image.dart' as image_lib;
 import 'package:tflite_flutter/tflite_flutter.dart';
+
+const activeModelClassOrder = <String>['FMD', 'healthy', 'non_cattle'];
+const modelInputSize = 224;
+const modelResizeInterpolation = image_lib.Interpolation.linear;
+
+class NonCattleImageException implements Exception {
+  const NonCattleImageException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 class OfflineInferenceResult {
   OfflineInferenceResult({
@@ -35,16 +45,36 @@ class OfflineModelMetadata {
   factory OfflineModelMetadata.fromJson(Map<String, dynamic> json) {
     final preprocessing = json['preprocessing'] as Map<String, dynamic>? ?? {};
     final inputSize = preprocessing['input_size'] as List<dynamic>?;
+    final modelVersion = json['model_version'];
+    final classOrder = (json['class_order'] as List<dynamic>?)
+        ?.map((value) => value.toString())
+        .toList();
+    final inputRange = preprocessing['input_range'];
+    final internalRescaling = preprocessing['internal_rescaling'];
+    if (modelVersion is! String ||
+        modelVersion.isEmpty ||
+        classOrder == null ||
+        !_sameClassOrder(classOrder) ||
+        inputSize?.length != 2 ||
+        inputSize![0] != modelInputSize ||
+        inputSize[1] != modelInputSize ||
+        preprocessing['channels'] != 3 ||
+        preprocessing['color_mode'] != 'RGB' ||
+        inputRange is! List ||
+        inputRange.length != 2 ||
+        inputRange[0] != 0 ||
+        inputRange[1] != 255 ||
+        internalRescaling != true ||
+        json['verification'] is! Map ||
+        (json['verification'] as Map)['overall_pass'] != true) {
+      throw const FormatException(
+        'Offline model metadata is missing a verified three-output contract',
+      );
+    }
     return OfflineModelMetadata(
-      modelVersion: json['model_version'] as String? ?? 'image-offline-1.0.0',
-      classOrder:
-          (json['class_order'] as List<dynamic>?)
-              ?.map((value) => value.toString())
-              .toList() ??
-          const ['FMD', 'LSD', 'healthy'],
-      inputSize: inputSize == null || inputSize.isEmpty
-          ? 224
-          : (inputSize.first as num).toInt(),
+      modelVersion: modelVersion,
+      classOrder: classOrder,
+      inputSize: modelInputSize,
     );
   }
 }
@@ -79,16 +109,31 @@ class OfflineInferenceService {
     }
     final probabilities = _asProbabilities(rawScores);
     final topIndex = _argMax(probabilities);
-    final confidence = probabilities[topIndex];
     final scores = <String, double>{
       for (var i = 0; i < metadata.classOrder.length; i++)
         metadata.classOrder[i]: _round4(probabilities[i]),
     };
+    final label = metadata.classOrder[topIndex];
+    if (label == 'non_cattle') {
+      throw const NonCattleImageException(
+        'Gambar ditolak karena bukan gambar sapi.',
+      );
+    }
+    final activeTotal = scores['FMD']! + scores['healthy']!;
+    if (activeTotal <= 0) {
+      throw const FormatException(
+        'Offline model probabilities must have positive active mass',
+      );
+    }
+    final activeScores = {
+      'FMD': scores['FMD']! / activeTotal,
+      'healthy': scores['healthy']! / activeTotal,
+    };
     return OfflineInferenceResult(
-      label: metadata.classOrder[topIndex],
-      confidence: _round4(confidence),
+      label: label,
+      confidence: activeScores[label]!,
       modelVersion: metadata.modelVersion,
-      scores: scores,
+      scores: activeScores,
     );
   }
 
@@ -113,17 +158,31 @@ class OfflineInferenceService {
     List<int> bytes,
     OfflineModelMetadata metadata,
   ) async {
-    final interpreter = await _loadInterpreter();
+    final interpreter = await _loadInterpreter(metadata);
     final input = _preprocess(bytes, metadata.inputSize);
     final output = [List<double>.filled(metadata.classOrder.length, 0)];
     interpreter.run(input, output);
     return output.first;
   }
 
-  Future<Interpreter> _loadInterpreter() async {
+  Future<Interpreter> _loadInterpreter(OfflineModelMetadata metadata) async {
     final cached = _interpreter;
     if (cached != null) return cached;
     final interpreter = await Interpreter.fromAsset(modelAssetPath);
+    interpreter.allocateTensors();
+    final inputs = interpreter.getInputTensors();
+    final outputs = interpreter.getOutputTensors();
+    if (inputs.length != 1 ||
+        outputs.length != 1 ||
+        inputs.first.shape.length != 4 ||
+        inputs.first.shape.join(',') != '1,$modelInputSize,$modelInputSize,3' ||
+        outputs.first.shape.join(',') != '1,${activeModelClassOrder.length}' ||
+        inputs.first.type != TensorType.float32 ||
+        outputs.first.type != TensorType.float32 ||
+        metadata.classOrder.length != outputs.first.shape.last) {
+      interpreter.close();
+      throw const FormatException('Offline TFLite tensor contract is invalid');
+    }
     _interpreter = interpreter;
     return interpreter;
   }
@@ -138,30 +197,30 @@ class OfflineInferenceService {
       oriented,
       width: inputSize,
       height: inputSize,
-      interpolation: image_lib.Interpolation.linear,
+      interpolation: modelResizeInterpolation,
     );
     return [
       List.generate(inputSize, (y) {
         return List.generate(inputSize, (x) {
           final pixel = resized.getPixel(x, y);
-          return [pixel.r / 255.0, pixel.g / 255.0, pixel.b / 255.0];
+          return [pixel.r.toDouble(), pixel.g.toDouble(), pixel.b.toDouble()];
         });
       }),
     ];
   }
 
   List<double> _asProbabilities(List<double> values) {
+    if (values.any((value) => value.isNaN || value.isInfinite) ||
+        values.any((value) => value < 0 || value > 1)) {
+      throw const FormatException(
+        'Offline model returned invalid probabilities',
+      );
+    }
     final sum = values.fold<double>(0, (total, value) => total + value);
-    final alreadyProbabilities =
-        values.every((value) => value >= 0) && (sum - 1.0).abs() < 0.001;
-    if (alreadyProbabilities) return values;
-
-    final maxValue = values.reduce(math.max);
-    final expValues = values
-        .map((value) => math.exp(value - maxValue))
-        .toList();
-    final expSum = expValues.fold<double>(0, (total, value) => total + value);
-    return expValues.map((value) => value / expSum).toList();
+    if ((sum - 1.0).abs() >= 0.001) {
+      throw const FormatException('Offline model probabilities must sum to 1');
+    }
+    return values;
   }
 
   int _argMax(List<double> values) {
@@ -178,3 +237,9 @@ class OfflineInferenceService {
 
   double _round4(double value) => (value * 10000).roundToDouble() / 10000;
 }
+
+bool _sameClassOrder(List<String> value) =>
+    value.length == activeModelClassOrder.length &&
+    value.asMap().entries.every(
+      (entry) => entry.value == activeModelClassOrder[entry.key],
+    );

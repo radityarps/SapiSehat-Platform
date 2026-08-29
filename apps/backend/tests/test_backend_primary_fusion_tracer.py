@@ -1,6 +1,6 @@
 """Backend-primary fusion tracer tests."""
 
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 
 from uuid import uuid4
 
@@ -27,11 +27,9 @@ def create_farmer_and_cattle():
 
 
 def image(top_class="FMD", confidence=0.82, quality_status="accepted"):
-    scores = {"healthy": 0.09, "FMD": 0.82, "LSD": 0.09}
-    if top_class == "LSD":
-        scores = {"healthy": 0.1, "FMD": 0.1, "LSD": confidence}
+    scores = {"healthy": 1 - confidence, "FMD": confidence}
     if top_class == "healthy":
-        scores = {"healthy": confidence, "FMD": 0.1, "LSD": 0.1}
+        scores = {"healthy": confidence, "FMD": 1 - confidence}
     return {
         "source": "image",
         "model_version": "image-model-1.0.0",
@@ -45,11 +43,9 @@ def image(top_class="FMD", confidence=0.82, quality_status="accepted"):
 
 
 def nlp(top_class="FMD", confidence=0.8):
-    scores = {"healthy": 0.1, "FMD": confidence, "LSD": 0.1}
-    if top_class == "LSD":
-        scores = {"healthy": 0.1, "FMD": 0.1, "LSD": confidence}
+    scores = {"healthy": 1 - confidence, "FMD": confidence}
     if top_class == "healthy":
-        scores = {"healthy": confidence, "FMD": 0.1, "LSD": 0.1}
+        scores = {"healthy": confidence, "FMD": 1 - confidence}
     return {
         "source": "nlp",
         "model_version": "nlp-model-1.0.0",
@@ -140,18 +136,34 @@ def test_fusion_result_can_be_deleted():
 def test_conflicting_top_classes_need_review():
     farmer_id, cattle_id = create_farmer_and_cattle()
 
-    result = fuse({"farmer_id": farmer_id, "cattle_id": cattle_id, "image_evidence": image("FMD", 0.8), "nlp_evidence": nlp("LSD", 0.76)})
+    result = fuse({"farmer_id": farmer_id, "cattle_id": cattle_id, "image_evidence": image("FMD", 0.8), "nlp_evidence": nlp("healthy", 0.76)})
 
     assert result["conflict_status"] == "image_nlp_conflict"
     assert result["reliability"] == "needs_review"
+
+def test_lsd_evidence_is_rejected_before_persistence():
+    farmer_id, cattle_id = create_farmer_and_cattle()
+    response = client.post(
+        "/api/fusion/results",
+        json={
+            "farmer_id": farmer_id,
+            "cattle_id": cattle_id,
+            "image_evidence": {
+                **image("FMD"),
+                "disease_scores": {"FMD": 0.8, "healthy": 0.1, "LSD": 0.1},
+            },
+        },
+    )
+
+    assert response.status_code == 422
 
 
 def test_missing_image_produces_low_reliability_nlp_result():
     farmer_id, cattle_id = create_farmer_and_cattle()
 
-    result = fuse({"farmer_id": farmer_id, "cattle_id": cattle_id, "nlp_evidence": nlp("LSD", 0.7)})
+    result = fuse({"farmer_id": farmer_id, "cattle_id": cattle_id, "nlp_evidence": nlp("healthy", 0.7)})
 
-    assert result["disease_class"] == "LSD"
+    assert result["disease_class"] == "healthy"
     assert result["conflict_status"] == "missing_image"
     assert result["reliability"] == "low_reliability"
     assert result["model_versions"]["image"] == "missing"
@@ -171,7 +183,7 @@ def test_missing_nlp_produces_low_reliability_image_result():
 def test_low_confidence_evidence_produces_insufficient_evidence():
     farmer_id, cattle_id = create_farmer_and_cattle()
 
-    result = fuse({"farmer_id": farmer_id, "cattle_id": cattle_id, "image_evidence": image("healthy", 0.4), "nlp_evidence": nlp("healthy", 0.45)})
+    result = fuse({"farmer_id": farmer_id, "cattle_id": cattle_id, "image_evidence": image("healthy", 0.55), "nlp_evidence": nlp("healthy", 0.55)})
 
     assert result["confidence_level"] == "low"
     assert result["reliability"] == "insufficient_evidence"

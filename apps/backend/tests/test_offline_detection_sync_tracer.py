@@ -1,7 +1,7 @@
 """Offline detection sync tracer tests."""
 
 from uuid import uuid4
-from fastapi.testclient import TestClient
+from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 
 from main import app
 from api.database import SessionLocal
@@ -41,26 +41,13 @@ def image():
         "source": "image",
         "model_version": "image-offline-1.0.0",
         "inference_mode": "offline",
-        "disease_scores": {"healthy": 0.1, "FMD": 0.82, "LSD": 0.08},
+        "disease_scores": {"healthy": 0.18, "FMD": 0.82},
         "top_class": "FMD",
         "confidence": 0.82,
         "quality_status": "accepted",
         "rejection_reasons": [],
     }
 
-
-def nlp():
-    return {
-        "source": "nlp",
-        "model_version": "nlp-offline-1.0.0",
-        "inference_mode": "offline",
-        "questionnaire_answers": {"mouth_lesion": True},
-        "notes_present": False,
-        "disease_scores": {"healthy": 0.1, "FMD": 0.78, "LSD": 0.12},
-        "top_class": "FMD",
-        "confidence": 0.78,
-        "evidence_terms": ["mouth_lesion"],
-    }
 
 
 def sync_payload(local_id, farmer_id, cattle_id):
@@ -70,7 +57,7 @@ def sync_payload(local_id, farmer_id, cattle_id):
         "cattle_id": cattle_id,
         "local_created_at": "2026-06-05T08:30:00+07:00",
         "image_evidence": image(),
-        "nlp_evidence": nlp(),
+        "nlp_evidence": None,
         "offline_fused_result": {"disease_class": "FMD", "confidence": 0.8},
     }
 
@@ -87,7 +74,7 @@ def test_first_sync_preserves_local_id_versions_and_timestamp():
     assert body["sync_status"] == "synced"
     assert body["local_created_at"] == "2026-06-05T08:30:00+07:00"
     assert body["fusion_result"]["inference_mode"] == "synced_offline"
-    assert body["fusion_result"]["model_versions"] == {"image": "image-offline-1.0.0", "nlp": "nlp-offline-1.0.0"}
+    assert body["fusion_result"]["model_versions"] == {"image": "image-offline-1.0.0", "nlp": "missing"}
     assert body["fusion_result"]["evidence_breakdown"]["image"]["inference_mode"] == "offline"
     with SessionLocal() as session:
         assert session.query(OfflineSyncedDetectionModel).count() == 1
@@ -110,7 +97,7 @@ def test_duplicate_sync_is_idempotent_for_stable_local_identifier():
 def test_malformed_offline_evidence_is_rejected():
     farmer_id, cattle_id = farmer_cattle()
     payload = sync_payload(f"local-{uuid4().hex}", farmer_id, cattle_id)
-    del payload["image_evidence"]["disease_scores"]["LSD"]
+    payload["image_evidence"]["disease_scores"]["LSD"] = 0.0
 
     response = client.post("/api/offline/detections/sync", json=payload)
 
