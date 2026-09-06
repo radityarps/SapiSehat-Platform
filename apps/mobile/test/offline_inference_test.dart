@@ -7,12 +7,25 @@ import 'package:sapisehat_mobile/main.dart';
 import 'package:sapisehat_mobile/features/scan/offline_inference.dart';
 
 class _FailingPredictTransport implements ApiTransport {
+  _FailingPredictTransport({this.modelNotReady = false});
+
+  final bool modelNotReady;
   final requests = <ApiRequest>[];
 
   @override
   Future<ApiResponse> send(ApiRequest request) async {
     requests.add(request);
     if (request.path == '/api/predict') {
+      if (modelNotReady) {
+        return ApiResponse(
+          503,
+          jsonEncode({
+            'status': 'error',
+            'error_code': 'MODEL_NOT_READY',
+            'message': 'Model is not ready',
+          }),
+        );
+      }
       throw const SocketException('network down');
     }
     if (request.path == '/api/fusion/results') {
@@ -27,7 +40,7 @@ class _FailingPredictTransport implements ApiTransport {
 
 const _metadata = OfflineModelMetadata(
   modelVersion: 'fmd-mobilenetv3-test',
-  classOrder: ['FMD', 'healthy', 'non_cattle'],
+  classOrder: ['non_sapi', 'pmk', 'sehat'],
   inputSize: 224,
 );
 
@@ -36,12 +49,32 @@ void main() {
     expect(modelResizeInterpolation, image_lib.Interpolation.linear);
   });
 
+  test('image quality gate reports small, dark, and blurry reasons', () {
+    final image = image_lib.Image(width: 100, height: 100);
+    final bytes = image_lib.encodePng(image);
+
+    expect(
+      () => validateImageQuality(bytes),
+      throwsA(
+        isA<ImageQualityException>().having(
+          (error) => error.reasons,
+          'reasons',
+          containsAll([
+            contains('terlalu kecil'),
+            contains('terlalu gelap'),
+            contains('terlalu buram'),
+          ]),
+        ),
+      ),
+    );
+  });
+
   test(
     'offline inference maps active scores using metadata class order',
     () async {
       final service = OfflineInferenceService(
         metadata: _metadata,
-        runModel: (_) async => [0.90, 0.05, 0.05],
+        runModel: (_) async => [0.05, 0.90, 0.05],
       );
 
       final result = await service.infer([1, 2, 3]);
@@ -60,7 +93,7 @@ void main() {
     () async {
       final service = OfflineInferenceService(
         metadata: _metadata,
-        runModel: (_) async => [0.05, 0.05, 0.90],
+        runModel: (_) async => [0.90, 0.05, 0.05],
       );
 
       expect(
@@ -75,7 +108,7 @@ void main() {
       transport: _FailingPredictTransport(),
       offlineInferenceService: OfflineInferenceService(
         metadata: _metadata,
-        runModel: (_) async => [0.90, 0.05, 0.05],
+        runModel: (_) async => [0.05, 0.90, 0.05],
       ),
     );
 
@@ -86,13 +119,35 @@ void main() {
     expect(result.modelVersion, 'fmd-mobilenetv3-test');
   });
 
+  test('model-not-ready reports an explicit unavailable reason', () async {
+    final api = SapiSehatApiClient(
+      transport: _FailingPredictTransport(modelNotReady: true),
+      offlineInferenceService: OfflineInferenceService(
+        metadata: _metadata,
+        runModel: (_) async =>
+            throw const FormatException('Offline model metadata is pending'),
+      ),
+    );
+
+    expect(
+      () => api.predictScan(bytes: [1, 2, 3]),
+      throwsA(
+        isA<DetectionUnavailableException>().having(
+          (error) => error.message,
+          'message',
+          contains('belum siap'),
+        ),
+      ),
+    );
+  });
+
   test('saving offline result sends image-only active evidence', () async {
     final transport = _FailingPredictTransport();
     final api = SapiSehatApiClient(
       transport: transport,
       offlineInferenceService: OfflineInferenceService(
         metadata: _metadata,
-        runModel: (_) async => [0.90, 0.05, 0.05],
+        runModel: (_) async => [0.05, 0.90, 0.05],
       ),
     );
 

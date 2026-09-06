@@ -228,9 +228,9 @@ class _ScanScreenState extends State<ScanScreen> {
   Future<void> predictAndOpen(XFile file) async {
     setState(() => selectedImage = file);
     try {
-      final prediction = await widget.apiClient.predictScan(
-        bytes: await file.readAsBytes(),
-      );
+      final bytes = await file.readAsBytes();
+      validateImageQuality(bytes);
+      final prediction = await widget.apiClient.predictScan(bytes: bytes);
       final scan = ScanResult(
         localId: prediction.localId,
         cattleId: prediction.cattleId,
@@ -256,19 +256,53 @@ class _ScanScreenState extends State<ScanScreen> {
         ),
       );
       if (saved != null) widget.onScan(saved);
+    } on ImageQualityException catch (exception) {
+      await showDetectionFailure(
+        title: 'Kualitas gambar belum cukup',
+        message: exception.message,
+      );
     } on NonCattleImageException catch (exception) {
-      if (!mounted) return;
-      setState(() => error = exception.message);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(exception.message)));
-    } catch (_) {
-      if (!mounted) return;
-      setState(() => error = 'Deteksi gagal. Coba ambil gambar ulang.');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Deteksi gagal.')));
+      await showDetectionFailure(
+        title: 'Gambar bukan sapi',
+        message: exception.message,
+      );
+    } on DetectionUnavailableException catch (exception) {
+      await showDetectionFailure(
+        title: 'Deteksi belum tersedia',
+        message: exception.message,
+      );
+    } on ApiRequestException catch (exception) {
+      await showDetectionFailure(
+        title: 'Deteksi gagal',
+        message: exception.message,
+      );
+    } catch (exception) {
+      await showDetectionFailure(
+        title: 'Deteksi gagal',
+        message: 'Gambar tidak dapat diproses. Coba ambil gambar ulang.',
+      );
     }
+  }
+
+  Future<void> showDetectionFailure({
+    required String title,
+    required String message,
+  }) async {
+    if (!mounted) return;
+    setState(() => error = message);
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(),
+            child: const Text('Ambil ulang'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> cycleFlash() async {

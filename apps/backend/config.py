@@ -1,7 +1,10 @@
 import os
 from pathlib import Path
 
-from pydantic_settings import BaseSettings, SettingsConfigDict  # type: ignore[import-not-found]
+from pydantic_settings import (  # type: ignore[import-not-found]
+    BaseSettings,
+    SettingsConfigDict,
+)
 
 
 def env_int(name: str, default: int) -> int:
@@ -29,7 +32,12 @@ def resolve_cors_origins(*, fastapi_env: str, cors_origins: str) -> list[str]:
     return origins
 
 
-MODEL_CLASS_ORDER = ("FMD", "healthy", "non_cattle")
+MODEL_CLASS_ORDER = ("non_sapi", "pmk", "sehat")
+MODEL_LABEL_MAPPING = {
+    "non_sapi": "non_cattle",
+    "pmk": "FMD",
+    "sehat": "healthy",
+}
 ACTIVE_DETECTION_CLASSES = ("FMD", "healthy")
 
 
@@ -76,7 +84,7 @@ class Settings(BaseSettings):
 
     # Model
     model_path: str = resolve_backend_path(
-        os.getenv("MODEL_PATH", "./model/fmd_mobilenetv3.keras")
+        os.getenv("MODEL_PATH", "./model/pmkbest.keras")
     )
     model_metadata_path: str = resolve_backend_path(
         os.getenv("MODEL_METADATA_PATH", "./model/metadata.json")
@@ -95,9 +103,7 @@ class Settings(BaseSettings):
     request_timeout: int = env_int("REQUEST_TIMEOUT", 60)
     cors_origins: str = os.getenv("CORS_ORIGINS", "")
     jwt_secret: str = os.getenv("JWT_SECRET", "sapisehat-dev-token-secret")
-    media_max_upload_bytes: int = env_int(
-        "MEDIA_MAX_UPLOAD_BYTES", 10 * 1024 * 1024
-    )
+    media_max_upload_bytes: int = env_int("MEDIA_MAX_UPLOAD_BYTES", 10 * 1024 * 1024)
     s3_endpoint_url: str = os.getenv("S3_ENDPOINT_URL", "http://localhost:9000")
     s3_bucket: str = os.getenv("S3_BUCKET", "sapisehat-scan-images")
     s3_region: str = os.getenv("S3_REGION", "us-east-1")
@@ -124,10 +130,9 @@ class Settings(BaseSettings):
     rate_limit_max_requests: int = env_int("RATE_LIMIT_MAX_REQUESTS", 1000)
     rate_limit_window_seconds: int = env_int("RATE_LIMIT_WINDOW_SECONDS", 60)
 
-    # Model metadata. The pending version keeps the service visibly gated until
-    # the verified MobileNetV3 manifest and matching artifacts are supplied.
+    # Model metadata.
     model_version: str = os.getenv(
-        "MODEL_VERSION", "fmd-mobilenetv3-three-output-pending"
+        "MODEL_VERSION", "cattle-disease-mobilenetv3large-v20260902-pmk-fp32"
     )
     labels: list[str] = list(MODEL_CLASS_ORDER)
     confidence_threshold: float = 0.60

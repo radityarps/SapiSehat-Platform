@@ -3,21 +3,20 @@
 Uses Hypothesis to verify universal invariants across randomized inputs.
 """
 
-import pytest  # type: ignore[import-not-found]
-from hypothesis import HealthCheck, given, settings as hypothesis_settings  # type: ignore[import-not-found]
+from hypothesis import HealthCheck, given  # type: ignore[import-not-found]
+from hypothesis import settings as hypothesis_settings
 from hypothesis import strategies as st  # type: ignore[import-not-found]
 
 from api.schemas import (
-    PredictResponse,
-    PredictionResult,
-    ModelInfo,
     DiseaseClass,
     ErrorResponse,
+    ModelInfo,
+    PredictionResult,
+    PredictResponse,
 )
-from utils.errors import ErrorCode
-from inference_server import DISPLAY_LABEL_KEY_MAP
 from config import settings as app_settings
-
+from inference_server import DISPLAY_LABEL_KEY_MAP
+from utils.errors import ErrorCode
 
 # --- Strategies ---
 
@@ -26,13 +25,11 @@ DISEASE_CLASSES = [DiseaseClass.FMD.value, DiseaseClass.HEALTHY.value]
 disease_classes_st = st.sampled_from(DISEASE_CLASSES)
 
 # Generate a valid probability distribution across the accepted classes.
-# Raw non_cattle probability is intentionally excluded from accepted results.
+# Raw non_sapi probability is intentionally excluded from accepted results.
 probability_distributions = st.tuples(
     st.integers(min_value=1, max_value=10_000),
     st.integers(min_value=1, max_value=10_000),
-).map(
-    lambda xs: [x / sum(xs) for x in xs]
-)
+).map(lambda xs: [x / sum(xs) for x in xs])
 
 # Generate valid timing values (non-negative integers)
 timing_values = st.integers(min_value=0, max_value=100000)
@@ -130,20 +127,27 @@ def test_success_response_shape(probs, preprocessing_ms, inference_ms, model_ver
     # Verify serialized dict contains all required fields
     serialized = response.model_dump()
     required_top_level = [
-        "status", "prediction", "model_info",
-        "processing_time_ms", "preprocessing_time_ms", "inference_time_ms",
+        "status",
+        "prediction",
+        "model_info",
+        "processing_time_ms",
+        "preprocessing_time_ms",
+        "inference_time_ms",
     ]
     for field in required_top_level:
         assert field in serialized, f"Missing top-level field: {field}"
 
     required_prediction_fields = [
-        "disease_class", "display_label_key", "confidence", "is_reliable", "scores",
+        "disease_class",
+        "display_label_key",
+        "confidence",
+        "is_reliable",
+        "scores",
     ]
     for field in required_prediction_fields:
         assert field in serialized["prediction"], f"Missing prediction field: {field}"
 
     assert "version" in serialized["model_info"], "Missing model_info.version field"
-
 
 
 # --- Property 3: Timing fields satisfy ordering invariant ---
@@ -206,8 +210,12 @@ def test_timing_ordering_invariant(
 
 
 @given(
-    s1=st.floats(min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False),
-    s2=st.floats(min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False),
+    s1=st.floats(
+        min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False
+    ),
+    s2=st.floats(
+        min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False
+    ),
 )
 @hypothesis_settings(max_examples=100)
 def test_prediction_structural_invariants(s1: float, s2: float):
@@ -232,12 +240,14 @@ def test_prediction_structural_invariants(s1: float, s2: float):
     # Simulate what InferenceService.predict() does:
     # Pick argmax as disease_class, confidence = max score, is_reliable = confidence >= threshold
     pred_idx = probs.index(max(probs))
-    pred_label = labels[pred_idx]
     pred_confidence = round(probs[pred_idx], 4)
-    is_reliable = pred_confidence >= confidence_threshold
 
-    # Build scores dict (same rounding as inference_server.py)
+    # Build scores dict (same rounding as inference_server.py). Rounding can
+    # create a tie, so derive the accepted label from the serialized scores.
     scores = {labels[i]: round(probs[i], 4) for i in range(2)}
+    pred_label = max(scores, key=lambda label: scores[label])
+    pred_confidence = scores[pred_label]
+    is_reliable = pred_confidence >= confidence_threshold
 
     # Build prediction object (same as inference_server.py)
     prediction = PredictionResult(
@@ -281,9 +291,7 @@ def test_prediction_structural_invariants(s1: float, s2: float):
 
     # Assert: scores contains one entry per active class
     for label in labels:
-        assert label in prediction.scores, (
-            f"scores missing entry for '{label}'"
-        )
+        assert label in prediction.scores, f"scores missing entry for '{label}'"
 
     # Assert: accepted scores sum to approximately 1.0 (allowing for rounding)
     score_sum = sum(prediction.scores.values())
@@ -446,7 +454,10 @@ def test_full_response_no_display_label(disease_class: str):
     )
 
     # Verify display_label_key is present and correct in prediction
-    assert response_dict["prediction"]["display_label_key"] == DISPLAY_LABEL_KEY_MAP[disease_class], (
+    assert (
+        response_dict["prediction"]["display_label_key"]
+        == DISPLAY_LABEL_KEY_MAP[disease_class]
+    ), (
         f"Expected display_label_key '{DISPLAY_LABEL_KEY_MAP[disease_class]}' "
         f"for disease_class '{disease_class}', "
         f"got '{response_dict['prediction']['display_label_key']}'"
@@ -459,6 +470,7 @@ def test_full_response_no_display_label(disease_class: str):
 import httpx  # type: ignore[import-not-found]
 from fastapi import FastAPI, Request  # type: ignore[import-not-found]
 from fastapi.responses import JSONResponse  # type: ignore[import-not-found]
+
 from api.rate_limiter import RateLimiterMiddleware
 
 

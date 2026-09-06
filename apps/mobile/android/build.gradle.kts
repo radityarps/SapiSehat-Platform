@@ -24,11 +24,11 @@ subprojects {
     tasks.withType<KotlinJvmCompile>().configureEach {
         compilerOptions {
             jvmTarget.set(
-                if (project.name == "app" || project.name == "tflite_flutter") {
-                    JvmTarget.JVM_17
+                if (project.name == "tflite_flutter") {
+                    JvmTarget.JVM_11
                 } else {
                     JvmTarget.JVM_17
-                }
+                },
             )
         }
     }

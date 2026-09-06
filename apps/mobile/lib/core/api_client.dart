@@ -306,6 +306,7 @@ class SapiSehatApiClient {
   }
 
   Future<ScanResult> predictScan({required List<int> bytes}) async {
+    ApiRequestException? availabilityError;
     try {
       final prediction = await transport.send(
         ApiRequest(
@@ -322,15 +323,25 @@ class SapiSehatApiClient {
       }
       final error = _apiError(prediction);
       if (!error.isAvailabilityFailure) throw error;
+      availabilityError = error;
     } on ApiRequestException catch (error) {
       if (!error.isAvailabilityFailure) rethrow;
+      availabilityError = error;
     } on IOException {
       // Transport availability failures use the offline model.
     } on NonCattleImageException {
       rethrow;
     }
 
-    final offline = await offlineInferenceService.infer(bytes);
+    OfflineInferenceResult offline;
+    try {
+      offline = await offlineInferenceService.infer(bytes);
+    } on FormatException catch (_) {
+      final message = availabilityError?.errorCode == 'MODEL_NOT_READY'
+          ? 'Model deteksi belum siap digunakan. Coba lagi setelah model diverifikasi.'
+          : 'Layanan online tidak tersedia dan model offline belum siap digunakan.';
+      throw DetectionUnavailableException(message);
+    }
     return ScanResult(
       localId: 'offline-${DateTime.now().microsecondsSinceEpoch}',
       label: offline.label,
