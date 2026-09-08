@@ -307,3 +307,23 @@ _Avoid_: Missing-model assumption, hardcoded fake offline scores
 **Complete Livestock Profile Fields**:
 Cattle profiles now store optional physical, reproductive, health, economic, and notes data: `name`, `color`, `weight_kg`, `reproductive_status`, `is_pregnant`, `last_calving_date`, `last_vaccination_date`, `last_deworming_date`, `health_notes`, `purchase_date`, `purchase_price_idr`, and `notes`. Timeline events remain separate for dated operational history, while profile fields store latest-known summary values. Development seeding includes realistic Indonesian cattle data for these fields.
 _Avoid_: diagnosis claims, required completion before scanning, replacing timeline events with summary-only data
+
+**Guide Article**:
+Admin-curated, multilingual educational content shown in the Flutter Farmer App, such as cattle-profile guidance, app usage, biosecurity, and FMD information. Bahasa Indonesia is required for publication; other translations are optional.
+_Avoid_: Blog Post, news feed, Farmer-Owned Cattle Record, user-generated content
+
+**Guide Category**:
+Admin-managed grouping for Guide Articles. The system-owned `Umum` category is the permanent fallback when another category is archived.
+_Avoid_: hard-coded mobile filter, disease taxonomy, article tag
+
+**Published Guide Snapshot**:
+One integrity-checked version of every published Guide Article, Guide Category, translation, and required media file that the mobile app can activate atomically for offline reading.
+_Avoid_: partially downloaded catalog, per-screen live content, mixed content versions
+
+**Bundled Guide Catalog**:
+The install-time Published Guide Snapshot packaged with the Flutter Farmer App so guidance exists before the first successful online synchronization. Its stable article and category IDs match the seeded CMS catalog.
+_Avoid_: permanent parallel content source, demo-only fixture, empty first-install cache
+
+**Guide Editorial Audit Event**:
+An immutable record of an admin creating, editing, publishing, unpublishing, archiving, or moving Guide content. It records action metadata but does not preserve a restorable copy of every article revision.
+_Avoid_: full revision history, reader analytics, mutable activity note
