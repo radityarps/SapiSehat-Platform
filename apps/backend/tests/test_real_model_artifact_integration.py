@@ -2,6 +2,7 @@
 
 import numpy as np  # type: ignore[import-not-found]
 import pytest
+
 from config import MODEL_CLASS_ORDER, settings
 from inference_server import InferenceService
 from model.loader import ModelLoader
