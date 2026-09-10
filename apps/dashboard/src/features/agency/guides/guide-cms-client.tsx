@@ -121,7 +121,6 @@ export function GuideCmsClient() {
 
 	// Modal States
 	const [previewArticle, setPreviewArticle] = useState<GuideArticle | null>(null);
-	const [previewLocale, setPreviewLocale] = useState<"id" | "en">("id");
 	const [archiveTarget, setArchiveTarget] = useState<GuideArticle | null>(null);
 
 	const articlesQuery = useQuery({
@@ -228,23 +227,6 @@ export function GuideCmsClient() {
 				},
 			},
 			{
-				accessorKey: "languages",
-				header: "Languages",
-				meta: { align: "center" },
-				cell: ({ row }) => (
-					<div className="flex items-center justify-center gap-1">
-						{row.original.translations.map((t) => (
-							<span
-								key={t.locale}
-								className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-mono font-medium text-muted-foreground uppercase"
-							>
-								{t.locale}
-							</span>
-						))}
-					</div>
-				),
-			},
-			{
 				accessorKey: "state",
 				header: "Status",
 				meta: { align: "center" },
@@ -270,10 +252,7 @@ export function GuideCmsClient() {
 								className="h-7 w-7 text-muted-foreground hover:text-foreground"
 								aria-label="Preview"
 								title="Preview article"
-								onClick={() => {
-									setPreviewArticle(article);
-									setPreviewLocale("id");
-								}}
+								onClick={() => setPreviewArticle(article)}
 							>
 								<Eye className="h-3.5 w-3.5" />
 							</Button>
@@ -385,9 +364,9 @@ export function GuideCmsClient() {
 		);
 	}
 
-	const activePreviewTranslation = previewArticle?.translations.find(
-		(t) => t.locale === previewLocale,
-	);
+	const activePreviewTranslation =
+		previewArticle?.translations.find((t) => t.locale === "id") ??
+		previewArticle?.translations[0];
 	const activePreviewCategory = previewArticle
 		? categories.find((c) => c.id === previewArticle.category_id)
 		: null;
@@ -423,61 +402,59 @@ export function GuideCmsClient() {
 
 					<Select value={statusFilter} onValueChange={setStatusFilter}>
 						<SelectTrigger className="w-[160px]">
-							<SelectValue placeholder="All statuses" />
+							<SelectValue placeholder="All status" />
 						</SelectTrigger>
 						<SelectContent>
-							<SelectItem value="all">All statuses</SelectItem>
+							<SelectItem value="all">All status</SelectItem>
 							<SelectItem value="draft">Draft</SelectItem>
 							<SelectItem value="published">Published</SelectItem>
-							<SelectItem value="unpublished">Unpublished</SelectItem>
 							<SelectItem value="archived">Archived</SelectItem>
 						</SelectContent>
 					</Select>
 
 					<div className="flex items-center gap-2 sm:ml-auto">
-						<Button variant="outline" size="sm" asChild className="gap-1.5">
+						<Button variant="outline" size="sm" asChild>
 							<Link href="/agency/guides/categories">
-								<FolderTree className="h-3.5 w-3.5" /> Manage categories
+								<FolderTree className="mr-1.5 h-4 w-4" />
+								Manage Categories
 							</Link>
 						</Button>
-						<Button size="sm" asChild className="gap-1.5">
+						<Button size="sm" asChild>
 							<Link href="/agency/guides/new">
-								<Plus className="h-3.5 w-3.5" /> Create article
+								<Plus className="mr-1.5 h-4 w-4" />
+								Create Article
 							</Link>
 						</Button>
 					</div>
 				</div>
 
-				{/* Table */}
-				<div className="rounded-md border">
+				{/* Table Container */}
+				<div className="rounded-md border bg-card">
 					<table className="w-full text-sm">
 						<thead>
 							{table.getHeaderGroups().map((headerGroup) => (
 								<tr key={headerGroup.id} className="border-b bg-muted/40">
 									{headerGroup.headers.map((header) => {
-										const align = (
-											header.column.columnDef.meta as
-												| { align?: string }
-												| undefined
-										)?.align;
+										const meta = header.column.columnDef.meta as
+											| { align?: string }
+											| undefined;
+										const alignClass =
+											meta?.align === "center"
+												? "text-center"
+												: meta?.align === "right"
+													? "text-right"
+													: "text-left";
 										return (
 											<th
 												key={header.id}
-												className={`px-4 py-2.5 text-xs font-medium text-muted-foreground cursor-pointer select-none ${align === "center" ? "text-center" : align === "right" ? "text-right" : "text-left"}`}
-												onClick={header.column.getToggleSortingHandler()}
+												className={`h-10 px-4 font-medium text-muted-foreground ${alignClass}`}
 											>
-												<div
-													className={`flex items-center gap-1 ${align === "center" ? "justify-center" : align === "right" ? "justify-end" : ""}`}
-												>
-													{header.isPlaceholder
-														? null
-														: flexRender(
-																header.column.columnDef.header,
-																header.getContext(),
-															)}
-													{header.column.getIsSorted() === "asc" && " ↑"}
-													{header.column.getIsSorted() === "desc" && " ↓"}
-												</div>
+												{header.isPlaceholder
+													? null
+													: flexRender(
+															header.column.columnDef.header,
+															header.getContext(),
+														)}
 											</th>
 										);
 									})}
@@ -485,23 +462,31 @@ export function GuideCmsClient() {
 							))}
 						</thead>
 						<tbody>
-							{table.getRowModel().rows.length === 0 ? (
+							{articlesQuery.isLoading ? (
+								Array.from({ length: 5 }).map((_, i) => (
+									<tr key={i} className="border-b last:border-0">
+										<td colSpan={columns.length} className="p-4">
+											<Skeleton className="h-6 w-full" />
+										</td>
+									</tr>
+								))
+							) : table.getRowModel().rows.length === 0 ? (
 								<tr>
 									<td
 										colSpan={columns.length}
-										className="px-4 py-8 text-center text-muted-foreground"
+										className="h-32 text-center text-muted-foreground"
 									>
 										No guide articles found.
 									</td>
 								</tr>
 							) : (
-								table.getRowModel().rows.map((row, i) => (
+								table.getRowModel().rows.map((row) => (
 									<tr
 										key={row.id}
-										className={`border-b last:border-0 transition-colors hover:bg-muted/20 ${i % 2 === 1 ? "bg-muted/5" : ""}`}
+										className="border-b transition-colors last:border-0 hover:bg-muted/50"
 									>
 										{row.getVisibleCells().map((cell) => (
-											<td key={cell.id} className="px-4 py-2.5">
+											<td key={cell.id} className="p-4">
 												{flexRender(
 													cell.column.columnDef.cell,
 													cell.getContext(),
@@ -551,39 +536,11 @@ export function GuideCmsClient() {
 			>
 				<DialogContent className="sm:max-w-[440px] max-h-[96vh] flex flex-col p-4 overflow-y-auto">
 					<DialogHeader className="pb-3 border-b">
-						<div className="flex items-center justify-between gap-3 pr-8">
-							<div>
-								<DialogTitle className="text-base font-semibold">Mobile Preview</DialogTitle>
-								<DialogDescription className="text-xs">
-									Simulated mobile app screen
-								</DialogDescription>
-							</div>
-
-							{/* Language Switcher Buttons (ID and EN) */}
-							<div className="flex items-center gap-1 rounded-md border bg-muted/50 p-0.5 shrink-0">
-								<button
-									type="button"
-									onClick={() => setPreviewLocale("id")}
-									className={`rounded px-2.5 py-0.5 text-xs font-semibold transition-colors ${
-										previewLocale === "id"
-											? "bg-primary text-primary-foreground shadow-xs"
-											: "text-muted-foreground hover:text-foreground"
-									}`}
-								>
-									ID
-								</button>
-								<button
-									type="button"
-									onClick={() => setPreviewLocale("en")}
-									className={`rounded px-2.5 py-0.5 text-xs font-semibold transition-colors ${
-										previewLocale === "en"
-											? "bg-primary text-primary-foreground shadow-xs"
-											: "text-muted-foreground hover:text-foreground"
-									}`}
-								>
-									EN
-								</button>
-							</div>
+						<div className="pr-8">
+							<DialogTitle className="text-base font-semibold">Mobile Preview</DialogTitle>
+							<DialogDescription className="text-xs">
+								Simulated mobile app screen
+							</DialogDescription>
 						</div>
 					</DialogHeader>
 
@@ -604,7 +561,7 @@ export function GuideCmsClient() {
 										<div className="flex flex-wrap items-center gap-1.5">
 											{activePreviewCategory && (
 												<span className="rounded bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary uppercase tracking-wide">
-													{categoryLabel(activePreviewCategory, previewLocale)}
+													{categoryLabel(activePreviewCategory, "id")}
 												</span>
 											)}
 											{previewArticle && (
@@ -637,8 +594,7 @@ export function GuideCmsClient() {
 									</div>
 								) : (
 									<div className="rounded-lg border border-dashed p-6 text-center text-xs text-muted-foreground my-8">
-										No {previewLocale === "id" ? "Indonesian (ID)" : "English (EN)"}{" "}
-										translation available for this article.
+										No content available for this article.
 									</div>
 								)}
 							</div>

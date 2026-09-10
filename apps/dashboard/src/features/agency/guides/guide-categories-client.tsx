@@ -79,7 +79,6 @@ export function GuideCategoriesClient() {
 	const [dialogOpen, setDialogOpen] = useState(false);
 	const [editingCategory, setEditingCategory] = useState<GuideCategory | null>(null);
 	const [labelId, setLabelId] = useState("");
-	const [labelEn, setLabelEn] = useState("");
 	const [displayOrder, setDisplayOrder] = useState<number>(0);
 
 	// Confirmation States
@@ -104,48 +103,48 @@ export function GuideCategoriesClient() {
 			return saveGuideCategory(token, agencyUserId, payload);
 		},
 		onSuccess: () => {
+			void queryClient.invalidateQueries({ queryKey: ["guide-categories"] });
 			toast.success(
-				editingCategory ? "Category updated." : "Category created.",
+				editingCategory
+					? "Category updated successfully."
+					: "Category created successfully.",
 			);
-			queryClient.invalidateQueries({ queryKey: ["guide-categories"] });
-			queryClient.invalidateQueries({ queryKey: ["agency-guides"] });
 			setDialogOpen(false);
-			setEditingCategory(null);
 		},
 		onError: (error) => {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to save category.",
+				error instanceof Error ? error.message : "Failed to save category",
 			);
 		},
 	});
 
 	const archiveMutation = useMutation({
-		mutationFn: (categoryId: string) =>
-			archiveGuideCategory(token, agencyUserId, categoryId),
+		mutationFn: async (categoryId: string) => {
+			return archiveGuideCategory(token, agencyUserId, categoryId);
+		},
 		onSuccess: () => {
-			toast.success("Category archived.");
-			queryClient.invalidateQueries({ queryKey: ["guide-categories"] });
-			queryClient.invalidateQueries({ queryKey: ["agency-guides"] });
+			void queryClient.invalidateQueries({ queryKey: ["guide-categories"] });
+			toast.success("Category archived successfully.");
 			setArchiveTarget(null);
 		},
 		onError: (error) => {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to archive category.",
+				error instanceof Error ? error.message : "Failed to archive category",
 			);
 		},
 	});
 
 	const activateMutation = useMutation({
-		mutationFn: (categoryId: string) =>
-			activateGuideCategory(token, agencyUserId, categoryId),
+		mutationFn: async (categoryId: string) => {
+			return activateGuideCategory(token, agencyUserId, categoryId);
+		},
 		onSuccess: () => {
-			toast.success("Category activated.");
-			queryClient.invalidateQueries({ queryKey: ["guide-categories"] });
-			queryClient.invalidateQueries({ queryKey: ["agency-guides"] });
+			void queryClient.invalidateQueries({ queryKey: ["guide-categories"] });
+			toast.success("Category activated successfully.");
 		},
 		onError: (error) => {
 			toast.error(
-				error instanceof Error ? error.message : "Failed to activate category.",
+				error instanceof Error ? error.message : "Failed to activate category",
 			);
 		},
 	});
@@ -167,29 +166,28 @@ export function GuideCategoriesClient() {
 	const openAddDialog = () => {
 		setEditingCategory(null);
 		setLabelId("");
-		setLabelEn("");
 		setDisplayOrder(((categoriesQuery.data?.length ?? 0) + 1) * 10);
 		setDialogOpen(true);
 	};
 
 	const openEditDialog = (category: GuideCategory) => {
 		setEditingCategory(category);
-		setLabelId(category.translations.find((t) => t.locale === "id")?.label || "");
-		setLabelEn(category.translations.find((t) => t.locale === "en")?.label || "");
+		setLabelId(
+			category.translations.find((t) => t.locale === "id")?.label ||
+			category.translations[0]?.label ||
+			"",
+		);
 		setDisplayOrder(category.display_order);
 		setDialogOpen(true);
 	};
 
 	const handleSaveCategory = () => {
 		if (!labelId.trim()) {
-			toast.error("Indonesian category label (ID) is required.");
+			toast.error("Category name is required.");
 			return;
 		}
 
-		const translations = [
-			{ locale: "id", label: labelId.trim() },
-			...(labelEn.trim() ? [{ locale: "en", label: labelEn.trim() }] : []),
-		];
+		const translations = [{ locale: "id", label: labelId.trim() }];
 
 		saveMutation.mutate({
 			id: editingCategory?.id,
@@ -210,22 +208,9 @@ export function GuideCategoriesClient() {
 						cat.translations[0]?.label ||
 						"Untitled";
 					return (
-						<div className="flex flex-col">
-							<span className="font-medium text-sm text-foreground">
-								{primary}
-							</span>
-							<div className="flex flex-wrap items-center gap-1 mt-0.5">
-								{cat.translations.map((t) => (
-									<span
-										key={t.locale}
-										className="inline-flex items-center gap-1 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-									>
-										<span className="font-mono font-semibold uppercase">{t.locale}:</span>
-										<span>{t.label}</span>
-									</span>
-								))}
-							</div>
-						</div>
+						<span className="font-medium text-sm text-foreground">
+							{primary}
+						</span>
 					);
 				},
 			},
@@ -506,37 +491,25 @@ export function GuideCategoriesClient() {
 				<DialogContent className="sm:max-w-md">
 					<DialogHeader>
 						<DialogTitle>
-							{editingCategory ? "Edit Category" : "Add New Category"}
+							{editingCategory ? "Edit Category" : "New Category"}
 						</DialogTitle>
 						<DialogDescription>
 							{editingCategory
-								? `Update Indonesian and English category names.`
-								: "Provide category labels for Indonesian and English."}
+								? "Update the category name."
+								: "Provide a category name for organizing articles."}
 						</DialogDescription>
 					</DialogHeader>
 
 					<div className="space-y-4 py-2">
 						<div className="space-y-1.5">
 							<Label htmlFor="category-label-id">
-								Indonesian Name (ID) <span className="text-destructive">*</span>
+								Category Name <span className="text-destructive">*</span>
 							</Label>
 							<Input
 								id="category-label-id"
 								value={labelId}
 								onChange={(e) => setLabelId(e.target.value)}
 								placeholder="e.g. Kesehatan Sapi"
-							/>
-						</div>
-
-						<div className="space-y-1.5">
-							<Label htmlFor="category-label-en">
-								English Name (EN)
-							</Label>
-							<Input
-								id="category-label-en"
-								value={labelEn}
-								onChange={(e) => setLabelEn(e.target.value)}
-								placeholder="e.g. Cattle Health"
 							/>
 						</div>
 

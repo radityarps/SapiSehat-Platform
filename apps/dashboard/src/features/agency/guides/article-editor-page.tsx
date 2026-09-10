@@ -35,7 +35,6 @@ import {
 	Eye,
 	EyeOff,
 	FileText,
-	Globe,
 	Heading,
 	Image as ImageIcon,
 	List,
@@ -49,13 +48,6 @@ import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 
 const emptyBlock: GuideBlock = { type: "paragraph", text: "" };
-
-const emptyTranslation = (locale: string): GuideTranslation => ({
-	locale,
-	title: "",
-	summary: "",
-	blocks: [{ ...emptyBlock }],
-});
 
 interface ArticleEditorPageProps {
 	mode: "create" | "edit";
@@ -71,10 +63,9 @@ export function ArticleEditorPage({ mode, articleId }: ArticleEditorPageProps) {
 	const [categories, setCategories] = useState<GuideCategory[]>([]);
 	const [article, setArticle] = useState<GuideArticle | null>(null);
 
-	const [translations, setTranslations] = useState<GuideTranslation[]>([
-		emptyTranslation("id"),
-	]);
-	const [activeLocale, setActiveLocale] = useState("id");
+	const [title, setTitle] = useState("");
+	const [summary, setSummary] = useState("");
+	const [blocks, setBlocks] = useState<GuideBlock[]>([{ ...emptyBlock }]);
 	const [categoryId, setCategoryId] = useState("");
 	const [preview, setPreview] = useState(false);
 
@@ -96,18 +87,20 @@ export function ArticleEditorPage({ mode, articleId }: ArticleEditorPageProps) {
 				setCategoryId(existingArticle.category_id);
 				const idTrans =
 					existingArticle.translations.find((item) => item.locale === "id") ??
-					emptyTranslation("id");
-				const enTrans =
-					existingArticle.translations.find((item) => item.locale === "en") ??
-					emptyTranslation("en");
-				setTranslations([idTrans, enTrans]);
-				setActiveLocale("id");
+					existingArticle.translations[0];
+				if (idTrans) {
+					setTitle(idTrans.title || "");
+					setSummary(idTrans.summary || "");
+					setBlocks(idTrans.blocks?.length ? idTrans.blocks : [{ ...emptyBlock }]);
+				}
 			} else {
 				const defaultCat =
 					categoryData.items.find((item) => item.state === "active")?.id ??
 					"guide-category-umum";
 				setCategoryId(defaultCat);
-				setTranslations([emptyTranslation("id"), emptyTranslation("en")]);
+				setTitle("");
+				setSummary("");
+				setBlocks([{ ...emptyBlock }]);
 			}
 		} catch (cause) {
 			toast.error(cause instanceof Error ? cause.message : "Failed to load article data");
@@ -148,42 +141,50 @@ export function ArticleEditorPage({ mode, articleId }: ArticleEditorPageProps) {
 		);
 	}
 
-	const active =
-		translations.find((item) => item.locale === activeLocale) ?? translations[0];
-
-	const updateActiveTranslation = (patch: Partial<GuideTranslation>) => {
-		if (!active) return;
-		setTranslations((prev) =>
-			prev.map((item) =>
-				item.locale === activeLocale ? { ...item, ...patch } : item,
-			),
-		);
-	};
-
 	const handleSave = async (andPublish = false) => {
 		if (!token || !agencyUserId) return;
 		if (!categoryId) {
 			toast.error("Please select a category.");
 			return;
 		}
-		const idTrans = translations.find((item) => item.locale === "id");
-		if (!idTrans?.title.trim()) {
-			toast.error("Indonesian title (ID) is required.");
+
+		const trimmedTitle = title.trim();
+		const trimmedSummary = summary.trim();
+
+		if (!trimmedTitle) {
+			toast.error("Article title is required.");
+			return;
+		}
+		if (!trimmedSummary) {
+			toast.error("Article summary is required.");
 			return;
 		}
 
-		// Include English translation if title or blocks have content
-		const enTrans = translations.find((item) => item.locale === "en");
-		const hasEn = Boolean(
-			enTrans &&
-				(enTrans.title.trim() ||
-					enTrans.summary.trim() ||
-					enTrans.blocks.some((b) => b.text?.trim() || b.items?.length)),
-		);
+		const cleanedBlocks: GuideBlock[] = [];
+		for (let i = 0; i < blocks.length; i++) {
+			const b = blocks[i];
+			if (b.type === "heading" || b.type === "paragraph") {
+				const text = (b.text ?? "").trim();
+				if (text) {
+					cleanedBlocks.push({ type: b.type, text });
+				}
+			} else if (b.type === "bullet_list") {
+				const items = (b.items ?? []).map((s) => s.trim()).filter(Boolean);
+				if (items.length > 0) {
+					cleanedBlocks.push({ type: "bullet_list", items });
+				}
+			} else if (b.type === "image" && b.media_id) {
+				cleanedBlocks.push({
+					type: "image",
+					media_id: b.media_id,
+					alt: (b.alt ?? "").trim() || "Illustration",
+				});
+			}
+		}
 
-		const savePayload = [idTrans];
-		if (hasEn && enTrans) {
-			savePayload.push(enTrans);
+		if (cleanedBlocks.length === 0) {
+			toast.error("Article content requires at least one block with text.");
+			return;
 		}
 
 		setBusy(true);
@@ -191,7 +192,14 @@ export function ArticleEditorPage({ mode, articleId }: ArticleEditorPageProps) {
 			const saved = await saveGuideArticle(token, agencyUserId, {
 				id: mode === "edit" && articleId ? articleId : undefined,
 				category_id: categoryId,
-				translations: savePayload,
+				translations: [
+					{
+						locale: "id",
+						title: trimmedTitle,
+						summary: trimmedSummary,
+						blocks: cleanedBlocks,
+					},
+				],
 			});
 
 			if (andPublish) {
@@ -349,170 +357,127 @@ export function ArticleEditorPage({ mode, articleId }: ArticleEditorPageProps) {
 						</CardContent>
 					</Card>
 
-					{/* Translation Tabs & Content */}
+					{/* Article Content Card */}
 					<Card>
 						<CardHeader className="pb-3">
-							<div>
-								<CardTitle className="text-base">Content & Translations</CardTitle>
-								<CardDescription>
-									Manage Indonesian (ID) and English (EN) titles, summaries, and content blocks.
-								</CardDescription>
-							</div>
-
-							{/* Locale Switcher Tabs (ID & EN only) */}
-							<div className="mt-3 flex gap-2 border-b pb-2">
-								<button
-									type="button"
-									onClick={() => setActiveLocale("id")}
-									className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-										activeLocale === "id"
-											? "bg-primary text-primary-foreground shadow-xs"
-											: "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-									}`}
-								>
-									<Globe className="h-3.5 w-3.5" />
-									Indonesian (ID)
-									{translations.find((t) => t.locale === "id")?.title.trim() && (
-										<span className="ml-1 text-[10px] opacity-75">✓</span>
-									)}
-								</button>
-								<button
-									type="button"
-									onClick={() => setActiveLocale("en")}
-									className={`inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
-										activeLocale === "en"
-											? "bg-primary text-primary-foreground shadow-xs"
-											: "bg-muted text-muted-foreground hover:bg-muted/80 hover:text-foreground"
-									}`}
-								>
-									<Globe className="h-3.5 w-3.5" />
-									English (EN)
-									{translations.find((t) => t.locale === "en")?.title.trim() && (
-										<span className="ml-1 text-[10px] opacity-75">✓</span>
-									)}
-								</button>
-							</div>
+							<CardTitle className="text-base">Article Content</CardTitle>
+							<CardDescription>
+								Compose the article title, summary, and instructional content in Bahasa Indonesia.
+							</CardDescription>
 						</CardHeader>
 
 						<CardContent className="space-y-4">
-							{active ? (
-								<>
-									<div className="space-y-2">
-										<Label htmlFor="article-title">
-											Title ({activeLocale.toUpperCase()})
-										</Label>
-										<Input
-											id="article-title"
-											value={active.title}
-											maxLength={160}
-											placeholder="e.g. Panduan Pencegahan PMK pada Sapi Perah"
-											onChange={(e) => updateActiveTranslation({ title: e.target.value })}
-										/>
-										<p className="text-right text-xs text-muted-foreground">
-											{active.title.length}/160 characters
-										</p>
-									</div>
+							<div className="space-y-2">
+								<Label htmlFor="article-title">Title</Label>
+								<Input
+									id="article-title"
+									value={title}
+									maxLength={160}
+									placeholder="e.g. Panduan Pencegahan PMK pada Sapi Perah"
+									onChange={(e) => setTitle(e.target.value)}
+								/>
+								<p className="text-right text-xs text-muted-foreground">
+									{title.length}/160 characters
+								</p>
+							</div>
 
-									<div className="space-y-2">
-										<Label htmlFor="article-summary">
-											Summary ({activeLocale.toUpperCase()})
-										</Label>
-										<Textarea
-											id="article-summary"
-											value={active.summary}
-											maxLength={500}
-											placeholder="Brief overview explaining what the farmer will learn..."
-											className="min-h-20"
-											onChange={(e) =>
-												updateActiveTranslation({ summary: e.target.value })
+							<div className="space-y-2">
+								<Label htmlFor="article-summary">Summary</Label>
+								<Textarea
+									id="article-summary"
+									value={summary}
+									maxLength={500}
+									placeholder="Brief overview explaining what the farmer will learn..."
+									className="min-h-20"
+									onChange={(e) => setSummary(e.target.value)}
+								/>
+								<p className="text-right text-xs text-muted-foreground">
+									{summary.length}/500 characters
+								</p>
+							</div>
+
+							{/* Content Blocks Section */}
+							<div className="space-y-3 pt-2">
+								<div className="flex items-center justify-between">
+									<Label className="text-sm font-semibold">
+										Content Blocks ({blocks.length})
+									</Label>
+									<div className="flex flex-wrap gap-1">
+										<Button
+											type="button"
+											variant="outline"
+											size="xs"
+											onClick={() =>
+												setBlocks((prev) => [
+													...prev,
+													{ type: "heading", text: "" },
+												])
 											}
+										>
+											<Heading className="mr-1 h-3 w-3" />
+											+ Heading
+										</Button>
+										<Button
+											type="button"
+											variant="outline"
+											size="xs"
+											onClick={() =>
+												setBlocks((prev) => [
+													...prev,
+													{ type: "paragraph", text: "" },
+												])
+											}
+										>
+											<FileText className="mr-1 h-3 w-3" />
+											+ Paragraph
+										</Button>
+										<Button
+											type="button"
+											variant="outline"
+											size="xs"
+											onClick={() =>
+												setBlocks((prev) => [
+													...prev,
+													{ type: "bullet_list", items: [] },
+												])
+											}
+										>
+											<List className="mr-1 h-3 w-3" />
+											+ Bullet List
+										</Button>
+									</div>
+								</div>
+
+								<div className="space-y-3">
+									{blocks.map((block, index) => (
+										<BlockEditorItem
+											key={`${block.type}-${index}`}
+											block={block}
+											index={index}
+											total={blocks.length}
+											onChange={(updated) =>
+												setBlocks((prev) =>
+													prev.map((b, i) => (i === index ? updated : b)),
+												)
+											}
+											onRemove={() =>
+												setBlocks((prev) =>
+													prev.filter((_, i) => i !== index),
+												)
+											}
+											onMove={(offset) => {
+												const target = index + offset;
+												if (target < 0 || target >= blocks.length) return;
+												setBlocks((prev) => {
+													const next = [...prev];
+													[next[index], next[target]] = [next[target], next[index]];
+													return next;
+												});
+											}}
 										/>
-										<p className="text-right text-xs text-muted-foreground">
-											{active.summary.length}/500 characters
-										</p>
-									</div>
-
-									{/* Content Blocks Section */}
-									<div className="space-y-3 pt-2">
-										<div className="flex items-center justify-between">
-											<Label className="text-sm font-semibold">
-												Content Blocks ({active.blocks.length})
-											</Label>
-											<div className="flex flex-wrap gap-1">
-												<Button
-													type="button"
-													variant="outline"
-													size="xs"
-													onClick={() =>
-														updateActiveTranslation({
-															blocks: [...active.blocks, { type: "heading", text: "" }],
-														})
-													}
-												>
-													<Heading className="mr-1 h-3 w-3" />
-													+ Heading
-												</Button>
-												<Button
-													type="button"
-													variant="outline"
-													size="xs"
-													onClick={() =>
-														updateActiveTranslation({
-															blocks: [...active.blocks, { type: "paragraph", text: "" }],
-														})
-													}
-												>
-													<FileText className="mr-1 h-3 w-3" />
-													+ Paragraph
-												</Button>
-												<Button
-													type="button"
-													variant="outline"
-													size="xs"
-													onClick={() =>
-														updateActiveTranslation({
-															blocks: [...active.blocks, { type: "bullet_list", items: [] }],
-														})
-													}
-												>
-													<List className="mr-1 h-3 w-3" />
-													+ Bullet List
-												</Button>
-											</div>
-										</div>
-
-										<div className="space-y-3">
-											{active.blocks.map((block, index) => (
-												<BlockEditorItem
-													key={`${block.type}-${index}`}
-													block={block}
-													index={index}
-													total={active.blocks.length}
-													onChange={(updated) =>
-														updateActiveTranslation({
-															blocks: active.blocks.map((b, i) =>
-																i === index ? updated : b,
-															),
-														})
-													}
-													onRemove={() =>
-														updateActiveTranslation({
-															blocks: active.blocks.filter((_, i) => i !== index),
-														})
-													}
-													onMove={(offset) => {
-														const target = index + offset;
-														if (target < 0 || target >= active.blocks.length) return;
-														const next = [...active.blocks];
-														[next[index], next[target]] = [next[target], next[index]];
-														updateActiveTranslation({ blocks: next });
-													}}
-												/>
-											))}
-										</div>
-									</div>
-								</>
-							) : null}
+									))}
+								</div>
+							</div>
 						</CardContent>
 					</Card>
 
@@ -582,16 +547,11 @@ export function ArticleEditorPage({ mode, articleId }: ArticleEditorPageProps) {
 					<div className="sticky top-6 self-start">
 						<Card className="border-2 border-primary/20 shadow-md">
 							<CardHeader className="pb-3 border-b bg-muted/20">
-								<div className="flex items-center justify-between">
-									<div>
-										<CardTitle className="text-sm font-semibold">Farmer Mobile Preview</CardTitle>
-										<CardDescription className="text-xs">
-											Simulating app view for locale: {activeLocale.toUpperCase()}
-										</CardDescription>
-									</div>
-									<Badge variant="outline" className="text-xs">
-										{activeLocale}
-									</Badge>
+								<div>
+									<CardTitle className="text-sm font-semibold">Farmer Mobile Preview</CardTitle>
+									<CardDescription className="text-xs">
+										Simulating mobile app view
+									</CardDescription>
 								</div>
 							</CardHeader>
 							<CardContent className="p-6">
@@ -606,13 +566,13 @@ export function ArticleEditorPage({ mode, articleId }: ArticleEditorPageProps) {
 											</span>
 										</div>
 										<h2 className="text-lg font-bold leading-tight tracking-tight">
-											{active?.title || "Untitled Guide Article"}
+											{title || "Untitled Guide Article"}
 										</h2>
 										<p className="mt-2 text-xs leading-relaxed text-muted-foreground border-b pb-3">
-											{active?.summary || "No summary provided yet."}
+											{summary || "No summary provided yet."}
 										</p>
 										<div className="mt-3 space-y-3">
-											{active?.blocks.map((block, idx) => (
+											{blocks.map((block, idx) => (
 												<BlockRenderer
 													key={`${block.type}-${idx}`}
 													block={block}

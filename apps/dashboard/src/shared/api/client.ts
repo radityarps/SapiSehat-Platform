@@ -93,6 +93,52 @@ const notificationSchema = z.object({
 	created_at: z.string(),
 });
 
+function formatApiErrorDetail(detail: unknown): string {
+	if (!detail) return "";
+	if (typeof detail === "string") {
+		return detail;
+	}
+	if (Array.isArray(detail)) {
+		const messages = detail
+			.map((item) => {
+				if (typeof item === "string") return item;
+				if (item && typeof item === "object") {
+					const rec = item as Record<string, unknown>;
+					if (rec.msg && typeof rec.msg === "string") {
+						const cleanedMsg = rec.msg.replace(/^Value error, /i, "");
+						if (Array.isArray(rec.loc) && rec.loc.length > 0) {
+							const fieldPath = rec.loc
+								.filter((part) => part !== "body")
+								.map((part) => {
+									if (part === "translations") return "translation";
+									if (part === "blocks") return "block";
+									return String(part);
+								})
+								.join(" > ");
+							return fieldPath ? `${fieldPath}: ${cleanedMsg}` : cleanedMsg;
+						}
+						return cleanedMsg;
+					}
+					return JSON.stringify(item);
+				}
+				return String(item);
+			})
+			.filter(Boolean);
+
+		if (messages.length > 0) {
+			return messages.join("; ");
+		}
+	}
+	if (typeof detail === "object") {
+		try {
+			return JSON.stringify(detail);
+		} catch {
+			return "Validation error";
+		}
+	}
+	return String(detail);
+}
+
 async function request<T>(
 	path: string,
 	init: RequestInit = {},
@@ -117,7 +163,11 @@ async function request<T>(
 		let detail = `Request failed (${response.status})`;
 		try {
 			const parsed = (await response.json()) as ApiError;
-			detail = parsed.detail ?? parsed.message ?? detail;
+			if (parsed.detail !== undefined && parsed.detail !== null) {
+				detail = formatApiErrorDetail(parsed.detail) || detail;
+			} else if (parsed.message) {
+				detail = parsed.message;
+			}
 		} catch {
 			// noop
 		}
