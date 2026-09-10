@@ -27,18 +27,6 @@ class SettingsTransport implements ApiTransport {
         }),
       );
     }
-    if (request.path == '/api/farmers/farmer-1/preferences') {
-      return ApiResponse(
-        200,
-        jsonEncode({
-          'farmer_id': 'farmer-1',
-          'scan_result_notifications': true,
-          'sync_notifications': true,
-          'area_risk_advisory_notifications': false,
-          'follow_up_status_notifications': true,
-        }),
-      );
-    }
     if (request.method == 'POST' &&
         request.path == '/api/farmers/farmer-1/account/archive') {
       lastArchive = request;

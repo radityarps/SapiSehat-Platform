@@ -6,7 +6,6 @@ import '../features/cattle/cattle.dart';
 import '../features/history/history.dart';
 import '../features/scan/offline_inference.dart';
 import '../features/scan/scan.dart';
-import '../features/settings/settings.dart';
 import 'api.dart';
 
 class ApiRequestException implements Exception {
@@ -176,36 +175,6 @@ class SapiSehatApiClient {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw Exception('Change password failed');
     }
-  }
-
-  Future<FarmerPreferences> getPreferences(AccountSession session) async {
-    final response = await transport.send(
-      ApiRequest(
-        'GET',
-        '/api/farmers/${session.farmerId}/preferences',
-        headers: _auth(session),
-      ),
-    );
-    if (response.statusCode != 200) throw Exception('Preferences failed');
-    return FarmerPreferences.fromJson(response.json);
-  }
-
-  Future<FarmerPreferences> updatePreferences(
-    AccountSession session,
-    FarmerPreferences preferences,
-  ) async {
-    final response = await transport.send(
-      ApiRequest(
-        'PUT',
-        '/api/farmers/${session.farmerId}/preferences',
-        body: jsonEncode(preferences.toJson()),
-        headers: _auth(session),
-      ),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Preferences update failed');
-    }
-    return FarmerPreferences.fromJson(response.json);
   }
 
   Future<FarmerAreaAdvisory> getAreaAdvisory(AccountSession session) async {
