@@ -21,6 +21,8 @@
     "dashboard:lint": "pnpm --dir apps/dashboard lint",
     "dashboard:typecheck": "pnpm --dir apps/dashboard exec tsc --noEmit",
     "mobile:build": "cd apps/mobile && flutter build apk --debug",
+    "mobile:build:apk:release": "cd apps/mobile && flutter build apk --release",
+    "mobile:build:aab:release": "cd apps/mobile && flutter build appbundle --release",
     "mobile:deploy": "pnpm run mobile:build && node scripts/run-adb.mjs install -r apps/mobile/build/app/outputs/flutter-apk/app-debug.apk",
     "mobile:run": "node scripts/run-flutter-first.mjs run",
     "mobile:restart": "node scripts/run-adb.mjs shell am force-stop id.sapisehat.sapisehat_mobile && node scripts/run-adb.mjs shell am start -n id.sapisehat.sapisehat_mobile/.MainActivity",
