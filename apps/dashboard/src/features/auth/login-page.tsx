@@ -12,8 +12,9 @@ import { Input } from "@/src/shared/ui/input";
 import { Label } from "@/src/shared/ui/label";
 import { loginAgency } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
+import { hasRoutePermission } from "@/src/shared/auth/route-permissions";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 const isDev = process.env.NODE_ENV === "development";
@@ -30,7 +31,7 @@ export default function LoginPage() {
 
 function LoginForm() {
 	const router = useRouter();
-	const { signIn } = useAgencySession();
+	const { status, agency, signIn } = useAgencySession();
 	const searchParams = useSearchParams();
 	const next = searchParams.get("next") || "/agency/overview";
 	const [email, setEmail] = useState(isDev ? devAdminEmail : "");
@@ -39,14 +40,27 @@ function LoginForm() {
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 
-	async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+	useEffect(() => {
+		if (status !== "authenticated") return;
+		const destination = hasRoutePermission(next, agency?.role)
+			? next
+			: "/agency/overview";
+		router.replace(destination);
+	}, [agency?.role, next, router, status]);
+
+	if (status === "checking" || status === "authenticated") return null;
+
+	async function onSubmit(event: React.SubmitEvent<HTMLFormElement>) {
 		event.preventDefault();
 		setError("");
 		setLoading(true);
 		try {
 			const result = await loginAgency(email, password);
-			await signIn(result.access_token, result.account ?? null);
-			router.push(next.startsWith("/agency") ? next : "/agency/overview");
+			const account = await signIn(result.access_token);
+			const destination = hasRoutePermission(next, account.role)
+				? next
+				: "/agency/overview";
+			router.replace(destination);
 		} catch (err) {
 			setError(err instanceof Error ? err.message : "Login failed");
 		} finally {
@@ -60,8 +74,8 @@ function LoginForm() {
 				<CardHeader>
 					<CardTitle>Agency login</CardTitle>
 					<CardDescription>
-						Access district-scoped review items, risk signals, follow-ups, and
-						audit logs.
+						Access district-scoped review items, risk signals, follow-ups, and audit
+						logs.
 					</CardDescription>
 				</CardHeader>
 				<CardContent>
