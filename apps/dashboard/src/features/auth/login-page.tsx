@@ -14,6 +14,7 @@ import { loginAgency } from "@/src/shared/api/client";
 import { useAgencySession } from "@/src/features/auth/session-context";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { Eye, EyeOff } from "lucide-react";
 
 const isDev = process.env.NODE_ENV === "development";
 const devAdminEmail = "admin@sapisehat.id";
@@ -34,6 +35,7 @@ function LoginForm() {
 	const next = searchParams.get("next") || "/agency/overview";
 	const [email, setEmail] = useState(isDev ? devAdminEmail : "");
 	const [password, setPassword] = useState(isDev ? devAdminPassword : "");
+	const [showPassword, setShowPassword] = useState(false);
 	const [error, setError] = useState("");
 	const [loading, setLoading] = useState(false);
 
@@ -76,13 +78,30 @@ function LoginForm() {
 						</div>
 						<div className="space-y-2">
 							<Label htmlFor="password">Password</Label>
-							<Input
-								id="password"
-								type="password"
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-								required
-							/>
+							<div className="relative">
+								<Input
+									id="password"
+									type={showPassword ? "text" : "password"}
+									value={password}
+									onChange={(e) => setPassword(e.target.value)}
+									className="pr-10"
+									required
+								/>
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									className="absolute right-0 top-0 h-9 w-9 text-muted-foreground hover:bg-transparent hover:text-foreground"
+									onClick={() => setShowPassword((prev) => !prev)}
+									aria-label={showPassword ? "Hide password" : "Show password"}
+								>
+									{showPassword ? (
+										<EyeOff className="h-4 w-4" />
+									) : (
+										<Eye className="h-4 w-4" />
+									)}
+								</Button>
+							</div>
 						</div>
 						{error ? <p className="text-sm text-destructive">{error}</p> : null}
 						<Button type="submit" className="w-full" disabled={loading}>
