@@ -6,6 +6,7 @@ from main import app
 from api.cattle_profiles import cattle_profile_store
 from api.detection_events import detection_event_store
 from api.farmer_accounts import FarmerConsentState, farmer_account_store
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 
 
 def setup_function():
@@ -105,7 +106,7 @@ def test_agency_dashboard_sees_detection_after_attachment_when_authorized():
     )
     assert attach_response.status_code == 200
 
-    response = client.get("/api/agency/detections", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/detections", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200
     detections = response.json()["detections"]
@@ -124,7 +125,7 @@ def test_agency_dashboard_does_not_see_unattached_or_unauthorized_detection():
         json={"cattle_id": private_cattle["id"]},
     )
 
-    response = client.get("/api/agency/detections", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/detections", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200
     assert response.json()["detections"] == []

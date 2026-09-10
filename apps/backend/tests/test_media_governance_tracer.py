@@ -3,6 +3,7 @@
 from uuid import uuid4
 from fastapi.testclient import TestClient
 
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 from main import app
 
 client = TestClient(app)
@@ -52,7 +53,7 @@ def test_allowed_media_access_for_authorized_agency():
     create = client.post("/api/media", json=media_payload(f["id"], c["id"]))
     assert create.status_code == 200, create.text
 
-    response = client.get(f"/api/agency/media/{create.json()['id']}", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get(f"/api/agency/media/{create.json()['id']}", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200, response.text
     body = response.json()
@@ -73,7 +74,7 @@ def test_denied_media_access_for_wrong_jurisdiction():
     create = client.post("/api/media", json=media_payload(f["id"]))
     assert create.status_code == 200, create.text
 
-    response = client.get(f"/api/agency/media/{create.json()['id']}", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get(f"/api/agency/media/{create.json()['id']}", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 403
 
@@ -89,7 +90,7 @@ def test_denied_media_storage_without_required_consent():
 
 
 def test_missing_media_returns_404():
-    response = client.get("/api/agency/media/media-missing", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/media/media-missing", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 404
 

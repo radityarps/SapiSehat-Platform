@@ -3,6 +3,7 @@
 from uuid import uuid4
 from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 from main import app
 from tests.conftest import repo_text
 
@@ -43,7 +44,7 @@ def test_detection_monitoring_lists_only_authorized_scope():
     allowed_result = create_fusion(allowed_farmer, allowed_cattle)
     outside_result = create_fusion(outside_farmer, outside_cattle)
 
-    response = client.get("/api/agency/detection-monitoring", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/detection-monitoring", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200, response.text
     ids = {item["id"] for item in response.json()["detections"]}
@@ -55,7 +56,7 @@ def test_detection_monitoring_shows_conflict_and_evidence_breakdown():
     farmer_id, cattle_id = farmer_cattle(tag="CONFLICT")
     conflict = create_fusion(farmer_id, cattle_id, image_top="FMD", nlp_top="healthy")
 
-    response = client.get("/api/agency/detection-monitoring", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/detection-monitoring", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
     row = next(item for item in response.json()["detections"] if item["id"] == conflict["id"])
 
     assert row["conflict_status"] == "image_nlp_conflict"

@@ -3,6 +3,7 @@
 from uuid import uuid4
 from fastapi.testclient import TestClient
 
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 from main import app
 from tests.conftest import repo_text
 
@@ -42,7 +43,7 @@ def test_registry_api_filters_farmers_and_cattle_by_authorization_scope():
     create_cattle(private["id"], "REG-PRIVATE")
     create_cattle(outside["id"], "REG-OUTSIDE", "west-java")
 
-    response = client.get("/api/agency/registry", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/registry", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200, response.text
     body = response.json()

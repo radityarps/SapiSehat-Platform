@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 
 from main import app
 from api.audit_logs import audit_log_store
+from api.surface_auth import DEFAULT_AGENCY_ADMIN_ID, DEFAULT_AGENCY_OFFICER_ID
 
 client = TestClient(app)
 
@@ -21,7 +22,7 @@ def test_admin_can_read_recent_audit_logs_with_filters():
     )
     audit_log_store.record(
         actor_type="agency",
-        actor_id="semarang-officer",
+        actor_id=DEFAULT_AGENCY_OFFICER_ID,
         action="follow_up.created",
         resource_type="follow_up",
         resource_id="follow-up-1",
@@ -29,7 +30,7 @@ def test_admin_can_read_recent_audit_logs_with_filters():
 
     response = client.get(
         "/api/agency/audit-logs?action=media.uploaded&limit=10",
-        headers={"X-Agency-User-Id": "central-java-admin"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_ADMIN_ID},
     )
 
     assert response.status_code == 200, response.text
@@ -50,7 +51,7 @@ def test_non_admin_agency_can_read_audit_logs():
 
     response = client.get(
         "/api/agency/audit-logs",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
     )
 
     assert response.status_code == 200, response.text

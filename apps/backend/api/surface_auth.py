@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import time
+import uuid
 from datetime import datetime, timezone
 
 from jose import JWTError, jwt
@@ -14,6 +15,9 @@ from api.database import SessionLocal, create_all_tables
 from api.db_models import AccountModel
 from config import settings
 
+DEFAULT_AGENCY_ADMIN_ID = "a1000000-0000-4000-8000-000000000001"
+DEFAULT_AGENCY_OFFICER_ID = "a2000000-0000-4000-8000-000000000002"
+DEFAULT_AGENCY_VIEWER_ID = "a3000000-0000-4000-8000-000000000003"
 
 TOKEN_ALGORITHM = "HS256"
 password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
@@ -77,16 +81,55 @@ class SurfaceAccountStore:
             address=address,
         )
 
-    def seed_agency(self, *, email: str, password: str, name: str, jurisdiction_id: str) -> SurfaceAccount:
+    def seed_agency(
+        self,
+        *,
+        email: str,
+        password: str,
+        name: str,
+        jurisdiction_id: str,
+        account_id: str | None = None,
+    ) -> SurfaceAccount:
+        from api.db_models import AgencyUserModel
+
         existing = self.get(account_type="agency", email=email)
         if existing is not None:
-            return existing
+            if account_id is not None and existing.id != account_id:
+                with SessionLocal() as session:
+                    old_agency_user = session.get(AgencyUserModel, existing.id)
+                    if old_agency_user is not None:
+                        session.delete(old_agency_user)
+                    old_account = session.get(AccountModel, existing.id)
+                    if old_account is not None:
+                        session.delete(old_account)
+                    session.commit()
+            else:
+                return existing
         return self._create(
             account_type="agency",
             email=email,
             password=password,
             name=name,
             jurisdiction_id=jurisdiction_id,
+            account_id=account_id,
+        )
+
+    def register_agency(
+        self,
+        *,
+        email: str,
+        password: str = "agency-password",
+        name: str,
+        jurisdiction_id: str,
+        account_id: str | None = None,
+    ) -> SurfaceAccount:
+        return self._create(
+            account_type="agency",
+            email=email,
+            password=password,
+            name=name,
+            jurisdiction_id=jurisdiction_id,
+            account_id=account_id,
         )
 
     def _create(
@@ -98,14 +141,26 @@ class SurfaceAccountStore:
         name: str,
         jurisdiction_id: str,
         address: str | None = None,
+        account_id: str | None = None,
     ) -> SurfaceAccount:
         normalized_email = normalize_email(email)
         if self.get(account_type=account_type, email=normalized_email) is not None:
             raise ValueError(f"{account_type} account already exists")
         with SessionLocal() as session:
-            next_num = (session.scalar(select(func.count()).select_from(AccountModel)) or 0) + 1
+            if account_id is None or session.get(AccountModel, account_id) is not None:
+                if account_type == "agency":
+                    account_id = str(uuid.uuid4())
+                    while session.get(AccountModel, account_id) is not None:
+                        account_id = str(uuid.uuid4())
+                else:
+                    next_num = (session.scalar(select(func.count()).select_from(AccountModel)) or 0) + 1
+                    candidate = f"{account_type}-{next_num}"
+                    while session.get(AccountModel, candidate) is not None:
+                        next_num += 1
+                        candidate = f"{account_type}-{next_num}"
+                    account_id = candidate
             account = SurfaceAccount(
-                id=f"{account_type}-{next_num}",
+                id=account_id,
                 account_type=account_type,
                 email=normalized_email,
                 name=name,
@@ -179,6 +234,16 @@ class SurfaceAccountStore:
             session.refresh(row)
             return _account_from_row(row)
 
+    def reset_password(self, *, account_id: str, new_password: str = "agency-password") -> SurfaceAccount:
+        with SessionLocal() as session:
+            row = session.get(AccountModel, account_id)
+            if row is None or not row.is_active:
+                raise ValueError("account not found")
+            row.password_hash = hash_password(new_password)
+            session.commit()
+            session.refresh(row)
+            return _account_from_row(row)
+
     def archive_farmer(self, *, account_id: str, password: str | None = None) -> SurfaceAccount:
         with SessionLocal() as session:
             row = session.get(AccountModel, account_id)
@@ -220,8 +285,25 @@ def seed_default_farmer_accounts() -> None:
     )
 
 def seed_default_agency_accounts() -> None:
-    from api.authorization import _agency_user_store, AgencyRole, refresh_agency_users
+    from api.authorization import AgencyRole, _agency_user_store, refresh_agency_users
+    from api.db_models import AgencyUserModel
     from config import settings
+
+    # Clean up obsolete legacy central-java-admin or legacy seeded accounts if present
+    with SessionLocal() as session:
+        for legacy_id in (
+            "central-java-admin",
+            "semarang-officer",
+            "tembalang-viewer",
+            "agency-1",
+        ):
+            legacy_u = session.get(AgencyUserModel, legacy_id)
+            if legacy_u is not None:
+                session.delete(legacy_u)
+            legacy_a = session.get(AccountModel, legacy_id)
+            if legacy_a is not None:
+                session.delete(legacy_a)
+        session.commit()
 
     # Master admin is always seeded, credentials from env in every tier.
     admin = surface_account_store.seed_agency(
@@ -229,21 +311,34 @@ def seed_default_agency_accounts() -> None:
         password=settings.master_admin_password,
         name=settings.master_admin_name,
         jurisdiction_id=settings.master_admin_jurisdiction,
+        account_id=DEFAULT_AGENCY_ADMIN_ID,
     )
     _agency_user_store.ensure_exists(
         admin.id, AgencyRole.ADMIN.value, settings.master_admin_jurisdiction
     )
 
-    # District officer only seeds in staging/development, never production.
+    # District officer and Viewer only seed in staging/development, never production.
     if settings.resolved_seed_tier != "production":
         officer = surface_account_store.seed_agency(
             email="semarang-officer@sapisehat.test",
             password="agency-password",
             name="Semarang Officer",
             jurisdiction_id="semarang-city",
+            account_id=DEFAULT_AGENCY_OFFICER_ID,
         )
         _agency_user_store.ensure_exists(
             officer.id, AgencyRole.DISTRICT_OFFICER.value, "semarang-city"
+        )
+
+        viewer = surface_account_store.seed_agency(
+            email="tembalang-viewer@sapisehat.test",
+            password="agency-password",
+            name="Tembalang Viewer",
+            jurisdiction_id="tembalang",
+            account_id=DEFAULT_AGENCY_VIEWER_ID,
+        )
+        _agency_user_store.ensure_exists(
+            viewer.id, AgencyRole.VIEWER.value, "tembalang"
         )
 
     refresh_agency_users()

@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 
 from main import app
 from api.risk_signals import cluster_risk_signal_store
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 
 client = TestClient(app)
 
@@ -55,7 +56,7 @@ def test_farmer_area_advisory_activates_for_farmer_district_cluster_without_iden
     farmer_id = create_signal()
     create_signal()
     create_signal()
-    agency = client.get("/api/agency/risk-signals", headers={"X-Agency-User-Id": "semarang-officer"})
+    agency = client.get("/api/agency/risk-signals", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
     assert agency.status_code == 200, agency.text
 
     response = client.get(f"/api/farmers/{farmer_id}/area-advisory")

@@ -19,6 +19,8 @@ from api.db_models import (
 )
 from api.guide_seed import ARTICLES, CATEGORIES, TIMESTAMP, seed_bundled_guide_catalog
 from api.surface_auth import (
+    DEFAULT_AGENCY_ADMIN_ID,
+    DEFAULT_AGENCY_OFFICER_ID,
     issue_token,
     seed_default_agency_accounts,
     seed_default_farmer_accounts,
@@ -35,7 +37,7 @@ def _auth(account_type: str, email: str) -> str:
 
 
 def _admin_headers(
-    user_id: str = "agency-1", email: str | None = None
+    user_id: str = DEFAULT_AGENCY_ADMIN_ID, email: str | None = None
 ) -> dict[str, str]:
     return {
         "Authorization": _auth("agency", email or settings.master_admin_email),
@@ -141,7 +143,7 @@ def test_only_matching_global_admin_can_access_cms() -> None:
     assert (
         client.get(
             "/api/agency/guide/articles",
-            headers={"Authorization": officer, "X-Agency-User-Id": "semarang-officer"},
+            headers={"Authorization": officer, "X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
         ).status_code
         == 403
     )
@@ -542,7 +544,7 @@ def test_admin_lists_and_farmer_reads_enforce_surface_authorization() -> None:
     client = TestClient(app)
     officer_headers = {
         "Authorization": _auth("agency", "semarang-officer@sapisehat.test"),
-        "X-Agency-User-Id": "semarang-officer",
+        "X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID,
     }
     for path in ("/api/agency/guide/media", "/api/agency/guide/audit-events"):
         assert client.get(path, headers=officer_headers).status_code == 403
@@ -654,7 +656,7 @@ def test_admin_media_preview_requires_admin_and_returns_private_bytes(
             path,
             headers={
                 "Authorization": officer,
-                "X-Agency-User-Id": "semarang-officer",
+                "X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID,
             },
         ).status_code
         == 403

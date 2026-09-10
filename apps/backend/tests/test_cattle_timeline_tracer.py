@@ -7,6 +7,7 @@ from api.database import SessionLocal
 from api.db_models import CattleTimelineEventModel
 from api.cattle_profiles import cattle_profile_store
 from api.farmer_accounts import FarmerConsentState, farmer_account_store
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 
 
 def setup_function():
@@ -114,7 +115,7 @@ def test_authorized_agency_can_read_cattle_timeline():
 
     response = client.get(
         f"/api/agency/cattle/{cattle['id']}",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
     )
 
     assert response.status_code == 200
@@ -128,7 +129,7 @@ def test_unauthorized_agency_cannot_read_cattle_timeline():
 
     response = client.get(
         f"/api/agency/cattle/{cattle['id']}",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
     )
 
     assert response.status_code == 404

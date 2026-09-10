@@ -14,6 +14,7 @@ from api.authorization import (
     can_agency_access_farmer,
     filter_visible_farmers,
 )
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 
 
 def test_authorization_allows_same_jurisdiction_with_monitoring_consent():
@@ -56,10 +57,10 @@ def test_filter_visible_farmers_excludes_unauthorized_records():
 
 def test_agency_farmers_endpoint_filters_by_role_jurisdiction_and_consent():
     client = TestClient(app)
-    response = client.get("/api/agency/farmers", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/farmers", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
     assert response.status_code == 200
     body = response.json()
-    assert body["agency_user_id"] == "semarang-officer"
+    assert body["agency_user_id"] == DEFAULT_AGENCY_OFFICER_ID
     assert [farmer["id"] for farmer in body["farmers"]] == ["farmer-1"]
 
 

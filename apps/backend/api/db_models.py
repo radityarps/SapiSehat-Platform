@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import uuid
+
 from sqlalchemy import (  # type: ignore[import-not-found]
     JSON,
     BigInteger,
@@ -14,7 +16,11 @@ from sqlalchemy import (  # type: ignore[import-not-found]
     String,
     UniqueConstraint,
 )
-from sqlalchemy.orm import Mapped, mapped_column  # type: ignore[import-not-found]
+from sqlalchemy.orm import (  # type: ignore[import-not-found]
+    Mapped,
+    mapped_column,
+    relationship,
+)
 
 from api.database import Base
 
@@ -94,6 +100,10 @@ class AgencyJurisdictionModel(Base):
     longitude: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
+def generate_agency_user_id() -> str:
+    return str(uuid.uuid4())
+
+
 class AgencyUserModel(Base):
     __tablename__ = "agency_users"
     __table_args__ = (
@@ -103,9 +113,20 @@ class AgencyUserModel(Base):
         ),
     )
 
-    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    id: Mapped[str] = mapped_column(
+        String(80),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        primary_key=True,
+        default=generate_agency_user_id,
+    )
     role: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     jurisdiction_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+
+    account: Mapped[AccountModel | None] = relationship(
+        "AccountModel",
+        lazy="joined",
+        uselist=False,
+    )
 
 
 class CattleProfileModel(Base):

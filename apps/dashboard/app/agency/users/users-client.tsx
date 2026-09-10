@@ -38,7 +38,7 @@ import {
 	useQuery,
 	useQueryClient,
 } from "@tanstack/react-query";
-import { Pencil, Plus, Search, Trash2 } from "lucide-react";
+import { KeyRound, Pencil, Plus, Search, Trash2 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
 import {
@@ -51,12 +51,32 @@ import {
 	type SortingState,
 } from "@tanstack/react-table";
 
-type AgencyUserItem = { id: string; role: string; jurisdiction_id: string };
+type AgencyUserItem = {
+	id: string;
+	name?: string;
+	email?: string;
+	role: string;
+	jurisdiction_id: string;
+};
 type JurisdictionItem = {
 	id: string;
 	name: string;
 	level: string;
 	parent_id: string | null;
+};
+
+type CreateUserPayload = {
+	name: string;
+	email: string;
+	role: string;
+	jurisdiction_id: string;
+	password?: string;
+};
+
+type UpdateUserPayload = {
+	name?: string;
+	role: string;
+	jurisdiction_id?: string;
 };
 
 const ROLES = [
@@ -111,7 +131,7 @@ async function fetchJurisdictions(
 async function createUser(
 	token: string,
 	agencyUserId: string,
-	data: AgencyUserItem,
+	data: CreateUserPayload,
 ) {
 	const res = await fetch("/api/agency/users", {
 		method: "POST",
@@ -122,7 +142,10 @@ async function createUser(
 		},
 		body: JSON.stringify(data),
 	});
-	if (!res.ok) throw new Error("Failed to create user");
+	if (!res.ok) {
+		const err = await res.json().catch(() => ({}));
+		throw new Error(err.detail || "Failed to create user");
+	}
 	return res.json();
 }
 
@@ -130,7 +153,7 @@ async function updateUser(
 	token: string,
 	agencyUserId: string,
 	userId: string,
-	data: { role: string; jurisdiction_id?: string },
+	data: UpdateUserPayload,
 ) {
 	const res = await fetch(`/api/agency/users/${userId}`, {
 		method: "PUT",
@@ -141,7 +164,10 @@ async function updateUser(
 		},
 		body: JSON.stringify(data),
 	});
-	if (!res.ok) throw new Error("Failed to update user");
+	if (!res.ok) {
+		const err = await res.json().catch(() => ({}));
+		throw new Error(err.detail || "Failed to update user");
+	}
 	return res.json();
 }
 
@@ -157,6 +183,21 @@ async function deleteUser(token: string, agencyUserId: string, userId: string) {
 	return res.json();
 }
 
+async function resetPasswordUser(token: string, agencyUserId: string, userId: string) {
+	const res = await fetch(`/api/agency/users/${userId}/reset-password`, {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${token}`,
+			"X-Agency-User-Id": agencyUserId,
+		},
+	});
+	if (!res.ok) {
+		const err = await res.json().catch(() => ({}));
+		throw new Error(err.detail || "Failed to reset password");
+	}
+	return res.json();
+}
+
 export function UsersClient() {
 	const { token, agencyUserId } = useAgencySession();
 	const queryClient = useQueryClient();
@@ -169,6 +210,7 @@ export function UsersClient() {
 	const [formOpen, setFormOpen] = useState(false);
 	const [editing, setEditing] = useState<AgencyUserItem | null>(null);
 	const [deleteTarget, setDeleteTarget] = useState<AgencyUserItem | null>(null);
+	const [resetPasswordTarget, setResetPasswordTarget] = useState<AgencyUserItem | null>(null);
 
 	const usersQuery = useQuery({
 		queryKey: ["agency-users", debouncedGlobalFilter, roleFilter],
@@ -198,6 +240,17 @@ export function UsersClient() {
 		},
 	});
 
+	const resetPasswordMutation = useMutation({
+		mutationFn: (userId: string) => resetPasswordUser(token, agencyUserId, userId),
+		onSuccess: () => {
+			toast.success("Password reset to default (agency-password).");
+			setResetPasswordTarget(null);
+		},
+		onError: (error) => {
+			toast.error(error instanceof Error ? error.message : "Failed to reset password.");
+		},
+	});
+
 	const users = useMemo(() => {
 		return usersQuery.data?.users ?? [];
 	}, [usersQuery.data?.users]);
@@ -210,10 +263,17 @@ export function UsersClient() {
 	const columns: ColumnDef<AgencyUserItem>[] = useMemo(
 		() => [
 			{
-				accessorKey: "id",
-				header: "ID",
+				accessorKey: "name",
+				header: "User",
 				cell: ({ row }) => (
-					<span className="font-mono text-xs">{row.original.id}</span>
+					<div className="flex flex-col">
+						<span className="font-medium text-sm text-foreground">
+							{row.original.name || row.original.id}
+						</span>
+						<span className="text-xs text-muted-foreground">
+							{row.original.email || row.original.id}
+						</span>
+					</div>
 				),
 			},
 			{
@@ -229,6 +289,13 @@ export function UsersClient() {
 				),
 			},
 			{ accessorKey: "jurisdiction_id", header: "Jurisdiction" },
+			{
+				accessorKey: "id",
+				header: "ID",
+				cell: ({ row }) => (
+					<span className="font-mono text-xs text-muted-foreground">{row.original.id}</span>
+				),
+			},
 			{
 				id: "actions",
 				header: "Actions",
@@ -246,6 +313,16 @@ export function UsersClient() {
 							}}
 						>
 							<Pencil className="h-3.5 w-3.5" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="icon"
+							className="h-7 w-7 text-amber-600 hover:text-amber-700 dark:text-amber-500"
+							aria-label="Reset Password"
+							title="Reset Password"
+							onClick={() => setResetPasswordTarget(row.original)}
+						>
+							<KeyRound className="h-3.5 w-3.5" />
 						</Button>
 						<Button
 							variant="ghost"
@@ -453,8 +530,10 @@ export function UsersClient() {
 						<AlertDialogTitle>Delete user?</AlertDialogTitle>
 						<AlertDialogDescription>
 							This will permanently remove agency user{" "}
-							<span className="font-mono">{deleteTarget?.id}</span> and revoke
-							their access. This cannot be undone.
+							<span className="font-mono">
+								{deleteTarget?.name ? `${deleteTarget.name} (${deleteTarget.id})` : deleteTarget?.id}
+							</span>{" "}
+							and revoke their access. This cannot be undone.
 						</AlertDialogDescription>
 					</AlertDialogHeader>
 					<AlertDialogFooter>
@@ -466,6 +545,38 @@ export function UsersClient() {
 							className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
 						>
 							{deleteMutation.isPending ? "Deleting..." : "Delete"}
+						</AlertDialogAction>
+					</AlertDialogFooter>
+				</AlertDialogContent>
+			</AlertDialog>
+
+			<AlertDialog
+				open={!!resetPasswordTarget}
+				onOpenChange={(v) => {
+					if (!v) setResetPasswordTarget(null);
+				}}
+			>
+				<AlertDialogContent>
+					<AlertDialogHeader>
+						<AlertDialogTitle>Reset user password?</AlertDialogTitle>
+						<AlertDialogDescription>
+							Are you sure you want to reset the password for{" "}
+							<span className="font-semibold text-foreground">
+								{resetPasswordTarget?.name ? `${resetPasswordTarget.name} (${resetPasswordTarget.id})` : resetPasswordTarget?.id}
+							</span>{" "}
+							to the default password (<code className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">agency-password</code>)?
+						</AlertDialogDescription>
+					</AlertDialogHeader>
+					<AlertDialogFooter>
+						<AlertDialogCancel>Cancel</AlertDialogCancel>
+						<AlertDialogAction
+							onClick={() =>
+								resetPasswordTarget &&
+								resetPasswordMutation.mutate(resetPasswordTarget.id)
+							}
+							className="bg-amber-600 text-white hover:bg-amber-700 dark:bg-amber-600 dark:hover:bg-amber-700"
+						>
+							{resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
 						</AlertDialogAction>
 					</AlertDialogFooter>
 				</AlertDialogContent>
@@ -490,17 +601,23 @@ function UserFormDialog({
 	const { token, agencyUserId } = useAgencySession();
 	const isEdit = !!editing;
 
-	const [id, setId] = useState("");
+	const [name, setName] = useState("");
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
 	const [role, setRole] = useState("district_officer");
 	const [jurisdiction, setJurisdiction] = useState("");
 
 	useEffect(() => {
 		if (editing) {
-			setId(editing.id);
+			setName(editing.name || "");
+			setEmail(editing.email || "");
+			setPassword("");
 			setRole(editing.role);
 			setJurisdiction(editing.jurisdiction_id);
 		} else {
-			setId("");
+			setName("");
+			setEmail("");
+			setPassword("");
 			setRole("district_officer");
 			setJurisdiction("");
 		}
@@ -510,14 +627,17 @@ function UserFormDialog({
 		mutationFn: () => {
 			if (isEdit && editing) {
 				return updateUser(token, agencyUserId, editing.id, {
+					name,
 					role,
 					jurisdiction_id: jurisdiction,
 				});
 			}
 			return createUser(token, agencyUserId, {
-				id,
+				name,
+				email,
 				role,
 				jurisdiction_id: jurisdiction,
+				password: password.trim() ? password : undefined,
 			});
 		},
 		onSuccess: () => {
@@ -545,11 +665,13 @@ function UserFormDialog({
 			<DialogContent className="sm:max-w-md">
 				<DialogHeader>
 					<DialogTitle>
-						{isEdit ? `Edit ${editing?.id}` : "New agency user"}
+						{isEdit
+							? `Edit ${editing?.name || editing?.id}`
+							: "New agency user"}
 					</DialogTitle>
 					<DialogDescription className="sr-only">
 						{isEdit
-							? "Update agency user role and jurisdiction."
+							? "Update agency user profile, role, and jurisdiction."
 							: "Create a new agency user account."}
 					</DialogDescription>
 				</DialogHeader>
@@ -561,15 +683,54 @@ function UserFormDialog({
 						mutation.mutate();
 					}}
 				>
+					<div className="space-y-1.5">
+						<Label htmlFor="user-name">Full Name</Label>
+						<Input
+							id="user-name"
+							value={name}
+							onChange={(e) => setName(e.target.value)}
+							placeholder="e.g. Budi Santoso"
+							required
+						/>
+					</div>
 					{!isEdit && (
 						<div className="space-y-1.5">
-							<Label htmlFor="user-id">User ID</Label>
+							<Label htmlFor="user-email">Email Address</Label>
 							<Input
-								id="user-id"
-								value={id}
-								onChange={(e) => setId(e.target.value)}
-								placeholder="e.g. agency-6"
+								id="user-email"
+								type="email"
+								value={email}
+								onChange={(e) => setEmail(e.target.value)}
+								placeholder="e.g. budi@sapisehat.id"
 								required
+							/>
+						</div>
+					)}
+					{isEdit && editing?.email && (
+						<div className="space-y-1.5">
+							<Label htmlFor="user-email-readonly">Email Address</Label>
+							<Input
+								id="user-email-readonly"
+								value={editing.email}
+								disabled
+								className="bg-muted text-muted-foreground cursor-not-allowed"
+							/>
+						</div>
+					)}
+					{!isEdit && (
+						<div className="space-y-1.5">
+							<Label htmlFor="user-password">
+								Password{" "}
+								<span className="text-xs font-normal text-muted-foreground">
+									(optional, default: agency-password)
+								</span>
+							</Label>
+							<Input
+								id="user-password"
+								type="password"
+								value={password}
+								onChange={(e) => setPassword(e.target.value)}
+								placeholder="Default: agency-password"
 							/>
 						</div>
 					)}
@@ -616,7 +777,12 @@ function UserFormDialog({
 						</Button>
 						<Button
 							type="submit"
-							disabled={mutation.isPending || (!isEdit && !id) || !jurisdiction}
+							disabled={
+								mutation.isPending ||
+								(!isEdit && (!name || !email)) ||
+								(isEdit && !name) ||
+								!jurisdiction
+							}
 						>
 							{mutation.isPending
 								? "Saving..."

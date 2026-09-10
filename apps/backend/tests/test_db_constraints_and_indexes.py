@@ -32,3 +32,4 @@ def test_backend_tables_have_expected_constraints_and_indexes():
     assert RateLimitRequestModel.__table__.columns.client_key.index is True
     assert AuditLogModel.__table__.columns.action.index is True
     assert AgencyUserModel.__table__.columns.role.index is True
+    assert "accounts.id" in {fk.target_fullname for fk in AgencyUserModel.__table__.foreign_keys}

@@ -10,6 +10,7 @@ from config import settings
 from main import app
 from api.farmer_accounts import farmer_account_store
 from api.media_governance import media_store
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 
 client = TestClient(app)
 
@@ -72,7 +73,7 @@ def test_real_minio_upload_and_signed_url_smoke():
     stored = s3.get_object(Bucket=settings.s3_bucket, Key=media["object_key"])["Body"].read()
     signed_url = client.get(
         f"/api/agency/media/{media['id']}/download-url",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
     )
 
     assert stored == content

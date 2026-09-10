@@ -1911,12 +1911,16 @@ class AgencyJurisdictionRequest(BaseModel):
 
 
 class AgencyUserCreateRequest(BaseModel):
-    id: str
+    id: str | None = None
+    name: str
+    email: str
     role: str
     jurisdiction_id: str
+    password: str | None = None
 
 
 class AgencyUserUpdateRequest(BaseModel):
+    name: str | None = None
     role: str
     jurisdiction_id: str | None = None
 
@@ -1938,11 +1942,26 @@ async def list_agency_users(
     users = [
         user
         for user in users
-        if _matches_query([user.id, user.role.value, user.jurisdiction_id], search)
+        if _matches_query(
+            [
+                user.id,
+                user.name or "",
+                user.email or "",
+                user.role.value,
+                user.jurisdiction_id,
+            ],
+            search,
+        )
     ]
     return {
         "users": [
-            {"id": u.id, "role": u.role.value, "jurisdiction_id": u.jurisdiction_id}
+            {
+                "id": u.id,
+                "name": u.name or u.id,
+                "email": u.email or f"{u.id}@sapisehat.id",
+                "role": u.role.value,
+                "jurisdiction_id": u.jurisdiction_id,
+            }
             for u in users
         ]
     }
@@ -1962,12 +1981,32 @@ async def create_agency_user(
         raise HTTPException(
             status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}"
         )
-    _agency_user_store.ensure_exists(request.id, request.role, request.jurisdiction_id)
+    existing_account = surface_account_store.get(
+        account_type="agency", email=request.email
+    )
+    if existing_account is not None:
+        raise HTTPException(
+            status_code=409, detail="Agency user with this email already exists"
+        )
+    account = surface_account_store.register_agency(
+        email=request.email,
+        name=request.name,
+        jurisdiction_id=request.jurisdiction_id,
+        password=request.password or "agency-password",
+        account_id=request.id,
+    )
+    user = _agency_user_store.create(
+        role=request.role,
+        jurisdiction_id=request.jurisdiction_id,
+        user_id=account.id,
+    )
     refresh_agency_users()
     return {
-        "id": request.id,
-        "role": request.role,
-        "jurisdiction_id": request.jurisdiction_id,
+        "id": user.id,
+        "name": user.name or account.name,
+        "email": user.email or account.email,
+        "role": user.role.value,
+        "jurisdiction_id": user.jurisdiction_id,
     }
 
 
@@ -1987,13 +2026,15 @@ async def update_agency_user(
             status_code=422, detail=f"Invalid role. Must be one of: {valid_roles}"
         )
     updated = _agency_user_store.update_role(
-        user_id, request.role, request.jurisdiction_id
+        user_id, request.role, request.jurisdiction_id, name=request.name
     )
     if updated is None:
         raise HTTPException(status_code=404, detail="User not found")
     refresh_agency_users()
     return {
         "id": updated.id,
+        "name": updated.name or updated.id,
+        "email": updated.email or f"{updated.id}@sapisehat.id",
         "role": updated.role.value,
         "jurisdiction_id": updated.jurisdiction_id,
     }
@@ -2012,6 +2053,30 @@ async def delete_agency_user(
         raise HTTPException(status_code=404, detail="User not found")
     refresh_agency_users()
     return {"deleted": True}
+
+
+@router.post("/agency/users/{user_id}/reset-password", tags=["agency"])
+async def reset_agency_user_password(
+    user_id: str, agency_user_id: str = Header(..., alias="X-Agency-User-Id")
+):
+    """Reset an agency user's password to default. Admin only."""
+    agency = DEMO_AGENCY_USERS.get(agency_user_id)
+    if agency is None or agency.role.value != "admin":
+        raise HTTPException(status_code=403, detail="Admin role required")
+    user = _agency_user_store.get(user_id)
+    if user is None:
+        raise HTTPException(status_code=404, detail="User not found")
+    try:
+        surface_account_store.reset_password(
+            account_id=user_id, new_password="agency-password"
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    return {
+        "success": True,
+        "message": f"Password for user {user.name or user.id} has been reset to default password",
+        "default_password": "agency-password",
+    }
 
 
 @router.get("/agency/jurisdictions", tags=["agency"])

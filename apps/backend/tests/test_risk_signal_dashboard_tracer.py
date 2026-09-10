@@ -3,6 +3,7 @@
 from uuid import uuid4
 from fastapi.testclient import TestClient  # type: ignore[import-not-found]
 
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 from main import app
 from tests.conftest import repo_text
 
@@ -38,7 +39,7 @@ def test_three_signal_threshold_marks_possible_increased_risk():
     create_signal()
     create_signal()
 
-    response = client.get("/api/agency/risk-signals", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/risk-signals", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200, response.text
     body = response.json()
@@ -55,7 +56,7 @@ def test_three_signal_threshold_marks_possible_increased_risk():
 def test_risk_signal_summary_filters_out_unauthorized_jurisdiction():
     create_signal(jurisdiction_id="west-java")
 
-    response = client.get("/api/agency/risk-signals", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/risk-signals", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200, response.text
     assert all(item["jurisdiction_id"] != "west-java" for item in response.json()["signals"])
