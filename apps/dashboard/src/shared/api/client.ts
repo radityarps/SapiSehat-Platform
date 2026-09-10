@@ -10,6 +10,11 @@ import type {
 	NotificationItem,
 	RiskSignalItem,
 	SafeLanguage,
+	GuideArticle,
+	GuideAuditEvent,
+	GuideCategory,
+	GuideMedia,
+	GuideTranslation,
 } from "@/src/shared/types/api";
 
 const envBase = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -490,6 +495,155 @@ export async function updateProfile(token: string, input: UpdateProfileInput) {
 		token,
 	);
 	return agencyMeSchema.parse(data) as AgencyMe;
+}
+
+function guideHeaders(token: string, agencyUserId: string) {
+	return {
+		Authorization: `Bearer ${token}`,
+		"X-Agency-User-Id": agencyUserId,
+	};
+}
+
+export async function getGuideArticles(token: string, agencyUserId: string) {
+	return request<{ items: GuideArticle[] }>(
+		"/api/agency/guide/articles",
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function getGuideCategories(token: string, agencyUserId: string) {
+	return request<{ items: GuideCategory[] }>(
+		"/api/agency/guide/categories",
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function getGuideMedia(token: string, agencyUserId: string) {
+	return request<{ items: GuideMedia[] }>(
+		"/api/agency/guide/media",
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function getGuideMediaPreview(
+	token: string,
+	agencyUserId: string,
+	mediaId: string,
+): Promise<Blob> {
+	const url = baseUrl
+		? `${baseUrl}/api/agency/guide/media/${mediaId}/preview`
+		: `/api/agency/guide/media/${mediaId}/preview`;
+	const response = await fetch(url, {
+		headers: guideHeaders(token, agencyUserId),
+		cache: "no-store",
+	});
+	if (!response.ok) throw new Error(`Image preview failed (${response.status})`);
+	return response.blob();
+}
+
+export async function getGuideAuditEvents(token: string, agencyUserId: string) {
+	return request<{ items: GuideAuditEvent[] }>(
+		"/api/agency/guide/audit-events",
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function saveGuideArticle(
+	token: string,
+	agencyUserId: string,
+	input: { id?: string; category_id: string; translations: GuideTranslation[] },
+) {
+	const path = input.id
+		? `/api/agency/guide/articles/${input.id}`
+		: "/api/agency/guide/articles";
+	return request<GuideArticle>(
+		path,
+		{
+			method: input.id ? "PUT" : "POST",
+			headers: guideHeaders(token, agencyUserId),
+			body: JSON.stringify({
+				category_id: input.category_id,
+				translations: input.translations,
+			}),
+		},
+		token,
+	);
+}
+
+export async function transitionGuideArticle(
+	token: string,
+	agencyUserId: string,
+	articleId: string,
+	action: "publish" | "unpublish" | "archive",
+) {
+	return request<GuideArticle>(
+		`/api/agency/guide/articles/${articleId}/${action}`,
+		{
+			method: "POST",
+			headers: guideHeaders(token, agencyUserId),
+		},
+		token,
+	);
+}
+
+export async function uploadGuideMedia(
+	token: string,
+	agencyUserId: string,
+	file: File,
+) {
+	const form = new FormData();
+	form.append("file", file);
+	const url = baseUrl
+		? `${baseUrl}/api/agency/guide/media`
+		: "/api/agency/guide/media";
+	const response = await fetch(url, {
+		method: "POST",
+		headers: guideHeaders(token, agencyUserId),
+		body: form,
+	});
+	if (!response.ok) throw new Error(`Upload failed (${response.status})`);
+	return response.json() as Promise<{ id: string; sha256: string }>;
+}
+
+export async function saveGuideCategory(
+	token: string,
+	agencyUserId: string,
+	input: {
+		id?: string;
+		display_order: number;
+		translations: { locale: string; label: string }[];
+	},
+) {
+	return request<GuideCategory>(
+		input.id
+			? `/api/agency/guide/categories/${input.id}`
+			: "/api/agency/guide/categories",
+		{
+			method: input.id ? "PUT" : "POST",
+			headers: guideHeaders(token, agencyUserId),
+			body: JSON.stringify(input),
+		},
+		token,
+	);
+}
+
+export async function archiveGuideCategory(
+	token: string,
+	agencyUserId: string,
+	categoryId: string,
+) {
+	return request(
+		`/api/agency/guide/categories/${categoryId}/archive`,
+		{
+			method: "POST",
+			headers: guideHeaders(token, agencyUserId),
+		},
+		token,
+	);
 }
 
 export async function changePassword(

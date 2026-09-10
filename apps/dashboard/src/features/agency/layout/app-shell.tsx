@@ -19,6 +19,7 @@ import {
   ChevronsUpDown,
   ClipboardList,
   FileClock,
+  BookOpen,
   LayoutDashboard,
   LogOut,
   Search,
@@ -82,6 +83,13 @@ const navItems = [
     icon: Bell,
     keywords: ["follow", "action", "status", "record"],
     roles: ["admin", "province_officer", "district_officer"] as AgencyRole[],
+  },
+  {
+    href: "/agency/guides",
+    label: "Guide CMS",
+    icon: BookOpen,
+    keywords: ["guide", "article", "category", "cms"],
+    roles: ["admin"] as AgencyRole[],
   },
   {
     href: "/agency/audit-logs",

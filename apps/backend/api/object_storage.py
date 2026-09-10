@@ -19,7 +19,13 @@ class S3CompatibleMediaStorage:
             region_name=settings.s3_region,
             aws_access_key_id=settings.s3_access_key_id,
             aws_secret_access_key=settings.s3_secret_access_key,
-            config=Config(s3={"addressing_style": "path" if settings.s3_force_path_style else "auto"}),
+            config=Config(
+                s3={
+                    "addressing_style": "path"
+                    if settings.s3_force_path_style
+                    else "auto"
+                }
+            ),
         )
 
     def put_object(self, *, object_key: str, content: bytes, content_type: str) -> str:
@@ -30,6 +36,9 @@ class S3CompatibleMediaStorage:
             ContentType=content_type,
         )
         return object_key
+
+    def get_object(self, *, object_key: str) -> bytes:
+        return self.client.get_object(Bucket=self.bucket, Key=object_key)["Body"].read()
 
     def presigned_get_url(self, *, object_key: str, expires_seconds: int = 900) -> str:
         return self.client.generate_presigned_url(
@@ -51,10 +60,17 @@ class LazyMediaStorage:
         return self._client
 
     def put_object(self, *, object_key: str, content: bytes, content_type: str) -> str:
-        return self._get().put_object(object_key=object_key, content=content, content_type=content_type)
+        return self._get().put_object(
+            object_key=object_key, content=content, content_type=content_type
+        )
+
+    def get_object(self, *, object_key: str) -> bytes:
+        return self._get().get_object(object_key=object_key)
 
     def presigned_get_url(self, *, object_key: str, expires_seconds: int = 900) -> str:
-        return self._get().presigned_get_url(object_key=object_key, expires_seconds=expires_seconds)
+        return self._get().presigned_get_url(
+            object_key=object_key, expires_seconds=expires_seconds
+        )
 
 
 media_storage_client = LazyMediaStorage()

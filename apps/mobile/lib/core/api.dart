@@ -27,9 +27,11 @@ class ApiRequest {
 }
 
 class ApiResponse {
-  ApiResponse(this.statusCode, this.body);
+  ApiResponse(this.statusCode, this.body, {List<int>? bytes})
+    : bytes = bytes ?? utf8.encode(body);
   final int statusCode;
   final String body;
+  final List<int> bytes;
   Map<String, dynamic> get json => jsonDecode(body) as Map<String, dynamic>;
 }
 
@@ -79,8 +81,15 @@ class HttpApiTransport implements ApiTransport {
       httpRequest.write(request.body);
     }
     final response = await httpRequest.close();
-    final body = await response.transform(utf8.decoder).join();
+    final bytes = await response.fold<List<int>>(
+      <int>[],
+      (result, chunk) => result..addAll(chunk),
+    );
     client.close();
-    return ApiResponse(response.statusCode, body);
+    return ApiResponse(
+      response.statusCode,
+      utf8.decode(bytes, allowMalformed: true),
+      bytes: bytes,
+    );
   }
 }

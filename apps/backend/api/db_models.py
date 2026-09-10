@@ -2,8 +2,19 @@
 
 from __future__ import annotations
 
-from sqlalchemy import Boolean, CheckConstraint, Float, ForeignKey, Index, Integer, JSON, String, UniqueConstraint
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import (  # type: ignore[import-not-found]
+    JSON,
+    BigInteger,
+    Boolean,
+    CheckConstraint,
+    Float,
+    ForeignKey,
+    Index,
+    Integer,
+    String,
+    UniqueConstraint,
+)
+from sqlalchemy.orm import Mapped, mapped_column  # type: ignore[import-not-found]
 
 from api.database import Base
 
@@ -12,7 +23,9 @@ class AccountModel(Base):
     __tablename__ = "accounts"
     __table_args__ = (
         UniqueConstraint("account_type", "email", name="uq_accounts_type_email"),
-        CheckConstraint("account_type IN ('farmer', 'agency', 'admin')", name="ck_accounts_type"),
+        CheckConstraint(
+            "account_type IN ('farmer', 'agency', 'admin')", name="ck_accounts_type"
+        ),
         CheckConstraint("length(trim(email)) > 3", name="ck_accounts_email_not_blank"),
     )
 
@@ -32,8 +45,15 @@ class AccountModel(Base):
 class FarmerAccountModel(Base):
     __tablename__ = "farmer_accounts"
     __table_args__ = (
-        CheckConstraint("consent_state IN ('private', 'agency_monitoring', 'research_and_monitoring')", name="ck_farmer_accounts_consent_state"),
-        Index("ix_dashboard_farmers_jurisdiction_consent", "jurisdiction_id", "consent_state"),
+        CheckConstraint(
+            "consent_state IN ('private', 'agency_monitoring', 'research_and_monitoring')",
+            name="ck_farmer_accounts_consent_state",
+        ),
+        Index(
+            "ix_dashboard_farmers_jurisdiction_consent",
+            "jurisdiction_id",
+            "consent_state",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
@@ -54,8 +74,16 @@ class FarmerAccountModel(Base):
 class AgencyJurisdictionModel(Base):
     __tablename__ = "agency_jurisdictions"
     __table_args__ = (
-        UniqueConstraint("parent_id", "level", "name", name="uq_agency_jurisdictions_parent_level_name"),
-        CheckConstraint("level IN ('province', 'regency_city', 'district_subdistrict', 'village')", name="ck_agency_jurisdictions_level"),
+        UniqueConstraint(
+            "parent_id",
+            "level",
+            "name",
+            name="uq_agency_jurisdictions_parent_level_name",
+        ),
+        CheckConstraint(
+            "level IN ('province', 'regency_city', 'district_subdistrict', 'village')",
+            name="ck_agency_jurisdictions_level",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
@@ -69,7 +97,10 @@ class AgencyJurisdictionModel(Base):
 class AgencyUserModel(Base):
     __tablename__ = "agency_users"
     __table_args__ = (
-        CheckConstraint("role IN ('admin', 'province_officer', 'district_officer', 'village_officer', 'viewer')", name="ck_agency_users_role"),
+        CheckConstraint(
+            "role IN ('admin', 'province_officer', 'district_officer', 'village_officer', 'viewer')",
+            name="ck_agency_users_role",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
@@ -82,13 +113,23 @@ class CattleProfileModel(Base):
     __table_args__ = (
         UniqueConstraint("farmer_id", "tag", name="uq_cattle_farmer_tag"),
         CheckConstraint("sex IN ('female', 'male', 'unknown')", name="ck_cattle_sex"),
-        CheckConstraint("status IN ('active', 'sold', 'dead', 'lost', 'archived')", name="ck_cattle_status"),
-        CheckConstraint("age_months IS NULL OR age_months >= 0", name="ck_cattle_age_nonnegative"),
+        CheckConstraint(
+            "status IN ('active', 'sold', 'dead', 'lost', 'archived')",
+            name="ck_cattle_status",
+        ),
+        CheckConstraint(
+            "age_months IS NULL OR age_months >= 0", name="ck_cattle_age_nonnegative"
+        ),
         Index("ix_dashboard_cattle_farmer_status", "farmer_id", "status"),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    farmer_id: Mapped[str] = mapped_column(String(80), ForeignKey("farmer_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
+    farmer_id: Mapped[str] = mapped_column(
+        String(80),
+        ForeignKey("farmer_accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     tag: Mapped[str] = mapped_column(String(80), nullable=False)
     name: Mapped[str | None] = mapped_column(String(120), nullable=True)
     sex: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -115,14 +156,32 @@ class CattleProfileModel(Base):
 class DetectionEventModel(Base):
     __tablename__ = "detection_events"
     __table_args__ = (
-        CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_detection_confidence_range"),
-        CheckConstraint("result_label IN ('healthy', 'FMD', 'LSD', 'needs_review')", name="ck_detection_result_label"),
-        CheckConstraint("source IN ('quick_scan', 'mobile', 'api', 'offline_sync', 'seed')", name="ck_detection_source"),
+        CheckConstraint(
+            "confidence >= 0 AND confidence <= 1", name="ck_detection_confidence_range"
+        ),
+        CheckConstraint(
+            "result_label IN ('healthy', 'FMD', 'LSD', 'needs_review')",
+            name="ck_detection_result_label",
+        ),
+        CheckConstraint(
+            "source IN ('quick_scan', 'mobile', 'api', 'offline_sync', 'seed')",
+            name="ck_detection_source",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    farmer_id: Mapped[str] = mapped_column(String(80), ForeignKey("farmer_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-    cattle_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("cattle_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
+    farmer_id: Mapped[str] = mapped_column(
+        String(80),
+        ForeignKey("farmer_accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cattle_id: Mapped[str | None] = mapped_column(
+        String(80),
+        ForeignKey("cattle_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     result_label: Mapped[str] = mapped_column(String(80), nullable=False)
     confidence: Mapped[float] = mapped_column(nullable=False)
     source: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -133,14 +192,19 @@ class StoredMediaModel(Base):
     __table_args__ = (
         UniqueConstraint("checksum", name="uq_stored_media_checksum"),
         CheckConstraint("byte_size >= 0", name="ck_stored_media_byte_size"),
-        CheckConstraint("content_type LIKE 'image/%'", name="ck_stored_media_content_type"),
+        CheckConstraint(
+            "content_type LIKE 'image/%'", name="ck_stored_media_content_type"
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
     farmer_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     cattle_id: Mapped[str | None] = mapped_column(String(80), nullable=True, index=True)
     detection_id: Mapped[str | None] = mapped_column(
-        String(80), ForeignKey("detection_events.id", ondelete="SET NULL"), nullable=True, index=True
+        String(80),
+        ForeignKey("detection_events.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
     )
     checksum: Mapped[str] = mapped_column(String(160), nullable=False)
     consent_scope: Mapped[str] = mapped_column(String(80), nullable=False)
@@ -162,10 +226,21 @@ class StoredMediaModel(Base):
 class FusionResultModel(Base):
     __tablename__ = "fusion_results"
     __table_args__ = (
-        CheckConstraint("confidence >= 0 AND confidence <= 1", name="ck_fusion_confidence_range"),
-        CheckConstraint("inference_mode IN ('online', 'offline', 'hybrid', 'synced_offline')", name="ck_fusion_inference_mode"),
-        CheckConstraint("disease_class IN ('healthy', 'FMD', 'LSD', 'needs_review')", name="ck_fusion_disease_class"),
-        CheckConstraint("confidence_level IN ('low', 'medium', 'high')", name="ck_fusion_confidence_level"),
+        CheckConstraint(
+            "confidence >= 0 AND confidence <= 1", name="ck_fusion_confidence_range"
+        ),
+        CheckConstraint(
+            "inference_mode IN ('online', 'offline', 'hybrid', 'synced_offline')",
+            name="ck_fusion_inference_mode",
+        ),
+        CheckConstraint(
+            "disease_class IN ('healthy', 'FMD', 'LSD', 'needs_review')",
+            name="ck_fusion_disease_class",
+        ),
+        CheckConstraint(
+            "confidence_level IN ('low', 'medium', 'high')",
+            name="ck_fusion_confidence_level",
+        ),
         Index("ix_dashboard_fusion_farmer_created", "farmer_id", "created_at"),
         Index("ix_dashboard_fusion_cattle_created", "cattle_id", "created_at"),
         Index("ix_cluster_fusion_disease_created", "disease_class", "created_at"),
@@ -174,8 +249,18 @@ class FusionResultModel(Base):
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
     fusion_version: Mapped[str] = mapped_column(String(80), nullable=False)
     inference_mode: Mapped[str] = mapped_column(String(20), nullable=False)
-    farmer_id: Mapped[str] = mapped_column(String(80), ForeignKey("farmer_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-    cattle_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("cattle_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
+    farmer_id: Mapped[str] = mapped_column(
+        String(80),
+        ForeignKey("farmer_accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cattle_id: Mapped[str | None] = mapped_column(
+        String(80),
+        ForeignKey("cattle_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     disease_class: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
     confidence: Mapped[float] = mapped_column(nullable=False)
     confidence_level: Mapped[str] = mapped_column(String(20), nullable=False)
@@ -215,13 +300,26 @@ class OfflineSyncedDetectionModel(Base):
 class FollowUpModel(Base):
     __tablename__ = "follow_ups"
     __table_args__ = (
-        CheckConstraint("status IN ('scheduled', 'in_progress', 'resolved', 'closed', 'cancelled')", name="ck_follow_up_status"),
+        CheckConstraint(
+            "status IN ('scheduled', 'in_progress', 'resolved', 'closed', 'cancelled')",
+            name="ck_follow_up_status",
+        ),
         Index("ix_followups_status_farmer", "status", "farmer_id"),
     )
 
     id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    farmer_id: Mapped[str] = mapped_column(String(80), ForeignKey("farmer_accounts.id", ondelete="CASCADE"), nullable=False, index=True)
-    cattle_id: Mapped[str | None] = mapped_column(String(80), ForeignKey("cattle_profiles.id", ondelete="SET NULL"), nullable=True, index=True)
+    farmer_id: Mapped[str] = mapped_column(
+        String(80),
+        ForeignKey("farmer_accounts.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    cattle_id: Mapped[str | None] = mapped_column(
+        String(80),
+        ForeignKey("cattle_profiles.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
     status: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
     public_message: Mapped[str] = mapped_column(String(500), nullable=False)
     internal_notes: Mapped[str] = mapped_column(String(1000), nullable=False)
@@ -232,8 +330,16 @@ class ClusterRiskSignalModel(Base):
     __table_args__ = (
         CheckConstraint("signal_count >= 0", name="ck_cluster_signal_count_positive"),
         CheckConstraint("window_days > 0", name="ck_cluster_window_positive"),
-        CheckConstraint("risk_level IN ('baseline_monitoring', 'possible_increased_risk', 'low', 'medium', 'high', 'critical')", name="ck_cluster_risk_level"),
-        Index("ix_cluster_risk_jurisdiction_disease", "jurisdiction_id", "disease_class", "risk_level"),
+        CheckConstraint(
+            "risk_level IN ('baseline_monitoring', 'possible_increased_risk', 'low', 'medium', 'high', 'critical')",
+            name="ck_cluster_risk_level",
+        ),
+        Index(
+            "ix_cluster_risk_jurisdiction_disease",
+            "jurisdiction_id",
+            "disease_class",
+            "risk_level",
+        ),
     )
 
     id: Mapped[str] = mapped_column(String(120), primary_key=True)
@@ -274,7 +380,9 @@ class AuditLogModel(Base):
 class FarmerPreferenceModel(Base):
     __tablename__ = "farmer_preferences"
 
-    farmer_id: Mapped[str] = mapped_column(String(80), ForeignKey("accounts.id", ondelete="CASCADE"), primary_key=True)
+    farmer_id: Mapped[str] = mapped_column(
+        String(80), ForeignKey("accounts.id", ondelete="CASCADE"), primary_key=True
+    )
     scan_result_notifications: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=True
     )
@@ -296,6 +404,129 @@ class FarmerPreferenceModel(Base):
     quiet_hours_end: Mapped[str] = mapped_column(
         String(8), nullable=False, default="06:00"
     )
+
+
+class GuideCategoryModel(Base):
+    __tablename__ = "guide_categories"
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('active', 'archived')", name="ck_guide_categories_state"
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    state: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    system_owned: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    display_order: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[str] = mapped_column(String(80), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(80), nullable=False)
+
+
+class GuideCategoryTranslationModel(Base):
+    __tablename__ = "guide_category_translations"
+    __table_args__ = (
+        UniqueConstraint("category_id", "locale", name="uq_guide_category_locale"),
+    )
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    category_id: Mapped[str] = mapped_column(
+        String(80),
+        ForeignKey("guide_categories.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    locale: Mapped[str] = mapped_column(String(10), nullable=False)
+    label: Mapped[str] = mapped_column(String(80), nullable=False)
+
+
+class GuideArticleModel(Base):
+    __tablename__ = "guide_articles"
+    __table_args__ = (
+        CheckConstraint(
+            "state IN ('draft', 'published', 'unpublished', 'archived')",
+            name="ck_guide_articles_state",
+        ),
+    )
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    category_id: Mapped[str] = mapped_column(
+        String(80), ForeignKey("guide_categories.id"), nullable=False, index=True
+    )
+    state: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
+    published_at: Mapped[str | None] = mapped_column(
+        String(80), nullable=True, index=True
+    )
+    published_document: Mapped[dict | None] = mapped_column(JSON, nullable=True)
+    created_at: Mapped[str] = mapped_column(String(80), nullable=False)
+    updated_at: Mapped[str] = mapped_column(String(80), nullable=False)
+
+
+class GuideArticleTranslationModel(Base):
+    __tablename__ = "guide_article_translations"
+    __table_args__ = (
+        UniqueConstraint("article_id", "locale", name="uq_guide_article_locale"),
+    )
+
+    id: Mapped[str] = mapped_column(String(100), primary_key=True)
+    article_id: Mapped[str] = mapped_column(
+        String(80),
+        ForeignKey("guide_articles.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    locale: Mapped[str] = mapped_column(String(10), nullable=False)
+    title: Mapped[str] = mapped_column(String(160), nullable=False)
+    summary: Mapped[str] = mapped_column(String(500), nullable=False)
+    blocks: Mapped[list[dict]] = mapped_column(JSON, nullable=False)
+
+
+class GuideMediaModel(Base):
+    __tablename__ = "guide_media"
+    __table_args__ = (
+        CheckConstraint(
+            "mime_type IN ('image/jpeg', 'image/png', 'image/webp')",
+            name="ck_guide_media_type",
+        ),
+        CheckConstraint(
+            "byte_size >= 0 AND width > 0 AND height > 0",
+            name="ck_guide_media_dimensions",
+        ),
+        UniqueConstraint("sha256", name="uq_guide_media_sha256"),
+    )
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    object_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(40), nullable=False)
+    width: Mapped[int] = mapped_column(Integer, nullable=False)
+    height: Mapped[int] = mapped_column(Integer, nullable=False)
+    byte_size: Mapped[int] = mapped_column(Integer, nullable=False)
+    sha256: Mapped[str] = mapped_column(String(64), nullable=False)
+    ready: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    created_at: Mapped[str] = mapped_column(String(80), nullable=False)
+
+
+class GuideManifestModel(Base):
+    __tablename__ = "guide_manifests"
+
+    version: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    created_at: Mapped[str] = mapped_column(String(80), nullable=False)
+    catalog: Mapped[dict] = mapped_column(JSON, nullable=False)
+
+
+class GuideEditorialAuditEventModel(Base):
+    __tablename__ = "guide_editorial_audit_events"
+
+    id: Mapped[str] = mapped_column(String(80), primary_key=True)
+    actor_id: Mapped[str] = mapped_column(String(120), nullable=False, index=True)
+    action: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    target_type: Mapped[str] = mapped_column(String(40), nullable=False, index=True)
+    target_id: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    metadata_json: Mapped[dict] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
 
 
 class NotificationModel(Base):

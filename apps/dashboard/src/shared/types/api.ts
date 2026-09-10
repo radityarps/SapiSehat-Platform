@@ -92,6 +92,56 @@ export type AgencyFollowUpItem = {
 	internal_notes: string;
 };
 
+export type GuideBlock = {
+	type: "heading" | "paragraph" | "bullet_list" | "image";
+	text?: string;
+	items?: string[];
+	media_id?: string;
+	alt?: string;
+};
+
+export type GuideTranslation = {
+	locale: string;
+	title: string;
+	summary: string;
+	blocks: GuideBlock[];
+};
+
+export type GuideArticle = {
+	id: string;
+	category_id: string;
+	state: "draft" | "published" | "unpublished" | "archived";
+	published_at?: string | null;
+	translations: GuideTranslation[];
+};
+
+export type GuideCategory = {
+	id: string;
+	state: "active" | "archived";
+	system_owned: boolean;
+	display_order: number;
+	article_count: number;
+	translations: { locale: string; label: string }[];
+};
+
+export type GuideMedia = {
+	id: string;
+	mime_type: "image/jpeg" | "image/png" | "image/webp";
+	width: number;
+	height: number;
+	byte_size: number;
+	sha256: string;
+};
+
+export type GuideAuditEvent = {
+	id: string;
+	actor_id: string;
+	action: string;
+	target_type: string;
+	target_id: string;
+	created_at: string;
+};
+
 export type NotificationItem = {
 	id: string;
 	account_id: string;
