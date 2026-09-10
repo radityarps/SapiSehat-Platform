@@ -512,6 +512,18 @@ export async function getGuideArticles(token: string, agencyUserId: string) {
 	);
 }
 
+export async function getGuideArticle(
+	token: string,
+	agencyUserId: string,
+	articleId: string,
+) {
+	return request<GuideArticle>(
+		`/api/agency/guide/articles/${encodeURIComponent(articleId)}`,
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
 export async function getGuideCategories(token: string, agencyUserId: string) {
 	return request<{ items: GuideCategory[] }>(
 		"/api/agency/guide/categories",
@@ -638,6 +650,21 @@ export async function archiveGuideCategory(
 ) {
 	return request(
 		`/api/agency/guide/categories/${categoryId}/archive`,
+		{
+			method: "POST",
+			headers: guideHeaders(token, agencyUserId),
+		},
+		token,
+	);
+}
+
+export async function activateGuideCategory(
+	token: string,
+	agencyUserId: string,
+	categoryId: string,
+) {
+	return request(
+		`/api/agency/guide/categories/${categoryId}/activate`,
 		{
 			method: "POST",
 			headers: guideHeaders(token, agencyUserId),

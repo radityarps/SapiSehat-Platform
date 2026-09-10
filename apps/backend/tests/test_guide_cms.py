@@ -350,6 +350,35 @@ def test_unpublish_returns_tombstone_and_hides_article() -> None:
     assert created["id"] not in {item["id"] for item in delta["documents"]["articles"]}
 
 
+def test_category_activate_and_archive_lifecycle() -> None:
+    client = TestClient(app)
+    category = client.post(
+        "/api/agency/guide/categories",
+        headers=_admin_headers(),
+        json={
+            "display_order": 92,
+            "translations": [
+                {"locale": "id", "label": "Kategori Uji"},
+                {"locale": "en", "label": "Test Category"},
+            ],
+        },
+    ).json()
+    cat_id = category["id"]
+    assert category["state"] == "active"
+
+    res = client.post(
+        f"/api/agency/guide/categories/{cat_id}/archive", headers=_admin_headers()
+    )
+    assert res.status_code == 200
+    assert res.json()["state"] == "archived"
+
+    res = client.post(
+        f"/api/agency/guide/categories/{cat_id}/activate", headers=_admin_headers()
+    )
+    assert res.status_code == 200
+    assert res.json()["state"] == "active"
+
+
 def test_category_archive_preserves_published_copy_and_emits_one_manifest() -> None:
     client = TestClient(app)
     category = client.post(
@@ -538,6 +567,29 @@ def test_safe_language_is_checked_in_every_locale_and_text_field() -> None:
             ).status_code
             == 200
         )
+
+
+def test_get_article_by_id_returns_article_or_404() -> None:
+    client = TestClient(app)
+    admin_headers = _admin_headers()
+    created = client.post(
+        "/api/agency/guide/articles",
+        headers=admin_headers,
+        json=_article("Detail Article Test"),
+    ).json()
+    article_id = created["id"]
+
+    response = client.get(
+        f"/api/agency/guide/articles/{article_id}", headers=admin_headers
+    )
+    assert response.status_code == 200
+    assert response.json()["id"] == article_id
+    assert response.json()["translations"][0]["title"] == "Detail Article Test"
+
+    not_found = client.get(
+        "/api/agency/guide/articles/nonexistent-id", headers=admin_headers
+    )
+    assert not_found.status_code == 404
 
 
 def test_admin_lists_and_farmer_reads_enforce_surface_authorization() -> None:

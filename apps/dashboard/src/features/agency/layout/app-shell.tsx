@@ -281,7 +281,10 @@ function AppSidebar() {
                   (item) => !agency?.role || item.roles.includes(agency.role),
                 )
                 .map((item) => {
-                  const active = pathname === item.href;
+                  const active =
+                    pathname === item.href ||
+                    (item.href !== "/agency/overview" &&
+                      pathname.startsWith(`${item.href}/`));
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton

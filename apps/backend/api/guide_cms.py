@@ -421,6 +421,26 @@ def archive_category(
         }
 
 
+@router.post("/agency/guide/categories/{category_id}/activate", tags=["guide-cms"])
+def activate_category(
+    category_id: str,
+    authorization: str = Header(..., alias="Authorization"),
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    _admin(authorization, agency_user_id)
+    with SessionLocal() as session:
+        lock_publication(session)
+        category = session.get(GuideCategoryModel, category_id)
+        if category is None:
+            raise HTTPException(status_code=404, detail="Guide category not found")
+        category.state = "active"
+        category.updated_at = now()
+        _audit(session, agency_user_id, "activate", "guide_category", category.id)
+        build_manifest(session)
+        session.commit()
+        return _category_dict(session, category)
+
+
 @router.get("/agency/guide/articles", tags=["guide-cms"])
 def list_articles(
     authorization: str = Header(..., alias="Authorization"),
@@ -483,6 +503,20 @@ def create_article(
         _replace_article_translations(session, article.id, request.translations)
         _audit(session, agency_user_id, "create", "guide_article", article.id)
         session.commit()
+        return _article_dict(session, article)
+
+
+@router.get("/agency/guide/articles/{article_id}", tags=["guide-cms"])
+def get_article(
+    article_id: str,
+    authorization: str = Header(..., alias="Authorization"),
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+):
+    _admin(authorization, agency_user_id)
+    with SessionLocal() as session:
+        article = session.get(GuideArticleModel, article_id)
+        if article is None:
+            raise HTTPException(status_code=404, detail="Guide Article not found")
         return _article_dict(session, article)
 
 

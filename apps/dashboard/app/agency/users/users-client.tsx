@@ -290,13 +290,6 @@ export function UsersClient() {
 			},
 			{ accessorKey: "jurisdiction_id", header: "Jurisdiction" },
 			{
-				accessorKey: "id",
-				header: "ID",
-				cell: ({ row }) => (
-					<span className="font-mono text-xs text-muted-foreground">{row.original.id}</span>
-				),
-			},
-			{
 				id: "actions",
 				header: "Actions",
 				meta: { align: "right" },
