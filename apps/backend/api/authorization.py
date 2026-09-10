@@ -6,7 +6,13 @@ from dataclasses import dataclass
 from enum import Enum
 
 from api.database import SessionLocal, create_all_tables
-from api.db_models import AgencyJurisdictionModel, AgencyUserModel
+from api.db_models import (
+    AccountModel,
+    AgencyJurisdictionModel,
+    AgencyUserModel,
+    CattleProfileModel,
+    FarmerAccountModel,
+)
 
 
 class AgencyRole(str, Enum):
@@ -21,6 +27,13 @@ class ConsentTier(str, Enum):
     PRIVATE = "private"
     AGENCY_MONITORING = "agency_monitoring"
     RESEARCH_AND_MONITORING = "research_and_monitoring"
+
+
+class JurisdictionLevel(str, Enum):
+    PROVINCE = "province"
+    REGENCY_CITY = "regency_city"
+    DISTRICT_SUBDISTRICT = "district_subdistrict"
+    VILLAGE = "village"
 
 
 @dataclass(frozen=True)
@@ -122,6 +135,142 @@ class JurisdictionStore:
         with SessionLocal() as session:
             rows = session.query(AgencyJurisdictionModel).all()
             return {row.id: _jurisdiction_from_row(row) for row in rows}
+
+    def create(
+        self,
+        *,
+        jurisdiction_id: str,
+        name: str,
+        level: str,
+        parent_id: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> AdministrativeJurisdiction:
+        with SessionLocal() as session:
+            normalized_id = jurisdiction_id.strip().lower()
+            normalized_name = name.strip()
+            if not normalized_id or not normalized_name:
+                raise ValueError("jurisdiction ID and name are required")
+            self._validate_parent(session, level, parent_id)
+            if session.get(AgencyJurisdictionModel, normalized_id) is not None:
+                raise ValueError("jurisdiction ID already exists")
+            row = AgencyJurisdictionModel(
+                id=normalized_id,
+                parent_id=parent_id,
+                level=level,
+                name=normalized_name,
+                latitude=latitude,
+                longitude=longitude,
+            )
+            session.add(row)
+            try:
+                session.commit()
+            except Exception as exc:
+                session.rollback()
+                raise ValueError("jurisdiction already exists at this level") from exc
+            return _jurisdiction_from_row(row)
+
+    @staticmethod
+    def _validate_parent(session, level: str, parent_id: str | None) -> None:
+        try:
+            jurisdiction_level = JurisdictionLevel(level)
+        except ValueError as exc:
+            raise ValueError("invalid jurisdiction level") from exc
+
+        parent_levels = {
+            JurisdictionLevel.PROVINCE: None,
+            JurisdictionLevel.REGENCY_CITY: JurisdictionLevel.PROVINCE,
+            JurisdictionLevel.DISTRICT_SUBDISTRICT: JurisdictionLevel.REGENCY_CITY,
+            JurisdictionLevel.VILLAGE: JurisdictionLevel.DISTRICT_SUBDISTRICT,
+        }
+        expected_parent_level = parent_levels[jurisdiction_level]
+        if expected_parent_level is None:
+            if parent_id is not None:
+                raise ValueError("province jurisdiction cannot have a parent")
+            return
+        if parent_id is None:
+            raise ValueError(f"{level} jurisdiction requires a parent")
+        parent = session.get(AgencyJurisdictionModel, parent_id)
+        if parent is None:
+            raise ValueError("parent jurisdiction not found")
+        if parent.level != expected_parent_level.value:
+            raise ValueError(
+                f"{level} jurisdiction requires a {expected_parent_level.value} parent"
+            )
+
+    def update(
+        self,
+        jurisdiction_id: str,
+        *,
+        name: str,
+        level: str,
+        parent_id: str | None = None,
+        latitude: float | None = None,
+        longitude: float | None = None,
+    ) -> AdministrativeJurisdiction | None:
+        with SessionLocal() as session:
+            row = session.get(AgencyJurisdictionModel, jurisdiction_id)
+            if row is None:
+                return None
+            if parent_id == jurisdiction_id:
+                raise ValueError("jurisdiction cannot be its own parent")
+            self._validate_parent(session, level, parent_id)
+            row.name = name
+            row.level = level
+            row.parent_id = parent_id
+            row.latitude = latitude
+            row.longitude = longitude
+            try:
+                session.commit()
+            except Exception as exc:
+                session.rollback()
+                raise ValueError("jurisdiction already exists at this level") from exc
+            session.refresh(row)
+            return _jurisdiction_from_row(row)
+
+    def delete(self, jurisdiction_id: str) -> bool:
+        with SessionLocal() as session:
+            row = session.get(AgencyJurisdictionModel, jurisdiction_id)
+            if row is None:
+                return False
+            if (
+                session.query(AgencyJurisdictionModel)
+                .filter(AgencyJurisdictionModel.parent_id == jurisdiction_id)
+                .first()
+                is not None
+            ):
+                raise ValueError("delete child jurisdictions first")
+            if (
+                session.query(AgencyUserModel)
+                .filter(AgencyUserModel.jurisdiction_id == jurisdiction_id)
+                .first()
+                is not None
+            ):
+                raise ValueError("jurisdiction is assigned to an agency user")
+            if (
+                session.query(AccountModel)
+                .filter(AccountModel.jurisdiction_id == jurisdiction_id)
+                .first()
+                is not None
+            ):
+                raise ValueError("jurisdiction is referenced by an account")
+            if (
+                session.query(FarmerAccountModel)
+                .filter(FarmerAccountModel.jurisdiction_id == jurisdiction_id)
+                .first()
+                is not None
+            ):
+                raise ValueError("jurisdiction is referenced by a farmer record")
+            if (
+                session.query(CattleProfileModel)
+                .filter(CattleProfileModel.jurisdiction_id == jurisdiction_id)
+                .first()
+                is not None
+            ):
+                raise ValueError("jurisdiction is referenced by a cattle record")
+            session.delete(row)
+            session.commit()
+            return True
 
 
 class AgencyUserStore:

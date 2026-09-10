@@ -3,90 +3,36 @@
 import asyncio
 import hashlib
 import io
-from pydantic import BaseModel as BaseModel  # type: ignore[import-not-found]
 from datetime import datetime, timezone
 from uuid import uuid4
+
 from fastapi import (  # type: ignore[import-not-found]
     APIRouter,
-    UploadFile,
     File,
     Form,
-    HTTPException,
-    Query,
     Header,
+    HTTPException,
     Path,
+    Query,
+    UploadFile,
 )
 from fastapi.responses import JSONResponse  # type: ignore[import-not-found]
 from PIL import Image
-from inference_server import (
-    get_inference_service,
-    is_model_ready,
-)
-from utils.errors import InferenceError, NonCattleImageError
-from api.schemas import (
-    PredictResponse,
-    HealthResponse,
-    FarmerRegisterRequest,
-    FarmerLoginRequest,
-    AgencyLoginRequest,
-    AuthResponse,
-    AuthAccountResponse,
-    ProfileUpdateRequest,
-    ChangePasswordRequest,
-    FarmerProfileUpdateRequest,
-    FarmerArchiveRequest,
-    FarmerPreferencesRequest,
-    FarmerPreferencesResponse,
-    AgencyFarmersResponse,
-    FarmerAccountRequest,
-    FarmerAccountResponse,
-    ScanImageStorageNoticeRequest,
-    ScanImageStorageNoticeResponse,
-    CattleProfileRequest,
-    CattleProfileResponse,
-    CattleProfileListResponse,
-    CattleTimelineEventRequest,
-    CattleTimelineEventResponse,
-    CattleProfileDetailResponse,
-    QuickScanDetectionRequest,
-    AttachDetectionRequest,
-    DetectionEventResponse,
-    DetectionEventListResponse,
-    ImageEvidenceRequest,
-    ImageEvidenceResponse,
-    NlpEvidenceRequest,
-    NlpEvidenceResponse,
-    NlpPlaceholderRequest,
-    NlpPlaceholderResponse,
-    FusionRequest,
-    FusionCattleLinkRequest,
-    FusionResultResponse,
-    FusionResultListResponse,
-    OfflineDetectionSyncRequest,
-    OfflineDetectionSyncResponse,
-    StoredMediaRequest,
-    StoredMediaResponse,
-    StoredMediaListResponse,
-    StoredMediaDownloadUrlResponse,
-    AgencyRegistryResponse,
-    AgencyDetectionMonitoringResponse,
-    AgencyRiskSignalSummaryResponse,
-    FarmerAreaAdvisoryResponse,
-    FollowUpCreateRequest,
-    FollowUpUpdateRequest,
-    AgencyFollowUpResponse,
-    FarmerFollowUpListResponse,
-    AuditLogListResponse,
-    NotificationListResponse,
-    NotificationMarkReadResponse,
-    NotificationResponse,
-)
-from config import ACTIVE_DETECTION_CLASSES, settings
-from utils.logger import get_logger
-from api.farmer_accounts import (
-    FarmerAccount,
-    FarmerConsentState,
-    farmer_account_store,
+from pydantic import BaseModel as BaseModel  # type: ignore[import-not-found]
+
+from api.audit_logs import audit_log_store
+from api.authorization import (
+    DEMO_AGENCY_USERS,
+    DEMO_FARMERS,
+    DEMO_JURISDICTIONS,
+    AgencyRole,
+    ConsentTier,
+    FarmerRecord,
+    _agency_user_store,
+    _jurisdiction_store,
+    can_agency_access_farmer,
+    filter_visible_farmers,
+    refresh_agency_users,
 )
 from api.cattle_profiles import (
     CattleEventType,
@@ -94,14 +40,20 @@ from api.cattle_profiles import (
     CattleStatus,
     cattle_profile_store,
 )
+from api.database import SessionLocal
+from api.db_models import FarmerPreferenceModel
 from api.detection_events import detection_event_store
-from api.fusion_results import fusion_result_store
-from api.offline_sync import offline_detection_sync_store
-from api.media_governance import media_store
-from api.object_storage import media_storage_client
-from api.audit_logs import audit_log_store
+from api.farmer_accounts import (
+    FarmerAccount,
+    FarmerConsentState,
+    farmer_account_store,
+)
 from api.follow_ups import follow_up_store
+from api.fusion_results import fusion_result_store
+from api.media_governance import media_store
 from api.notifications import notification_store
+from api.object_storage import media_storage_client
+from api.offline_sync import offline_detection_sync_store
 from api.risk_signals import (
     CLUSTER_WINDOW_DAYS,
     HYBRID_ALERT_THRESHOLD,
@@ -109,18 +61,62 @@ from api.risk_signals import (
     cluster_risk_signal_store,
     summarize_risk_signals,
 )
-from api.authorization import (
-    AgencyRole,
-    ConsentTier,
-    FarmerRecord,
-    DEMO_AGENCY_USERS,
-    DEMO_FARMERS,
-    DEMO_JURISDICTIONS,
-    _agency_user_store,
-    _jurisdiction_store,
-    can_agency_access_farmer,
-    filter_visible_farmers,
-    refresh_agency_users,
+from api.schemas import (
+    AgencyDetectionMonitoringResponse,
+    AgencyFarmersResponse,
+    AgencyFollowUpResponse,
+    AgencyLoginRequest,
+    AgencyRegistryResponse,
+    AgencyRiskSignalSummaryResponse,
+    AttachDetectionRequest,
+    AuditLogListResponse,
+    AuthAccountResponse,
+    AuthResponse,
+    CattleProfileDetailResponse,
+    CattleProfileListResponse,
+    CattleProfileRequest,
+    CattleProfileResponse,
+    CattleTimelineEventRequest,
+    CattleTimelineEventResponse,
+    ChangePasswordRequest,
+    DetectionEventListResponse,
+    DetectionEventResponse,
+    FarmerAccountRequest,
+    FarmerAccountResponse,
+    FarmerArchiveRequest,
+    FarmerAreaAdvisoryResponse,
+    FarmerFollowUpListResponse,
+    FarmerLoginRequest,
+    FarmerPreferencesRequest,
+    FarmerPreferencesResponse,
+    FarmerProfileUpdateRequest,
+    FarmerRegisterRequest,
+    FollowUpCreateRequest,
+    FollowUpUpdateRequest,
+    FusionCattleLinkRequest,
+    FusionRequest,
+    FusionResultListResponse,
+    FusionResultResponse,
+    HealthResponse,
+    ImageEvidenceRequest,
+    ImageEvidenceResponse,
+    NlpEvidenceRequest,
+    NlpEvidenceResponse,
+    NlpPlaceholderRequest,
+    NlpPlaceholderResponse,
+    NotificationListResponse,
+    NotificationMarkReadResponse,
+    NotificationResponse,
+    OfflineDetectionSyncRequest,
+    OfflineDetectionSyncResponse,
+    PredictResponse,
+    ProfileUpdateRequest,
+    QuickScanDetectionRequest,
+    ScanImageStorageNoticeRequest,
+    ScanImageStorageNoticeResponse,
+    StoredMediaDownloadUrlResponse,
+    StoredMediaRequest,
+    StoredMediaResponse,
 )
 from api.surface_auth import (
     issue_token,
@@ -129,8 +125,13 @@ from api.surface_auth import (
     seed_default_farmer_accounts,
     surface_account_store,
 )
-from api.db_models import FarmerPreferenceModel
-from api.database import SessionLocal
+from config import ACTIVE_DETECTION_CLASSES, settings
+from inference_server import (
+    get_inference_service,
+    is_model_ready,
+)
+from utils.errors import InferenceError, NonCattleImageError
+from utils.logger import get_logger
 
 logger = get_logger(__name__)
 router = APIRouter(prefix="/api")
@@ -210,6 +211,7 @@ def _serialize_audit_log(event):
         "created_at": event.created_at,
     }
 
+
 def _matches_query(values, query: str | None) -> bool:
     if not query:
         return True
@@ -218,6 +220,7 @@ def _matches_query(values, query: str | None) -> bool:
         return True
     return any(needle in str(value or "").casefold() for value in values)
 
+
 def _filter_value(value: str | None) -> str | None:
     if value is None:
         return None
@@ -225,6 +228,7 @@ def _filter_value(value: str | None) -> str | None:
     if not normalized or normalized.casefold() == "all":
         return None
     return normalized
+
 
 def _same_filter_value(value: str | None, expected: str | None) -> bool:
     normalized = _filter_value(expected)
@@ -246,14 +250,34 @@ def _serialize_notification(notification):
     }
 
 
-def _require_admin_agency(agency_user_id: str):
+def _serialize_jurisdiction(jurisdiction):
+    return {
+        "id": jurisdiction.id,
+        "name": jurisdiction.name,
+        "level": jurisdiction.level,
+        "parent_id": jurisdiction.parent_id,
+        "latitude": jurisdiction.latitude,
+        "longitude": jurisdiction.longitude,
+    }
+
+
+def _require_admin_agency(agency_user_id: str, authorization: str):
+    if not authorization.startswith("Bearer "):
+        raise HTTPException(status_code=401, detail="Bearer token required")
+    try:
+        claims = read_token(authorization.removeprefix("Bearer "))
+    except ValueError as exc:
+        raise HTTPException(status_code=401, detail=str(exc)) from exc
+    if (
+        claims.get("account_type") != "agency"
+        or str(claims.get("sub")) != agency_user_id
+    ):
+        raise HTTPException(status_code=403, detail="Agency identity mismatch")
     agency = DEMO_AGENCY_USERS.get(agency_user_id)
     if agency is None:
         raise HTTPException(status_code=403, detail="Unknown agency user")
     if agency.role.value != "admin":
-        raise HTTPException(
-            status_code=403, detail="Audit logs require admin agency role"
-        )
+        raise HTTPException(status_code=403, detail="Admin role required")
     return agency
 
 
@@ -1658,7 +1682,9 @@ async def get_agency_dashboard_registry(
             farmer for farmer in scoped_farmers if farmer.id in visible_farmer_ids
         ]
         visible_cattle = [
-            profile for profile in visible_cattle if profile.farmer_id in visible_farmer_ids
+            profile
+            for profile in visible_cattle
+            if profile.farmer_id in visible_farmer_ids
         ]
     cattle_status = _filter_value(cattle_status)
     if cattle_status:
@@ -1732,12 +1758,16 @@ async def get_agency_detection_monitoring(
     farmer_id = _filter_value(farmer_id)
     if farmer_id:
         results = [
-            result for result in results if _same_filter_value(result.farmer_id, farmer_id)
+            result
+            for result in results
+            if _same_filter_value(result.farmer_id, farmer_id)
         ]
     cattle_id = _filter_value(cattle_id)
     if cattle_id:
         results = [
-            result for result in results if _same_filter_value(result.cattle_id, cattle_id)
+            result
+            for result in results
+            if _same_filter_value(result.cattle_id, cattle_id)
         ]
     disease_class = _filter_value(disease_class)
     if disease_class:
@@ -1871,6 +1901,15 @@ async def get_farmer_area_advisory(farmer_id: str = Path(...)):
 # --- User Management (admin-only) ---
 
 
+class AgencyJurisdictionRequest(BaseModel):
+    id: str
+    name: str
+    level: str
+    parent_id: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+
+
 class AgencyUserCreateRequest(BaseModel):
     id: str
     role: str
@@ -1978,25 +2017,79 @@ async def delete_agency_user(
 @router.get("/agency/jurisdictions", tags=["agency"])
 async def list_jurisdictions(
     agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    authorization: str = Header(..., alias="Authorization"),
 ):
     """List all available jurisdictions."""
-    agency = DEMO_AGENCY_USERS.get(agency_user_id)
-    if agency is None:
-        raise HTTPException(status_code=403, detail="Unknown agency user")
+    _require_admin_agency(agency_user_id, authorization)
     jurisdictions = _jurisdiction_store.all_by_id()
     return {
-        "jurisdictions": [
-            {
-                "id": j.id,
-                "name": j.name,
-                "level": j.level,
-                "parent_id": j.parent_id,
-                "latitude": j.latitude,
-                "longitude": j.longitude,
-            }
-            for j in jurisdictions.values()
-        ]
+        "jurisdictions": [_serialize_jurisdiction(j) for j in jurisdictions.values()]
     }
+
+
+@router.post("/agency/jurisdictions", tags=["agency"], status_code=201)
+async def create_jurisdiction(
+    request: AgencyJurisdictionRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Create an agency jurisdiction. Admin only."""
+    _require_admin_agency(agency_user_id, authorization)
+    try:
+        jurisdiction = _jurisdiction_store.create(
+            jurisdiction_id=request.id,
+            name=request.name,
+            level=request.level,
+            parent_id=request.parent_id,
+            latitude=request.latitude,
+            longitude=request.longitude,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    return _serialize_jurisdiction(jurisdiction)
+
+
+@router.put("/agency/jurisdictions/{jurisdiction_id}", tags=["agency"])
+async def update_jurisdiction(
+    jurisdiction_id: str,
+    request: AgencyJurisdictionRequest,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Update an agency jurisdiction. Admin only."""
+    _require_admin_agency(agency_user_id, authorization)
+    try:
+        jurisdiction = _jurisdiction_store.update(
+            jurisdiction_id,
+            name=request.name,
+            level=request.level,
+            parent_id=request.parent_id,
+            latitude=request.latitude,
+            longitude=request.longitude,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if jurisdiction is None:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+    return _serialize_jurisdiction(jurisdiction)
+
+
+@router.delete("/agency/jurisdictions/{jurisdiction_id}", tags=["agency"])
+async def delete_jurisdiction(
+    jurisdiction_id: str,
+    agency_user_id: str = Header(..., alias="X-Agency-User-Id"),
+    authorization: str = Header(..., alias="Authorization"),
+):
+    """Delete an agency jurisdiction. Admin only."""
+    _require_admin_agency(agency_user_id, authorization)
+    try:
+        deleted = _jurisdiction_store.delete(jurisdiction_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Jurisdiction not found")
+    refresh_agency_users()
+    return {"deleted": True}
 
 
 @router.get(

@@ -24,6 +24,7 @@ export const routePermissions: Record<string, AgencyRole[]> = {
 	"/agency/guides": ["admin"],
 	"/agency/audit-logs": ["admin"],
 	"/agency/users": ["admin"],
+	"/agency/jurisdictions": ["admin"],
 	"/agency/settings": allAgencyRoles,
 };
 

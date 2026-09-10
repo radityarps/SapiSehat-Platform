@@ -26,6 +26,7 @@ import {
   Settings,
   ShieldAlert,
   Users,
+  Map,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -103,6 +104,13 @@ const navItems = [
     label: "User Management",
     icon: Users,
     keywords: ["users", "roles", "permissions", "manage"],
+    roles: ["admin"] as AgencyRole[],
+  },
+  {
+    href: "/agency/jurisdictions",
+    label: "Jurisdiction Management",
+    icon: Map,
+    keywords: ["jurisdiction", "area", "region", "scope"],
     roles: ["admin"] as AgencyRole[],
   },
 ];

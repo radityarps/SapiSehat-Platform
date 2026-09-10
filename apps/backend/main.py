@@ -49,7 +49,6 @@ async def _seed_on_startup() -> None:
         from api.guide_seed import (  # type: ignore[import-not-found]
             seed_bundled_guide_catalog,
         )
-        from api.seeding import seed_development_sample_data
         from api.surface_auth import (
             seed_default_agency_accounts,
             seed_default_farmer_accounts,
@@ -57,7 +56,6 @@ async def _seed_on_startup() -> None:
 
         seed_default_agency_accounts()
         seed_default_farmer_accounts()
-        seed_development_sample_data()
         seed_bundled_guide_catalog()
     except Exception:  # pragma: no cover - startup must not crash on seed
         logger.exception("Startup seeding failed")
