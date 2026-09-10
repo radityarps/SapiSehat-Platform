@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sapisehat_mobile/features/cattle/cattle_detail_page.dart';
+import 'package:sapisehat_mobile/features/cattle/cattle_form_page.dart';
 import 'package:sapisehat_mobile/features/cattle/cattle_screen.dart';
 import 'package:sapisehat_mobile/main.dart';
 
@@ -170,5 +171,35 @@ void main() {
     expect(find.text('Informasi Sapi'), findsOneWidget);
     expect(find.text('Mawar'), findsOneWidget);
     expect(find.text('SAPI-001'), findsOneWidget);
+  });
+
+  testWidgets('cattle form displays date fields with date picker', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CattleFormPage(
+          apiClient: SapiSehatApiClient(transport: CattleUiTransport()),
+          session: _session,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tanggal melahirkan terakhir'), findsOneWidget);
+    expect(find.text('Tanggal vaksin terakhir'), findsOneWidget);
+    expect(find.text('Tanggal obat cacing terakhir'), findsOneWidget);
+    expect(find.text('Tanggal pembelian'), findsOneWidget);
+    expect(find.byIcon(Icons.calendar_today_outlined), findsNWidgets(4));
+
+    // Tap calendar icon to open datepicker
+    await tester.tap(find.byIcon(Icons.calendar_today_outlined).first);
+    await tester.pumpAndSettle();
+
+    expect(find.byType(DatePickerDialog), findsOneWidget);
   });
 }

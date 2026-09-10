@@ -2,22 +2,24 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import time
 import uuid
+from dataclasses import dataclass
 from datetime import datetime, timezone
 
+from config import settings
 from jose import JWTError, jwt
 from passlib.context import CryptContext  # type: ignore[import-not-found]
-from sqlalchemy import func, select  # type: ignore[import-not-found]
+from sqlalchemy import select  # type: ignore[import-not-found]
 
 from api.database import SessionLocal, create_all_tables
 from api.db_models import AccountModel
-from config import settings
 
 DEFAULT_AGENCY_ADMIN_ID = "a1000000-0000-4000-8000-000000000001"
 DEFAULT_AGENCY_OFFICER_ID = "a2000000-0000-4000-8000-000000000002"
 DEFAULT_AGENCY_VIEWER_ID = "a3000000-0000-4000-8000-000000000003"
+DEFAULT_FARMER_DEMO_ID = "f1000000-0000-4000-8000-000000000001"
+DEFAULT_FARMER_DEMO_TWO_ID = "f2000000-0000-4000-8000-000000000002"
 
 TOKEN_ALGORITHM = "HS256"
 password_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
@@ -50,6 +52,8 @@ class SurfaceAccountStore:
         name: str,
         jurisdiction_id: str,
         address: str | None = None,
+        phone_number: str | None = None,
+        account_id: str | None = None,
     ) -> SurfaceAccount:
         return self._create(
             account_type="farmer",
@@ -58,6 +62,8 @@ class SurfaceAccountStore:
             name=name,
             jurisdiction_id=jurisdiction_id,
             address=address,
+            account_id=account_id,
+            phone_number=phone_number,
         )
 
     def seed_farmer(
@@ -68,10 +74,40 @@ class SurfaceAccountStore:
         name: str,
         jurisdiction_id: str,
         address: str | None = None,
+        account_id: str | None = None,
+        phone_number: str | None = None,
     ) -> SurfaceAccount:
+        from api.db_models import FarmerAccountModel
+        from api.farmer_accounts import FarmerConsentState
+
         existing = self.get(account_type="farmer", email=email)
         if existing is not None:
-            return existing
+            if account_id is not None and existing.id != account_id:
+                with SessionLocal() as session:
+                    old_farmer = session.get(FarmerAccountModel, existing.id)
+                    if old_farmer is not None:
+                        session.delete(old_farmer)
+                    old_account = session.get(AccountModel, existing.id)
+                    if old_account is not None:
+                        session.delete(old_account)
+                    session.commit()
+            else:
+                with SessionLocal() as session:
+                    farmer_row = session.get(FarmerAccountModel, existing.id)
+                    if farmer_row is None:
+                        session.add(
+                            FarmerAccountModel(
+                                id=existing.id,
+                                phone_number=phone_number,
+                                name=existing.name,
+                                address=existing.address,
+                                jurisdiction_id=existing.jurisdiction_id,
+                                consent_state=FarmerConsentState.AGENCY_MONITORING.value,
+                                scan_image_storage_notice_accepted=False,
+                            )
+                        )
+                        session.commit()
+                return existing
         return self._create(
             account_type="farmer",
             email=email,
@@ -79,6 +115,8 @@ class SurfaceAccountStore:
             name=name,
             jurisdiction_id=jurisdiction_id,
             address=address,
+            account_id=account_id,
+            phone_number=phone_number,
         )
 
     def seed_agency(
@@ -142,23 +180,16 @@ class SurfaceAccountStore:
         jurisdiction_id: str,
         address: str | None = None,
         account_id: str | None = None,
+        phone_number: str | None = None,
     ) -> SurfaceAccount:
         normalized_email = normalize_email(email)
         if self.get(account_type=account_type, email=normalized_email) is not None:
             raise ValueError(f"{account_type} account already exists")
         with SessionLocal() as session:
             if account_id is None or session.get(AccountModel, account_id) is not None:
-                if account_type == "agency":
+                account_id = str(uuid.uuid4())
+                while session.get(AccountModel, account_id) is not None:
                     account_id = str(uuid.uuid4())
-                    while session.get(AccountModel, account_id) is not None:
-                        account_id = str(uuid.uuid4())
-                else:
-                    next_num = (session.scalar(select(func.count()).select_from(AccountModel)) or 0) + 1
-                    candidate = f"{account_type}-{next_num}"
-                    while session.get(AccountModel, candidate) is not None:
-                        next_num += 1
-                        candidate = f"{account_type}-{next_num}"
-                    account_id = candidate
             account = SurfaceAccount(
                 id=account_id,
                 account_type=account_type,
@@ -169,6 +200,22 @@ class SurfaceAccountStore:
                 password_hash=hash_password(password),
             )
             session.add(AccountModel(**account.__dict__))
+            if account_type == "farmer":
+                from api.db_models import FarmerAccountModel
+                from api.farmer_accounts import FarmerConsentState
+
+                if session.get(FarmerAccountModel, account_id) is None:
+                    session.add(
+                        FarmerAccountModel(
+                            id=account_id,
+                            phone_number=phone_number,
+                            name=name,
+                            address=address,
+                            jurisdiction_id=jurisdiction_id,
+                            consent_state=FarmerConsentState.AGENCY_MONITORING.value,
+                            scan_image_storage_notice_accepted=False,
+                        )
+                    )
             session.commit()
             return account
 
@@ -189,7 +236,9 @@ class SurfaceAccountStore:
                 return None
             return _account_from_row(row)
 
-    def authenticate(self, *, account_type: str, email: str, password: str) -> SurfaceAccount | None:
+    def authenticate(
+        self, *, account_type: str, email: str, password: str
+    ) -> SurfaceAccount | None:
         account = self.get(account_type=account_type, email=email)
         if account is None:
             return None
@@ -199,7 +248,16 @@ class SurfaceAccountStore:
             return None
         return account
 
-    def update_farmer_profile(self, *, account_id: str, name: str, jurisdiction_id: str, address: str | None = None) -> SurfaceAccount:
+    def update_farmer_profile(
+        self,
+        *,
+        account_id: str,
+        name: str,
+        jurisdiction_id: str,
+        address: str | None = None,
+    ) -> SurfaceAccount:
+        from api.db_models import FarmerAccountModel
+
         with SessionLocal() as session:
             row = session.get(AccountModel, account_id)
             if row is None or row.account_type != "farmer" or not row.is_active:
@@ -208,6 +266,13 @@ class SurfaceAccountStore:
             row.jurisdiction_id = jurisdiction_id
             if address is not None:
                 row.address = address
+
+            farmer_row = session.get(FarmerAccountModel, account_id)
+            if farmer_row is not None:
+                farmer_row.name = name
+                farmer_row.jurisdiction_id = jurisdiction_id
+                if address is not None:
+                    farmer_row.address = address
             session.commit()
             session.refresh(row)
             return _account_from_row(row)
@@ -222,7 +287,9 @@ class SurfaceAccountStore:
             session.refresh(row)
             return _account_from_row(row)
 
-    def change_password(self, *, account_id: str, current_password: str, new_password: str) -> SurfaceAccount:
+    def change_password(
+        self, *, account_id: str, current_password: str, new_password: str
+    ) -> SurfaceAccount:
         with SessionLocal() as session:
             row = session.get(AccountModel, account_id)
             if row is None or not row.is_active:
@@ -234,7 +301,9 @@ class SurfaceAccountStore:
             session.refresh(row)
             return _account_from_row(row)
 
-    def reset_password(self, *, account_id: str, new_password: str = "agency-password") -> SurfaceAccount:
+    def reset_password(
+        self, *, account_id: str, new_password: str = "agency-password"
+    ) -> SurfaceAccount:
         with SessionLocal() as session:
             row = session.get(AccountModel, account_id)
             if row is None or not row.is_active:
@@ -244,7 +313,9 @@ class SurfaceAccountStore:
             session.refresh(row)
             return _account_from_row(row)
 
-    def archive_farmer(self, *, account_id: str, password: str | None = None) -> SurfaceAccount:
+    def archive_farmer(
+        self, *, account_id: str, password: str | None = None
+    ) -> SurfaceAccount:
         with SessionLocal() as session:
             row = session.get(AccountModel, account_id)
             if row is None or row.account_type != "farmer" or not row.is_active:
@@ -258,7 +329,11 @@ class SurfaceAccountStore:
             return _account_from_row(row)
 
     def clear(self) -> None:
+        from api.db_models import AgencyUserModel, FarmerAccountModel
+
         with SessionLocal() as session:
+            session.query(AgencyUserModel).delete()
+            session.query(FarmerAccountModel).delete()
             session.query(AccountModel).delete()
             session.commit()
 
@@ -266,15 +341,56 @@ class SurfaceAccountStore:
 def seed_default_farmer_accounts() -> None:
     from config import settings
 
+    from api.db_models import FarmerAccountModel
+    from api.farmer_accounts import FarmerConsentState
+
+    # Ensure any existing active farmer account has a FarmerAccountModel record
+    with SessionLocal() as session:
+        farmers_in_accounts = (
+            session.query(AccountModel)
+            .filter(AccountModel.account_type == "farmer")
+            .all()
+        )
+        for acc in farmers_in_accounts:
+            if session.get(FarmerAccountModel, acc.id) is None:
+                session.add(
+                    FarmerAccountModel(
+                        id=acc.id,
+                        phone_number=None,
+                        name=acc.name,
+                        address=acc.address,
+                        jurisdiction_id=acc.jurisdiction_id,
+                        consent_state=FarmerConsentState.AGENCY_MONITORING.value,
+                        scan_image_storage_notice_accepted=False,
+                    )
+                )
+        session.commit()
+
     # Farmers only seed in staging/development, never production.
     if settings.resolved_seed_tier == "production":
         return
+
+    # Clean up obsolete legacy farmer IDs if they exist
+    with SessionLocal() as session:
+        for legacy_id in ("farmer-1", "farmer-2", "farmer-3", "farmer-4", "farmer-5"):
+            acc = session.get(AccountModel, legacy_id)
+            if acc is not None and acc.email in (
+                "farmer@example.com",
+                "farmer2@example.com",
+            ):
+                old_f = session.get(FarmerAccountModel, legacy_id)
+                if old_f is not None:
+                    session.delete(old_f)
+                session.delete(acc)
+        session.commit()
+
     surface_account_store.seed_farmer(
         email="farmer@example.com",
         password="strong-password",
         name="Demo Farmer",
         jurisdiction_id="tembalang",
         address="Jl. Ngesrep Timur V No. 12, Tembalang",
+        account_id=DEFAULT_FARMER_DEMO_ID,
     )
     surface_account_store.seed_farmer(
         email="farmer2@example.com",
@@ -282,12 +398,15 @@ def seed_default_farmer_accounts() -> None:
         name="Demo Farmer Two",
         jurisdiction_id="banyumanik",
         address="Jl. Banyumanik Raya No. 22, Banyumanik",
+        account_id=DEFAULT_FARMER_DEMO_TWO_ID,
     )
 
+
 def seed_default_agency_accounts() -> None:
+    from config import settings
+
     from api.authorization import AgencyRole, _agency_user_store, refresh_agency_users
     from api.db_models import AgencyUserModel
-    from config import settings
 
     # Clean up obsolete legacy central-java-admin or legacy seeded accounts if present
     with SessionLocal() as session:

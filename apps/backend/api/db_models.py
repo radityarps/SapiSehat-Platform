@@ -62,18 +62,30 @@ class FarmerAccountModel(Base):
         ),
     )
 
-    id: Mapped[str] = mapped_column(String(80), primary_key=True)
-    phone_number: Mapped[str] = mapped_column(
-        String(40), nullable=False, unique=True, index=True
+    id: Mapped[str] = mapped_column(
+        String(80),
+        ForeignKey("accounts.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    phone_number: Mapped[str | None] = mapped_column(
+        String(40), nullable=True, unique=True, index=True
     )
     name: Mapped[str] = mapped_column(String(120), nullable=False)
     address: Mapped[str | None] = mapped_column(String(300), nullable=True)
     jurisdiction_id: Mapped[str] = mapped_column(
         String(120), nullable=False, index=True
     )
-    consent_state: Mapped[str] = mapped_column(String(80), nullable=False, index=True)
+    consent_state: Mapped[str] = mapped_column(
+        String(80), nullable=False, index=True, default="agency_monitoring"
+    )
     scan_image_storage_notice_accepted: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
+    )
+
+    account: Mapped[AccountModel | None] = relationship(
+        "AccountModel",
+        lazy="joined",
+        uselist=False,
     )
 
 

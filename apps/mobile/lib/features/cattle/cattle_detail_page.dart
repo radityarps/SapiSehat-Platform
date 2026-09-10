@@ -58,16 +58,6 @@ class _CattleDetailPageState extends State<CattleDetailPage> {
     ).showSnackBar(const SnackBar(content: Text('Sapi berhasil diperbarui.')));
   }
 
-  Future<void> transfer() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const CattleTransferPlaceholderPage()),
-    );
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Transfer ternak belum tersedia.')),
-    );
-  }
-
   Future<void> delete() async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -194,21 +184,12 @@ class _CattleDetailPageState extends State<CattleDetailPage> {
                     const SizedBox(width: 8),
                     Expanded(
                       child: OutlinedButton.icon(
-                        onPressed: transfer,
-                        icon: const Icon(Icons.swap_horiz),
-                        label: const Text('Transfer'),
+                        onPressed: delete,
+                        icon: const Icon(Icons.delete_outline),
+                        label: const Text('Hapus'),
                       ),
                     ),
                   ],
-                ),
-                const SizedBox(height: 8),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton.icon(
-                    onPressed: delete,
-                    icon: const Icon(Icons.delete_outline),
-                    label: const Text('Hapus'),
-                  ),
                 ),
               ],
             ),
@@ -248,46 +229,6 @@ class _CattleDetailPageState extends State<CattleDetailPage> {
                   .toList(),
             );
           },
-        ),
-      ],
-    ),
-  );
-}
-
-class CattleTransferPlaceholderPage extends StatelessWidget {
-  const CattleTransferPlaceholderPage({super.key});
-
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Transfer sapi')),
-    body: ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Text(
-          'Transfer ternak',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w900),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'Fitur transfer ternak belum tersedia. Form ini disiapkan untuk alur transfer aman berikutnya.',
-        ),
-        const SizedBox(height: 20),
-        const TextField(
-          enabled: false,
-          decoration: InputDecoration(labelText: 'Nomor HP peternak tujuan'),
-        ),
-        SizedBox(height: 12),
-        const TextField(
-          enabled: false,
-          maxLines: 3,
-          decoration: InputDecoration(labelText: 'Alasan transfer'),
-        ),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: null,
-          child: const Text('Transfer belum tersedia'),
         ),
       ],
     ),
