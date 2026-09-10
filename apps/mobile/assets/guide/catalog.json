@@ -1,0 +1,20 @@
+{
+  "version": 0,
+  "documents": {
+    "categories": [
+      {"id":"guide-category-umum","state":"active","system_owned":true,"display_order":0,"translations":[{"locale":"id","label":"Umum"}]},
+      {"id":"guide-category-penggunaan","state":"active","system_owned":false,"display_order":10,"translations":[{"locale":"id","label":"Penggunaan"}]},
+      {"id":"guide-category-pmk","state":"active","system_owned":false,"display_order":20,"translations":[{"locale":"id","label":"PMK"}]},
+      {"id":"guide-category-sapi-sehat","state":"active","system_owned":false,"display_order":30,"translations":[{"locale":"id","label":"Sapi Sehat"}]}
+    ],
+    "articles": [
+      {"id":"guide-article-scan-pertama","category_id":"guide-category-penggunaan","state":"published","published_at":"2026-01-01T00:00:00+00:00","translations":[{"locale":"id","title":"Memulai Scan Pertama","summary":"Panduan menggunakan fitur scan untuk melihat sinyal risiko pada sapi.","blocks":[{"type":"paragraph","text":"Buka tab Scan, arahkan kamera ke sapi, lalu ambil foto. Gunakan jarak 1-2 meter, pencahayaan cukup, dan posisi sejajar tubuh sapi.\n\nHasil menampilkan sinyal risiko, confidence score, dan saran tindakan awal. Hasil bukan diagnosis dokter hewan."}]}]},
+      {"id":"guide-article-mode-offline","category_id":"guide-category-penggunaan","state":"published","published_at":"2026-01-01T00:00:00+00:00","translations":[{"locale":"id","title":"Mode Online vs Offline","summary":"Perbedaan mode inferensi online dan offline.","blocks":[{"type":"paragraph","text":"Mode online memakai server untuk analisis saat internet tersedia. Mode offline memakai model di perangkat ketika koneksi tidak tersedia.\n\nHasil offline disimpan dan dapat disinkronkan saat perangkat kembali online."}]}]},
+      {"id":"guide-article-mengenal-pmk","category_id":"guide-category-pmk","state":"published","published_at":"2026-01-01T00:00:00+00:00","translations":[{"locale":"id","title":"Mengenal PMK","summary":"Informasi dasar Penyakit Mulut dan Kuku.","blocks":[{"type":"paragraph","text":"PMK adalah penyakit menular pada hewan berkuku belah. Tanda yang dapat terlihat antara lain demam, air liur berlebih, lepuh pada mulut atau kaki, dan pincang.\n\nHubungi petugas kesehatan hewan untuk pemeriksaan lebih lanjut."}]}]},
+      {"id":"guide-article-pencegahan-pmk","category_id":"guide-category-pmk","state":"published","published_at":"2026-01-01T00:00:00+00:00","translations":[{"locale":"id","title":"Pencegahan PMK","summary":"Biosekuriti dan tindakan awal yang aman.","blocks":[{"type":"paragraph","text":"Pisahkan sapi yang menunjukkan gejala, batasi lalu lintas orang dan ternak, bersihkan serta desinfeksi kandang, dan gunakan alas kaki khusus.\n\nLakukan vaksinasi sesuai arahan petugas kesehatan hewan."}]}]},
+      {"id":"guide-article-sapi-sehat","category_id":"guide-category-sapi-sehat","state":"published","published_at":"2026-01-01T00:00:00+00:00","translations":[{"locale":"id","title":"Ciri-Ciri Sapi Sehat","summary":"Tanda umum sapi sehat sebagai bahan pemantauan.","blocks":[{"type":"paragraph","text":"Sapi yang sehat umumnya aktif, memiliki nafsu makan baik, mata cerah, bulu dan kulit bersih, serta bergerak normal tanpa pincang.\n\nPantau perubahan perilaku, makan, dan gerak sebagai sinyal untuk tindak lanjut."}]}]},
+      {"id":"guide-article-biosekuriti","category_id":"guide-category-sapi-sehat","state":"published","published_at":"2026-01-01T00:00:00+00:00","translations":[{"locale":"id","title":"Biosekuriti Harian","summary":"Rutinitas menjaga kesehatan ternak.","blocks":[{"type":"paragraph","text":"Bersihkan kandang, sediakan air bersih, batasi pengunjung, gunakan alas kaki khusus, karantina ternak baru, dan catat kesehatan sapi."}]}]}
+    ]
+  },
+  "media": []
+}

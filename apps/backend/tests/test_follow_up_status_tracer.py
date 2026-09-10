@@ -6,6 +6,7 @@ from main import app
 from api.farmer_accounts import farmer_account_store
 from api.cattle_profiles import cattle_profile_store
 from api.follow_ups import follow_up_store
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 
 
 def setup_function():
@@ -27,7 +28,7 @@ def test_agency_internal_notes_hidden_from_farmer_follow_up_status():
 
     created = client.post(
         "/api/agency/follow-ups",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
         json={
             "farmer_id": farmer["id"],
             "cattle_id": cattle["id"],
@@ -54,7 +55,7 @@ def test_agency_follow_up_list_returns_agency_rows_with_internal_notes():
     ).json()
     created = client.post(
         "/api/agency/follow-ups",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
         json={
             "farmer_id": farmer["id"],
             "cattle_id": None,
@@ -64,7 +65,7 @@ def test_agency_follow_up_list_returns_agency_rows_with_internal_notes():
         },
     )
 
-    listed = client.get("/api/agency/follow-ups", headers={"X-Agency-User-Id": "semarang-officer"})
+    listed = client.get("/api/agency/follow-ups", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert created.status_code == 200, created.text
     assert listed.status_code == 200, listed.text
@@ -83,7 +84,7 @@ def test_agency_follow_up_list_is_jurisdiction_scoped():
     ).json()
     allowed_created = client.post(
         "/api/agency/follow-ups",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
         json={"farmer_id": allowed["id"], "cattle_id": None, "status": "scheduled", "public_message": "Petugas meninjau sinyal risiko.", "internal_notes": "visible local row"},
     )
     assert allowed_created.status_code == 200, allowed_created.text
@@ -95,7 +96,7 @@ def test_agency_follow_up_list_is_jurisdiction_scoped():
         internal_notes="must not leak to semarang officer",
     )
 
-    listed = client.get("/api/agency/follow-ups", headers={"X-Agency-User-Id": "semarang-officer"})
+    listed = client.get("/api/agency/follow-ups", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert listed.status_code == 200, listed.text
     rows = listed.json()

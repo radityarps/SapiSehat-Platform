@@ -7,6 +7,7 @@ from main import app
 from api.farmer_accounts import farmer_account_store
 from api.cattle_profiles import cattle_profile_store
 from api.follow_ups import follow_up_store
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 
 client = TestClient(app)
 
@@ -47,7 +48,7 @@ def test_agency_follow_up_rejects_farmer_outside_jurisdiction():
 
     response = client.post(
         "/api/agency/follow-ups",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
         json={
             "farmer_id": outside["id"],
             "cattle_id": outside_cattle["id"],
@@ -67,7 +68,7 @@ def test_agency_cattle_detail_rejects_cattle_outside_jurisdiction():
 
     response = client.get(
         f"/api/agency/cattle/{outside_cattle['id']}",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
     )
 
     assert response.status_code == 404

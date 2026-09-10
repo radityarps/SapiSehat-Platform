@@ -107,7 +107,7 @@ const _slides = [
     asset: 'assets/onboarding/veterinary-clinic.svg',
     title: 'Kelola kesehatan sapi',
     body:
-        'Gunakan kamera untuk mencatat sinyal risiko PMK dan LSD. Hasil bukan diagnosis veteriner.',
+        'Gunakan kamera untuk mencatat sinyal risiko PMK dan sapi sehat. Hasil bukan diagnosis veteriner.',
   ),
   _Slide(
     asset: 'assets/onboarding/undraw_no-signal_nqfa.svg',

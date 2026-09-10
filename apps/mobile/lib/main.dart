@@ -11,6 +11,8 @@ export 'features/advisory/advisory.dart';
 export 'features/auth/auth.dart';
 export 'features/cattle/cattle.dart';
 export 'features/history/history.dart';
+export 'features/guide/guide_catalog.dart';
+export 'features/guide/guide_screen.dart';
 export 'features/scan/scan.dart';
 
 Future<void> main() async {

@@ -19,12 +19,14 @@ import {
   ChevronsUpDown,
   ClipboardList,
   FileClock,
+  BookOpen,
   LayoutDashboard,
   LogOut,
   Search,
   Settings,
   ShieldAlert,
   Users,
+  Map,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
@@ -84,6 +86,13 @@ const navItems = [
     roles: ["admin", "province_officer", "district_officer"] as AgencyRole[],
   },
   {
+    href: "/agency/guides",
+    label: "Guide CMS",
+    icon: BookOpen,
+    keywords: ["guide", "article", "category", "cms"],
+    roles: ["admin"] as AgencyRole[],
+  },
+  {
     href: "/agency/audit-logs",
     label: "Audit Logs",
     icon: FileClock,
@@ -95,6 +104,13 @@ const navItems = [
     label: "User Management",
     icon: Users,
     keywords: ["users", "roles", "permissions", "manage"],
+    roles: ["admin"] as AgencyRole[],
+  },
+  {
+    href: "/agency/jurisdictions",
+    label: "Jurisdiction Management",
+    icon: Map,
+    keywords: ["jurisdiction", "area", "region", "scope"],
     roles: ["admin"] as AgencyRole[],
   },
 ];
@@ -265,7 +281,10 @@ function AppSidebar() {
                   (item) => !agency?.role || item.roles.includes(agency.role),
                 )
                 .map((item) => {
-                  const active = pathname === item.href;
+                  const active =
+                    pathname === item.href ||
+                    (item.href !== "/agency/overview" &&
+                      pathname.startsWith(`${item.href}/`));
                   return (
                     <SidebarMenuItem key={item.href}>
                       <SidebarMenuButton

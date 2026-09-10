@@ -102,7 +102,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         onDeleteLocal: (result) =>
             ref.read(localHistoryProvider.notifier).remove(result),
       ),
-      const GuideScreen(),
+      GuideScreen(apiClient: widget.apiClient, session: session),
       SettingsScreen(
         apiClient: widget.apiClient,
         session: session,

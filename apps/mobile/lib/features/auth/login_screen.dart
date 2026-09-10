@@ -74,27 +74,26 @@ class _LoginScreenState extends State<LoginScreen> {
       gpsLoading = true;
       error = null;
     });
-    final ctx = context;
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         setState(() => gpsLoading = false);
         if (!mounted) return;
         await showDialog(
-          context: ctx,
-          builder: (_) => AlertDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
             title: const Text('Layanan lokasi tidak aktif'),
             content: const Text(
               'Aktifkan GPS di pengaturan perangkat untuk mengisi alamat otomatis.',
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: () => Navigator.of(dialogContext).pop(),
                 child: const Text('Batal'),
               ),
               FilledButton(
                 onPressed: () {
-                  Navigator.pop(ctx);
+                  Navigator.of(dialogContext).pop();
                   Geolocator.openLocationSettings();
                 },
                 child: const Text('Pengaturan'),
@@ -111,20 +110,20 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => gpsLoading = false);
         if (!mounted) return;
         await showDialog(
-          context: ctx,
-          builder: (_) => AlertDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
             title: const Text('Izin lokasi ditolak'),
             content: const Text(
               'Buka pengaturan aplikasi untuk mengizinkan akses lokasi.',
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx),
+                onPressed: () => Navigator.of(dialogContext).pop(),
                 child: const Text('Batal'),
               ),
               FilledButton(
                 onPressed: () {
-                  Navigator.pop(ctx);
+                  Navigator.of(dialogContext).pop();
                   Geolocator.openAppSettings();
                 },
                 child: const Text('Pengaturan'),
@@ -139,19 +138,19 @@ class _LoginScreenState extends State<LoginScreen> {
         setState(() => gpsLoading = false);
         if (!mounted) return;
         final confirmed = await showDialog<bool>(
-          context: ctx,
-          builder: (_) => AlertDialog(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
             title: const Text('Izin lokasi diperlukan'),
             content: const Text(
               'SapiSehat membutuhkan izin lokasi untuk mengisi alamat otomatis dari GPS.',
             ),
             actions: [
               TextButton(
-                onPressed: () => Navigator.pop(ctx, false),
+                onPressed: () => Navigator.of(dialogContext).pop(false),
                 child: const Text('Batal'),
               ),
               FilledButton(
-                onPressed: () => Navigator.pop(ctx, true),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
                 child: const Text('Izinkan'),
               ),
             ],

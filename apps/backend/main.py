@@ -1,11 +1,13 @@
 """Main FastAPI application."""
 
-from fastapi import FastAPI, HTTPException
-from fastapi.middleware.cors import CORSMiddleware
-from starlette.responses import JSONResponse
-from config import settings
-from api.routes import router
+from fastapi import FastAPI, HTTPException  # type: ignore[import-not-found]
+from fastapi.middleware.cors import CORSMiddleware  # type: ignore[import-not-found]
+from starlette.responses import JSONResponse  # type: ignore[import-not-found]
+
+from api.guide_cms import router as guide_router  # type: ignore[import-not-found]
 from api.rate_limiter import RateLimiterMiddleware
+from api.routes import router
+from config import settings
 from utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -13,7 +15,7 @@ logger = get_logger(__name__)
 # Create FastAPI app
 app = FastAPI(
     title="SapiSehat Backend",
-    description="Cattle disease detection API (PMK & LSD)",
+    description="Cattle disease early detection API (FMD and healthy signals)",
     version=settings.model_version,
     docs_url="/docs",
     redoc_url="/redoc",
@@ -37,23 +39,26 @@ app.add_middleware(
 
 # Include routes
 app.include_router(router)
+app.include_router(guide_router)
 
 
 @app.on_event("startup")
 async def _seed_on_startup() -> None:
     """Seed environment-appropriate data once the app is ready."""
     try:
+        from api.guide_seed import (  # type: ignore[import-not-found]
+            seed_bundled_guide_catalog,
+        )
         from api.surface_auth import (
             seed_default_agency_accounts,
             seed_default_farmer_accounts,
         )
-        from api.seeding import seed_development_sample_data
 
         seed_default_agency_accounts()
         seed_default_farmer_accounts()
-        seed_development_sample_data()
-    except Exception as exc:  # pragma: no cover - startup must not crash on seed
-        logger.error(f"Startup seeding failed: {exc}", exc_info=True)
+        seed_bundled_guide_catalog()
+    except Exception:  # pragma: no cover - startup must not crash on seed
+        logger.exception("Startup seeding failed")
 
 
 @app.get("/")
@@ -70,6 +75,8 @@ async def root():
 def _resolve_error_code(exc: HTTPException) -> str:
     """Map HTTPException status code to a defined error code."""
     if exc.status_code == 422:
+        if "not a cattle image" in str(exc.detail).lower():
+            return "NON_CATTLE_IMAGE"
         return "INVALID_IMAGE"
     elif exc.status_code == 503:
         return "MODEL_NOT_READY"
@@ -98,7 +105,7 @@ async def http_exception_handler(request, exc):
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):
     """Catch-all for unhandled exceptions."""
-    logger.error(f"Unhandled exception: {str(exc)}", exc_info=True)
+    logger.error(f"Unhandled exception: {exc!s}")
     return JSONResponse(
         status_code=500,
         content={
@@ -110,7 +117,7 @@ async def global_exception_handler(request, exc):
 
 
 if __name__ == "__main__":
-    import uvicorn
+    import uvicorn  # type: ignore[import-not-found]
 
     logger.info(f"Starting SapiSehat Backend (v{settings.model_version})")
     logger.info(f"Environment: {settings.fastapi_env}")

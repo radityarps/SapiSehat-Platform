@@ -39,7 +39,7 @@ SAPISEHAT_API_BASE_URL=http://10.0.2.2:8000   # Android emulator → host
 In debug mode (`kDebugMode = true`), login and register fields are pre-filled with dev credentials:
 
 | Field | Value |
-|-------|-------|
+| --- | --- |
 | Email | `farmer@example.com` |
 | Password | `strong-password` |
 | Name | `Demo Farmer` |
@@ -52,12 +52,12 @@ In release builds, all fields are empty.
 Bottom navigation (5 tabs):
 
 | Tab | Screen | Description |
-|-----|--------|-------------|
+| --- | --- | --- |
 | Sapi | `CattleScreen` | Cattle list, create, edit, status |
 | Scan | `ScanScreen` | Camera scan (online) + offline fallback |
 | Riwayat | `HistoryScreen` | Backend-first detection history with pending-local fallback |
 | Panduan | `GuideScreen` | Safe farmer guidance |
-| Setelan | `SettingsScreen` | Profile card, preferences, logout confirmation, archive |
+| Setelan | `SettingsScreen` | Profile card, logout confirmation, archive |
 
 Profile editing is accessed from Settings → "Edit profil" button.
 
@@ -71,7 +71,7 @@ Profile editing is accessed from Settings → "Edit profil" button.
 - **Detection history** — backend results are source of truth when reachable; pending local results appear as fallback. Matching local image paths are merged into backend cards so scan thumbnails remain visible. Manual pull-to-refresh is supported.
 - **Result management** — detection result detail and history cards can reassign linked cattle, delete scan results with success/failure toasts, and export/share PDF without exposing raw cattle IDs.
 - **Cattle display** — cattle name is primary text, tag is secondary; selectors and detection results use `{name} ({tag})`, with `Belum dikaitkan` when no linked cattle is available.
-- **Settings** — notification preferences, profile card, logout confirmation with success/failure toasts, password-visible account deletion confirmation, and account archive.
+- **Settings** — profile card, logout confirmation with success/failure toasts, password-visible account deletion confirmation, and account archive.
 
 ## Permissions (Android)
 
@@ -87,6 +87,6 @@ Location permission is requested at runtime only when the GPS button is tapped o
 ## Seeded dev accounts
 
 | Email | Password | Jurisdiction |
-|-------|----------|-------------|
+| --- | --- | --- |
 | `farmer@example.com` | `strong-password` | tembalang |
 | `farmer2@example.com` | `strong-password` | banyumanik |

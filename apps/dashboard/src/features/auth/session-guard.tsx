@@ -1,6 +1,5 @@
 "use client";
 
-import { Button } from "@/src/shared/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/src/shared/ui/card";
 import { Skeleton } from "@/src/shared/ui/skeleton";
 import { useAgencySession } from "@/src/features/auth/session-context";
@@ -11,9 +10,9 @@ import { useEffect } from "react";
 export function SessionGuard({ children }: { children: React.ReactNode }) {
 	const router = useRouter();
 	const pathname = usePathname();
-	const { status, agency, signOut } = useAgencySession();
+	const { status, signOut } = useAgencySession();
 
-	useRouteGuard(pathname);
+	const hasPermission = useRouteGuard(pathname);
 
 	useEffect(() => {
 		if (status === "invalid") signOut();
@@ -25,8 +24,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
 		}
 	}, [status, pathname, router]);
 
-	if (status === "authenticated" && agency?.account_type === "agency")
-		return <>{children}</>;
+	if (status === "authenticated" && hasPermission) return <>{children}</>;
 
 	return (
 		<main className="flex min-h-screen items-center justify-center bg-background px-4 py-10">

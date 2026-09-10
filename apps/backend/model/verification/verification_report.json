@@ -1,0 +1,1154 @@
+{
+  "schema_version": 2,
+  "generated_from": "apps/backend/model/verification/golden_corpus_manifest.json",
+  "model_version": "cattle-disease-mobilenetv3large-v20260902-pmk-fp32",
+  "artifact_status": "verified",
+  "activation_ready": true,
+  "overall_pass": true,
+  "required_gates": [
+    "metadata_pair_contract",
+    "metadata_activation_status",
+    "artifact_checksums",
+    "tensor_contract_declaration",
+    "runtime_tensor_contract",
+    "finite_probability_contract",
+    "valid_image_top_class_parity",
+    "score_tolerance",
+    "labeled_corpus_expectations",
+    "corpus_label_provenance",
+    "corpus_file_integrity",
+    "corrupt_input_fixture",
+    "former_lsd_policy",
+    "class_identity_provenance",
+    "corpus_source_permissions",
+    "physical_android_offline_smoke"
+  ],
+  "gates": {
+    "metadata_pair_contract": true,
+    "metadata_activation_status": true,
+    "artifact_checksums": true,
+    "tensor_contract_declaration": true,
+    "runtime_tensor_contract": true,
+    "finite_probability_contract": true,
+    "valid_image_top_class_parity": true,
+    "score_tolerance": true,
+    "labeled_corpus_expectations": true,
+    "corpus_label_provenance": true,
+    "corpus_file_integrity": true,
+    "corrupt_input_fixture": true,
+    "former_lsd_policy": true,
+    "class_identity_provenance": true,
+    "corpus_source_permissions": true,
+    "physical_android_offline_smoke": true
+  },
+  "blockers": [],
+  "artifacts": {
+    "keras": {
+      "path": "apps/backend/model/pmkbest.keras",
+      "exists": true,
+      "sha256": "2de81ed02da7e95e8cc8ff1a3abf2d18140d5ae99660ed40a3f1cba238d9ceae",
+      "expected_sha256": "2de81ed02da7e95e8cc8ff1a3abf2d18140d5ae99660ed40a3f1cba238d9ceae",
+      "matches": true
+    },
+    "tflite": {
+      "path": "apps/mobile/assets/model/pmk_fp32.tflite",
+      "exists": true,
+      "sha256": "2ba19d218abf71a0d6328cf8d6b4c0a74ca57711e1f86c8eedd72b6f660f9833",
+      "expected_sha256": "2ba19d218abf71a0d6328cf8d6b4c0a74ca57711e1f86c8eedd72b6f660f9833",
+      "matches": true
+    }
+  },
+  "class_identity": {
+    "schema_version": 1,
+    "status": "authoritative",
+    "model_version": "cattle-disease-mobilenetv3large-v20260902-pmk-fp32",
+    "artifacts": {
+      "keras": {
+        "path": "apps/backend/model/pmkbest.keras",
+        "sha256": "2de81ed02da7e95e8cc8ff1a3abf2d18140d5ae99660ed40a3f1cba238d9ceae",
+        "model_version": "cattle-disease-mobilenetv3large-v20260902-pmk-fp32"
+      },
+      "tflite": {
+        "path": "apps/mobile/assets/model/pmk_fp32.tflite",
+        "sha256": "2ba19d218abf71a0d6328cf8d6b4c0a74ca57711e1f86c8eedd72b6f660f9833",
+        "model_version": "cattle-disease-mobilenetv3large-v20260902-pmk-fp32"
+      }
+    },
+    "class_order": [
+      "non_sapi",
+      "pmk",
+      "sehat"
+    ],
+    "class_indices": {
+      "0": "non_sapi",
+      "1": "pmk",
+      "2": "sehat"
+    },
+    "label_mapping": {
+      "non_sapi": "non_cattle",
+      "pmk": "FMD",
+      "sehat": "healthy"
+    },
+    "producer_signature": null,
+    "producer": null,
+    "export_run": null,
+    "evidence": {
+      "source": "apps/backend/model/class_names.json",
+      "status": "authoritative",
+      "basis": "Owner-approved class_names.json is authoritative class-order evidence from the same training/export as this artifact pair; the canonical mapping is explicit and is not inferred from predictions.",
+      "not_asserted": [
+        "cryptographic signature",
+        "external URL",
+        "license",
+        "veterinary review"
+      ],
+      "not_acceptable": [
+        "inferring labels from predictions",
+        "renaming output labels without an explicit canonical mapping",
+        "using the older MobileNetV2 FMD/Healthy/LSD notebook as proof",
+        "using a sibling project's different four-class export as proof"
+      ]
+    },
+    "note": "Class-order evidence is accepted under the owner-approved policy. The repository owner attests that the required physical Android offline smoke test passed."
+  },
+  "corpus_files": [
+    {
+      "id": "fmd-pmk-01",
+      "path": "apps/backend/tests/assets/sapi pmk 1.jpg",
+      "exists": true,
+      "sha256": "2075b338580c46fda9469533c08434bcb3b38a6a0832328de98fd551d7ccd133",
+      "expected_sha256": "2075b338580c46fda9469533c08434bcb3b38a6a0832328de98fd551d7ccd133",
+      "matches": true
+    },
+    {
+      "id": "fmd-pmk-02",
+      "path": "apps/backend/tests/assets/sapi pmk 2.jpg",
+      "exists": true,
+      "sha256": "701ef99b168ca335689ab43ea79fe6c4dfbbe5c16cb3374c7efe403a0ebd3fbf",
+      "expected_sha256": "701ef99b168ca335689ab43ea79fe6c4dfbbe5c16cb3374c7efe403a0ebd3fbf",
+      "matches": true
+    },
+    {
+      "id": "fmd-pmk-03",
+      "path": "apps/backend/tests/assets/sapi pmk 3.jpg",
+      "exists": true,
+      "sha256": "6f79bf9a214849e5b489b21311cd1199243beb2045fce83b2134e30f4ec8313e",
+      "expected_sha256": "6f79bf9a214849e5b489b21311cd1199243beb2045fce83b2134e30f4ec8313e",
+      "matches": true
+    },
+    {
+      "id": "fmd-pmk-04",
+      "path": "apps/backend/tests/assets/sapi pmk 4.jpg",
+      "exists": true,
+      "sha256": "ca9d4ae4183128ada656ed1656923e1d3ffc68b867369fa9effe2f5dccd9fb3f",
+      "expected_sha256": "ca9d4ae4183128ada656ed1656923e1d3ffc68b867369fa9effe2f5dccd9fb3f",
+      "matches": true
+    },
+    {
+      "id": "fmd-pmk-05",
+      "path": "apps/backend/tests/assets/sapi pmk 5.jpg",
+      "exists": true,
+      "sha256": "6261a02d4db9d34070a528f881ffae2d8ed9d2dc2a452ba09506e7e29c601f89",
+      "expected_sha256": "6261a02d4db9d34070a528f881ffae2d8ed9d2dc2a452ba09506e7e29c601f89",
+      "matches": true
+    },
+    {
+      "id": "fmd-pmk-06",
+      "path": "apps/backend/tests/assets/sapi pmk 6.jpg",
+      "exists": true,
+      "sha256": "466e84e63aaa05679a39aba65cf4ae058eedd4b9c7f94d9ca883c27d0d0e4450",
+      "expected_sha256": "466e84e63aaa05679a39aba65cf4ae058eedd4b9c7f94d9ca883c27d0d0e4450",
+      "matches": true
+    },
+    {
+      "id": "fmd-pmk-07",
+      "path": "apps/backend/tests/assets/sapi pmk 7.jpg",
+      "exists": true,
+      "sha256": "c25bf9083aa9b5d39d77f505fffbeaadf2fa8cdaf9ce09f62719845d761529cd",
+      "expected_sha256": "c25bf9083aa9b5d39d77f505fffbeaadf2fa8cdaf9ce09f62719845d761529cd",
+      "matches": true
+    },
+    {
+      "id": "fmd-pmk-08",
+      "path": "apps/backend/tests/assets/sapi pmk awal.jpg",
+      "exists": true,
+      "sha256": "d4b2b95f61bc8fb1a835e24242cc502556b45c433c61659f9eb99101f7ccaaa2",
+      "expected_sha256": "d4b2b95f61bc8fb1a835e24242cc502556b45c433c61659f9eb99101f7ccaaa2",
+      "matches": true
+    },
+    {
+      "id": "healthy-01",
+      "path": "apps/backend/tests/assets/sapi sehat 1.jpg",
+      "exists": true,
+      "sha256": "6c720a022c0b221b6d1de29707a567fd8d98e70e892208378879eaf4c43cc398",
+      "expected_sha256": "6c720a022c0b221b6d1de29707a567fd8d98e70e892208378879eaf4c43cc398",
+      "matches": true
+    },
+    {
+      "id": "healthy-02",
+      "path": "apps/backend/tests/assets/sapi sehat 2.jpg",
+      "exists": true,
+      "sha256": "67dfe33bc34329fa28cbba2c0b8235f5314dbf9536d88b6fc1cbd57d8dd69ec3",
+      "expected_sha256": "67dfe33bc34329fa28cbba2c0b8235f5314dbf9536d88b6fc1cbd57d8dd69ec3",
+      "matches": true
+    },
+    {
+      "id": "healthy-03",
+      "path": "apps/backend/tests/assets/sapi sehat 3.jpg",
+      "exists": true,
+      "sha256": "db718648c361e9c4b2b111debf6003b67ec824a985e7dfa3fef49addcede940d",
+      "expected_sha256": "db718648c361e9c4b2b111debf6003b67ec824a985e7dfa3fef49addcede940d",
+      "matches": true
+    },
+    {
+      "id": "healthy-04",
+      "path": "apps/backend/tests/assets/sapi sehat 4.jpg",
+      "exists": true,
+      "sha256": "11dfc566b0813b03b6b558d6012e6eacf94c06a7775bc0b34997ba453fe9c3d8",
+      "expected_sha256": "11dfc566b0813b03b6b558d6012e6eacf94c06a7775bc0b34997ba453fe9c3d8",
+      "matches": true
+    },
+    {
+      "id": "non-cattle-cat-01",
+      "path": "apps/backend/tests/assets/kucing 1.png",
+      "exists": true,
+      "sha256": "f3e10fe34f9a1ee295ec6e17c09fc4fe7a24f23dcd876d8666a028877ad13ca4",
+      "expected_sha256": "f3e10fe34f9a1ee295ec6e17c09fc4fe7a24f23dcd876d8666a028877ad13ca4",
+      "matches": true
+    },
+    {
+      "id": "non-cattle-human-01",
+      "path": "apps/backend/tests/assets/manusia 1.png",
+      "exists": true,
+      "sha256": "d4a8dc4d863306b0747d66529d3e3031378a4d1a8d6a95dfadbe5e51d7a41c14",
+      "expected_sha256": "d4a8dc4d863306b0747d66529d3e3031378a4d1a8d6a95dfadbe5e51d7a41c14",
+      "matches": true
+    },
+    {
+      "id": "non-cattle-cat-02",
+      "path": "apps/backend/tests/assets/mulut kucing.png",
+      "exists": true,
+      "sha256": "30097f8d4ab3a278475ec52034c6ac909b89ccfe9ce8635ab2c6168485e053b1",
+      "expected_sha256": "30097f8d4ab3a278475ec52034c6ac909b89ccfe9ce8635ab2c6168485e053b1",
+      "matches": true
+    },
+    {
+      "id": "non-cattle-human-02",
+      "path": "apps/backend/tests/assets/mulut manusia.png",
+      "exists": true,
+      "sha256": "9b8e3c951b59039fa9dd2eeb726b406e298a7bb2fe0afe2dba27b0f83634689e",
+      "expected_sha256": "9b8e3c951b59039fa9dd2eeb726b406e298a7bb2fe0afe2dba27b0f83634689e",
+      "matches": true
+    },
+    {
+      "id": "non-cattle-object-01",
+      "path": "apps/backend/tests/assets/baut.png",
+      "exists": true,
+      "sha256": "883c50c71f2c4a7266fec4e18335b857d76d4066f5a1ef5b42cb2306f9d8512e",
+      "expected_sha256": "883c50c71f2c4a7266fec4e18335b857d76d4066f5a1ef5b42cb2306f9d8512e",
+      "matches": true
+    },
+    {
+      "id": "former-lsd-01",
+      "path": "apps/backend/tests/assets/sapi lsd 1.jpg",
+      "exists": true,
+      "sha256": "863942cf437a57319b23ec70a681e4727275c468904f92ae18b716c1c3ad9991",
+      "expected_sha256": "863942cf437a57319b23ec70a681e4727275c468904f92ae18b716c1c3ad9991",
+      "matches": true
+    },
+    {
+      "id": "former-lsd-02",
+      "path": "apps/backend/tests/assets/sapi lsd 2.jpg",
+      "exists": true,
+      "sha256": "1b3dbd6c482bd183acce1771ab6363b5ae3e79ba542d5922b7beb2f515d14be8",
+      "expected_sha256": "1b3dbd6c482bd183acce1771ab6363b5ae3e79ba542d5922b7beb2f515d14be8",
+      "matches": true
+    },
+    {
+      "id": "former-lsd-03",
+      "path": "apps/backend/tests/assets/sapi lsd 3.jpg",
+      "exists": true,
+      "sha256": "cc2561a2dc32dc4f507460aeb9ad479b88d3b067be0fa371f145932d7fea6fd3",
+      "expected_sha256": "cc2561a2dc32dc4f507460aeb9ad479b88d3b067be0fa371f145932d7fea6fd3",
+      "matches": true
+    },
+    {
+      "id": "former-lsd-04",
+      "path": "apps/backend/tests/assets/sapi LSD awal.jpg",
+      "exists": true,
+      "sha256": "5219b1d9a5da914e59cf2766b4d825eed6a9c306a4b394266900a7aada16b56f",
+      "expected_sha256": "5219b1d9a5da914e59cf2766b4d825eed6a9c306a4b394266900a7aada16b56f",
+      "matches": true
+    },
+    {
+      "id": "corrupt-01",
+      "path": "apps/backend/tests/assets/corrupt-image.bin",
+      "exists": true,
+      "sha256": "5f6ddd3b503ff3cbd16679aa5c011a941ce07ba9364bd4a1417983f6a5013866",
+      "expected_sha256": "5f6ddd3b503ff3cbd16679aa5c011a941ce07ba9364bd4a1417983f6a5013866",
+      "matches": true
+    }
+  ],
+  "corrupt_fixtures": [
+    {
+      "id": "corrupt-01",
+      "path": "apps/backend/tests/assets/corrupt-image.bin",
+      "model_invocations": 0,
+      "exists": true,
+      "sha256": "5f6ddd3b503ff3cbd16679aa5c011a941ce07ba9364bd4a1417983f6a5013866",
+      "decode_status": "rejected_before_inference",
+      "error_type": "UnidentifiedImageError"
+    }
+  ],
+  "runtime": {
+    "status": "completed",
+    "runtime": "TensorFlow 2.21.0",
+    "tensor_contract": {
+      "keras": {
+        "input_tensor_count": 1,
+        "output_tensor_count": 1,
+        "input_shape": [
+          null,
+          224,
+          224,
+          3
+        ],
+        "output_shape": [
+          null,
+          3
+        ],
+        "input_dtype": "float32",
+        "output_dtype": "float32",
+        "valid": true
+      },
+      "tflite": {
+        "input_tensor_count": 1,
+        "output_tensor_count": 1,
+        "input_shape": [
+          1,
+          224,
+          224,
+          3
+        ],
+        "output_shape": [
+          1,
+          3
+        ],
+        "input_dtype": "float32",
+        "output_dtype": "float32",
+        "valid": true
+      }
+    },
+    "cases": [
+      {
+        "id": "fmd-pmk-01",
+        "path": "apps/backend/tests/assets/sapi pmk 1.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.00042326253606006503,
+          0.9451112747192383,
+          0.05446547269821167
+        ],
+        "tflite_scores": [
+          0.00042326695984229445,
+          0.9451112747192383,
+          0.05446549877524376
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 2.60770320892334e-08,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "fmd-pmk-02",
+        "path": "apps/backend/tests/assets/sapi pmk 2.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          9.009950758809282e-07,
+          0.9997438788414001,
+          0.00025521827046759427
+        ],
+        "tflite_scores": [
+          9.009933137349435e-07,
+          0.9997438788414001,
+          0.00025521827046759427
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 1.7621459846850485e-12,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "fmd-pmk-03",
+        "path": "apps/backend/tests/assets/sapi pmk 3.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          8.14348732092185e-06,
+          0.9999916553497314,
+          1.7874792490601976e-07
+        ],
+        "tflite_scores": [
+          8.143603736243676e-06,
+          0.9999916553497314,
+          1.787486070270461e-07
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 1.1641532182693481e-10,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "fmd-pmk-04",
+        "path": "apps/backend/tests/assets/sapi pmk 4.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.02809949964284897,
+          0.953920841217041,
+          0.017979690805077553
+        ],
+        "tflite_scores": [
+          0.028099967166781425,
+          0.9539203643798828,
+          0.017979638651013374
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 4.76837158203125e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "fmd-pmk-05",
+        "path": "apps/backend/tests/assets/sapi pmk 5.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          1.9721190255950205e-05,
+          0.9536803960800171,
+          0.04629991576075554
+        ],
+        "tflite_scores": [
+          1.972137761185877e-05,
+          0.9536803960800171,
+          0.046299852430820465
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 6.332993507385254e-08,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "fmd-pmk-06",
+        "path": "apps/backend/tests/assets/sapi pmk 6.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          1.3061264780844795e-06,
+          0.9999046325683594,
+          9.406833123648539e-05
+        ],
+        "tflite_scores": [
+          1.3061189747531898e-06,
+          0.9999046325683594,
+          9.40658210311085e-05
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 2.510205376893282e-09,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "fmd-pmk-07",
+        "path": "apps/backend/tests/assets/sapi pmk 7.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          7.162387191783637e-05,
+          0.9999223947525024,
+          5.983608843962429e-06
+        ],
+        "tflite_scores": [
+          7.162448309827596e-05,
+          0.9999223947525024,
+          5.9836029322468676e-06
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 6.111804395914078e-10,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "fmd-pmk-08",
+        "path": "apps/backend/tests/assets/sapi pmk awal.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.00019488087855279446,
+          0.9948892593383789,
+          0.004915821831673384
+        ],
+        "tflite_scores": [
+          0.0001948819844983518,
+          0.9948892593383789,
+          0.0049158125184476376
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 9.313225746154785e-09,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "healthy-01",
+        "path": "apps/backend/tests/assets/sapi sehat 1.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.03356287628412247,
+          0.15438000857830048,
+          0.8120570778846741
+        ],
+        "tflite_scores": [
+          0.03356310725212097,
+          0.15437911450862885,
+          0.8120577931404114
+        ],
+        "keras_top_class": "healthy",
+        "tflite_top_class": "healthy",
+        "score_delta_max_abs": 8.940696716308594e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "healthy-02",
+        "path": "apps/backend/tests/assets/sapi sehat 2.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.0038680422585457563,
+          0.05506296455860138,
+          0.9410690069198608
+        ],
+        "tflite_scores": [
+          0.0038680171128362417,
+          0.055063262581825256,
+          0.9410687685012817
+        ],
+        "keras_top_class": "healthy",
+        "tflite_top_class": "healthy",
+        "score_delta_max_abs": 2.980232238769531e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "healthy-03",
+        "path": "apps/backend/tests/assets/sapi sehat 3.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.0005586852203123271,
+          0.020533960312604904,
+          0.9789072871208191
+        ],
+        "tflite_scores": [
+          0.0005586820188909769,
+          0.02053385227918625,
+          0.9789074063301086
+        ],
+        "keras_top_class": "healthy",
+        "tflite_top_class": "healthy",
+        "score_delta_max_abs": 1.1920928955078125e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "healthy-04",
+        "path": "apps/backend/tests/assets/sapi sehat 4.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.0010250186314806342,
+          0.0007492777658626437,
+          0.9982256293296814
+        ],
+        "tflite_scores": [
+          0.001025032834149897,
+          0.0007492842269130051,
+          0.9982256293296814
+        ],
+        "keras_top_class": "healthy",
+        "tflite_top_class": "healthy",
+        "score_delta_max_abs": 1.4202669262886047e-08,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "non-cattle-cat-01",
+        "path": "apps/backend/tests/assets/kucing 1.png",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.8801282644271851,
+          0.032573502510786057,
+          0.08729821443557739
+        ],
+        "tflite_scores": [
+          0.8801283240318298,
+          0.032573599368333817,
+          0.08729805797338486
+        ],
+        "keras_top_class": "non_cattle",
+        "tflite_top_class": "non_cattle",
+        "score_delta_max_abs": 1.564621925354004e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "non-cattle-human-01",
+        "path": "apps/backend/tests/assets/manusia 1.png",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.998975396156311,
+          0.0004585040733218193,
+          0.0005661628674715757
+        ],
+        "tflite_scores": [
+          0.998975396156311,
+          0.0004585066926665604,
+          0.0005661631585098803
+        ],
+        "keras_top_class": "non_cattle",
+        "tflite_top_class": "non_cattle",
+        "score_delta_max_abs": 2.6193447411060333e-09,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "non-cattle-cat-02",
+        "path": "apps/backend/tests/assets/mulut kucing.png",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.7092071175575256,
+          0.24758081138134003,
+          0.04321205988526344
+        ],
+        "tflite_scores": [
+          0.7092069983482361,
+          0.24758070707321167,
+          0.04321229085326195
+        ],
+        "keras_top_class": "non_cattle",
+        "tflite_top_class": "non_cattle",
+        "score_delta_max_abs": 2.3096799850463867e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "non-cattle-human-02",
+        "path": "apps/backend/tests/assets/mulut manusia.png",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.005754965357482433,
+          0.888782262802124,
+          0.10546279698610306
+        ],
+        "tflite_scores": [
+          0.00575502123683691,
+          0.8887816071510315,
+          0.10546340048313141
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 6.556510925292969e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "non-cattle-object-01",
+        "path": "apps/backend/tests/assets/baut.png",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.9884722232818604,
+          0.0009339608368463814,
+          0.010593811981379986
+        ],
+        "tflite_scores": [
+          0.9884722828865051,
+          0.0009339581592939794,
+          0.01059377659112215
+        ],
+        "keras_top_class": "non_cattle",
+        "tflite_top_class": "non_cattle",
+        "score_delta_max_abs": 5.960464477539063e-08,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "former-lsd-01",
+        "path": "apps/backend/tests/assets/sapi lsd 1.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.00031846010824665427,
+          0.937800943851471,
+          0.06188054382801056
+        ],
+        "tflite_scores": [
+          0.00031845943885855377,
+          0.9378008246421814,
+          0.061880629509687424
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 1.1920928955078125e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "former-lsd-02",
+        "path": "apps/backend/tests/assets/sapi lsd 2.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          5.4162588639883325e-05,
+          0.029320867732167244,
+          0.9706249833106995
+        ],
+        "tflite_scores": [
+          5.41627814527601e-05,
+          0.029321111738681793,
+          0.9706247448921204
+        ],
+        "keras_top_class": "healthy",
+        "tflite_top_class": "healthy",
+        "score_delta_max_abs": 2.4400651454925537e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "former-lsd-03",
+        "path": "apps/backend/tests/assets/sapi lsd 3.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.0009314598282799125,
+          0.938737154006958,
+          0.060331348329782486
+        ],
+        "tflite_scores": [
+          0.0009314590715803206,
+          0.9387373924255371,
+          0.060331132262945175
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 2.384185791015625e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "former-lsd-04",
+        "path": "apps/backend/tests/assets/sapi LSD awal.jpg",
+        "model_invocations": 2,
+        "decode_status": "decoded",
+        "keras_scores": [
+          0.001579130650497973,
+          0.8248164653778076,
+          0.17360436916351318
+        ],
+        "tflite_scores": [
+          0.001579141360707581,
+          0.8248158097267151,
+          0.17360498011112213
+        ],
+        "keras_top_class": "FMD",
+        "tflite_top_class": "FMD",
+        "score_delta_max_abs": 6.556510925292969e-07,
+        "top_class_match": true,
+        "probabilities_valid": true
+      },
+      {
+        "id": "corrupt-01",
+        "path": "apps/backend/tests/assets/corrupt-image.bin",
+        "model_invocations": 0,
+        "decode_status": "rejected_before_inference",
+        "probabilities_valid": null,
+        "error_type": "UnidentifiedImageError"
+      }
+    ],
+    "valid_cases_checked": 21,
+    "max_observed_score_delta": 8.940696716308594e-07,
+    "top_class_mismatches": 0,
+    "probability_contract_failures": [],
+    "runtime_case_failures": []
+  },
+  "cases": [
+    {
+      "id": "fmd-pmk-01",
+      "category": "fmd",
+      "path": "apps/backend/tests/assets/sapi pmk 1.jpg",
+      "source_label": "PMK",
+      "expected_label": "FMD",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository.",
+      "sha256": "2075b338580c46fda9469533c08434bcb3b38a6a0832328de98fd551d7ccd133",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false
+    },
+    {
+      "id": "fmd-pmk-02",
+      "category": "fmd",
+      "path": "apps/backend/tests/assets/sapi pmk 2.jpg",
+      "source_label": "PMK",
+      "expected_label": "FMD",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "701ef99b168ca335689ab43ea79fe6c4dfbbe5c16cb3374c7efe403a0ebd3fbf",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "fmd-pmk-03",
+      "category": "fmd",
+      "path": "apps/backend/tests/assets/sapi pmk 3.jpg",
+      "source_label": "PMK",
+      "expected_label": "FMD",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "6f79bf9a214849e5b489b21311cd1199243beb2045fce83b2134e30f4ec8313e",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "fmd-pmk-04",
+      "category": "fmd",
+      "path": "apps/backend/tests/assets/sapi pmk 4.jpg",
+      "source_label": "PMK",
+      "expected_label": "FMD",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "ca9d4ae4183128ada656ed1656923e1d3ffc68b867369fa9effe2f5dccd9fb3f",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "fmd-pmk-05",
+      "category": "fmd",
+      "path": "apps/backend/tests/assets/sapi pmk 5.jpg",
+      "source_label": "PMK",
+      "expected_label": "FMD",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "6261a02d4db9d34070a528f881ffae2d8ed9d2dc2a452ba09506e7e29c601f89",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "fmd-pmk-06",
+      "category": "fmd",
+      "path": "apps/backend/tests/assets/sapi pmk 6.jpg",
+      "source_label": "PMK",
+      "expected_label": "FMD",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "466e84e63aaa05679a39aba65cf4ae058eedd4b9c7f94d9ca883c27d0d0e4450",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "fmd-pmk-07",
+      "category": "fmd",
+      "path": "apps/backend/tests/assets/sapi pmk 7.jpg",
+      "source_label": "PMK",
+      "expected_label": "FMD",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "c25bf9083aa9b5d39d77f505fffbeaadf2fa8cdaf9ce09f62719845d761529cd",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "fmd-pmk-08",
+      "category": "fmd",
+      "path": "apps/backend/tests/assets/sapi pmk awal.jpg",
+      "source_label": "PMK",
+      "expected_label": "FMD",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "d4b2b95f61bc8fb1a835e24242cc502556b45c433c61659f9eb99101f7ccaaa2",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "healthy-01",
+      "category": "healthy",
+      "path": "apps/backend/tests/assets/sapi sehat 1.jpg",
+      "source_label": "healthy",
+      "expected_label": "healthy",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "6c720a022c0b221b6d1de29707a567fd8d98e70e892208378879eaf4c43cc398",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "healthy-02",
+      "category": "healthy",
+      "path": "apps/backend/tests/assets/sapi sehat 2.jpg",
+      "source_label": "healthy",
+      "expected_label": "healthy",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "67dfe33bc34329fa28cbba2c0b8235f5314dbf9536d88b6fc1cbd57d8dd69ec3",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "healthy-03",
+      "category": "healthy",
+      "path": "apps/backend/tests/assets/sapi sehat 3.jpg",
+      "source_label": "healthy",
+      "expected_label": "healthy",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "db718648c361e9c4b2b111debf6003b67ec824a985e7dfa3fef49addcede940d",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "healthy-04",
+      "category": "healthy",
+      "path": "apps/backend/tests/assets/sapi sehat 4.jpg",
+      "source_label": "healthy",
+      "expected_label": "healthy",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "11dfc566b0813b03b6b558d6012e6eacf94c06a7775bc0b34997ba453fe9c3d8",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "non-cattle-cat-01",
+      "category": "non_cattle",
+      "path": "apps/backend/tests/assets/kucing 1.png",
+      "source_label": "cat",
+      "expected_label": "non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository.",
+      "sha256": "f3e10fe34f9a1ee295ec6e17c09fc4fe7a24f23dcd876d8666a028877ad13ca4",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false
+    },
+    {
+      "id": "non-cattle-human-01",
+      "category": "non_cattle",
+      "path": "apps/backend/tests/assets/manusia 1.png",
+      "source_label": "human",
+      "expected_label": "non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "d4a8dc4d863306b0747d66529d3e3031378a4d1a8d6a95dfadbe5e51d7a41c14",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "non-cattle-cat-02",
+      "category": "non_cattle",
+      "path": "apps/backend/tests/assets/mulut kucing.png",
+      "source_label": "cat",
+      "expected_label": "non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "30097f8d4ab3a278475ec52034c6ac909b89ccfe9ce8635ab2c6168485e053b1",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "non-cattle-human-02",
+      "category": "non_cattle",
+      "path": "apps/backend/tests/assets/mulut manusia.png",
+      "source_label": "human",
+      "expected_label": "non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "9b8e3c951b59039fa9dd2eeb726b406e298a7bb2fe0afe2dba27b0f83634689e",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository.",
+      "accepted_limitation": {
+        "option": "C",
+        "status": "accepted",
+        "expected_label": "non_cattle",
+        "observed_label": "FMD",
+        "reason": "Known limitation is explicitly accepted by the owner: mulut manusia.png predicts FMD in both runtimes. Preserve this mismatch visibly; do not hide or relabel the result."
+      }
+    },
+    {
+      "id": "non-cattle-object-01",
+      "category": "non_cattle",
+      "path": "apps/backend/tests/assets/baut.png",
+      "source_label": "bolt",
+      "expected_label": "non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "883c50c71f2c4a7266fec4e18335b857d76d4066f5a1ef5b42cb2306f9d8512e",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label from the same training/export corpus; accepted for this personal repository."
+    },
+    {
+      "id": "former-lsd-01",
+      "category": "former_lsd",
+      "path": "apps/backend/tests/assets/sapi lsd 1.jpg",
+      "source_label": "LSD",
+      "expected_label": null,
+      "expected_policy": "must_not_be_non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "label_evidence": "Owner-approved project label identifies this image as a former-LSD cattle probe; the expected policy is must_not_be_non_cattle, not an active disease label.",
+      "sha256": "863942cf437a57319b23ec70a681e4727275c468904f92ae18b716c1c3ad9991",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false
+    },
+    {
+      "id": "former-lsd-02",
+      "category": "former_lsd",
+      "path": "apps/backend/tests/assets/sapi lsd 2.jpg",
+      "source_label": "LSD",
+      "expected_label": null,
+      "expected_policy": "must_not_be_non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "1b3dbd6c482bd183acce1771ab6363b5ae3e79ba542d5922b7beb2f515d14be8",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label identifies this image as a former-LSD cattle probe; the expected policy is must_not_be_non_cattle, not an active disease label."
+    },
+    {
+      "id": "former-lsd-03",
+      "category": "former_lsd",
+      "path": "apps/backend/tests/assets/sapi lsd 3.jpg",
+      "source_label": "LSD",
+      "expected_label": null,
+      "expected_policy": "must_not_be_non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "cc2561a2dc32dc4f507460aeb9ad479b88d3b067be0fa371f145932d7fea6fd3",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label identifies this image as a former-LSD cattle probe; the expected policy is must_not_be_non_cattle, not an active disease label."
+    },
+    {
+      "id": "former-lsd-04",
+      "category": "former_lsd",
+      "path": "apps/backend/tests/assets/sapi LSD awal.jpg",
+      "source_label": "LSD",
+      "expected_label": null,
+      "expected_policy": "must_not_be_non_cattle",
+      "label_source": "owner_approved_project_label",
+      "label_status": "authoritative",
+      "sha256": "5219b1d9a5da914e59cf2766b4d825eed6a9c306a4b394266900a7aada16b56f",
+      "source_url": "not applicable; team-owned corpus",
+      "license": "not asserted; team-owned corpus",
+      "permission": "team-owned; owner-approved for this personal repository",
+      "contains_sensitive_data": false,
+      "label_evidence": "Owner-approved project label identifies this image as a former-LSD cattle probe; the expected policy is must_not_be_non_cattle, not an active disease label."
+    },
+    {
+      "id": "corrupt-01",
+      "category": "corrupt",
+      "path": "apps/backend/tests/assets/corrupt-image.bin",
+      "source_label": "invalid_bytes",
+      "expected_label": null,
+      "expected_policy": "reject_before_model_invocation",
+      "label_source": "fixture_author",
+      "label_status": "authoritative",
+      "sha256": "5f6ddd3b503ff3cbd16679aa5c011a941ce07ba9364bd4a1417983f6a5013866",
+      "source_url": "generated in repository",
+      "license": "repository-authored fixture",
+      "permission": "repository-authored fixture",
+      "contains_sensitive_data": false
+    }
+  ],
+  "corpus_summary": {
+    "total_cases": 22,
+    "valid_cases": 21,
+    "former_lsd_cases": 4
+  },
+  "score_tolerance_max_abs": 2e-06,
+  "notes": [
+    "Predictions are never used to infer class identity.",
+    "Former-LSD probes are historical source-label probes, not active LSD labels.",
+    "non-cattle-human-02 (mulut manusia.png) predicts FMD; this is an explicitly accepted Option C known limitation, not hidden or relabeled.",
+    "Activation remains blocked until provenance, permissions, physical Android offline smoke, and every required gate pass."
+  ]
+}

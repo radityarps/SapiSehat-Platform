@@ -3,37 +3,33 @@
 Uses Hypothesis to verify universal invariants across randomized inputs.
 """
 
-import pytest
-from hypothesis import HealthCheck, given, settings as hypothesis_settings
-from hypothesis import strategies as st
+from hypothesis import HealthCheck, given  # type: ignore[import-not-found]
+from hypothesis import settings as hypothesis_settings
+from hypothesis import strategies as st  # type: ignore[import-not-found]
 
 from api.schemas import (
-    PredictResponse,
-    PredictionResult,
-    ModelInfo,
     DiseaseClass,
     ErrorResponse,
+    ModelInfo,
+    PredictionResult,
+    PredictResponse,
 )
-from utils.errors import ErrorCode
-from inference_server import DISPLAY_LABEL_KEY_MAP
 from config import settings as app_settings
-
+from inference_server import DISPLAY_LABEL_KEY_MAP
+from utils.errors import ErrorCode
 
 # --- Strategies ---
 
-DISEASE_CLASSES = [dc.value for dc in DiseaseClass]
+DISEASE_CLASSES = [DiseaseClass.FMD.value, DiseaseClass.HEALTHY.value]
 
 disease_classes_st = st.sampled_from(DISEASE_CLASSES)
 
-# Generate a valid probability distribution across 3 classes.
-# Use bounded integers for fast, deterministic Hypothesis input generation.
+# Generate a valid probability distribution across the accepted classes.
+# Raw non_sapi probability is intentionally excluded from accepted results.
 probability_distributions = st.tuples(
     st.integers(min_value=1, max_value=10_000),
     st.integers(min_value=1, max_value=10_000),
-    st.integers(min_value=1, max_value=10_000),
-).map(
-    lambda xs: [x / sum(xs) for x in xs]
-)
+).map(lambda xs: [x / sum(xs) for x in xs])
 
 # Generate valid timing values (non-negative integers)
 timing_values = st.integers(min_value=0, max_value=100000)
@@ -62,7 +58,7 @@ def test_success_response_shape(probs, preprocessing_ms, inference_ms, model_ver
 
     **Validates: Requirements 1.1, 1.4, 1.6**
     """
-    labels = app_settings.labels  # ["FMD", "LSD", "healthy"]
+    labels = ["FMD", "healthy"]
 
     # Determine predicted class from max probability
     pred_idx = probs.index(max(probs))
@@ -71,7 +67,7 @@ def test_success_response_shape(probs, preprocessing_ms, inference_ms, model_ver
     is_reliable = pred_confidence >= app_settings.confidence_threshold
 
     # Build scores dict
-    scores = {labels[i]: round(probs[i], 4) for i in range(3)}
+    scores = {labels[i]: round(probs[i], 4) for i in range(2)}
 
     # Total processing time must be >= sum of parts
     total_ms = preprocessing_ms + inference_ms + 1  # +1 for overhead
@@ -118,8 +114,8 @@ def test_success_response_shape(probs, preprocessing_ms, inference_ms, model_ver
     assert isinstance(prediction.is_reliable, bool)
     assert isinstance(prediction.scores, dict)
 
-    # Assert scores has exactly 3 entries (one per disease class)
-    assert len(prediction.scores) == 3
+    # Assert accepted scores contain exactly the two active classes.
+    assert set(prediction.scores) == {"FMD", "healthy"}
     for label in labels:
         assert label in prediction.scores
         assert isinstance(prediction.scores[label], float)
@@ -131,20 +127,27 @@ def test_success_response_shape(probs, preprocessing_ms, inference_ms, model_ver
     # Verify serialized dict contains all required fields
     serialized = response.model_dump()
     required_top_level = [
-        "status", "prediction", "model_info",
-        "processing_time_ms", "preprocessing_time_ms", "inference_time_ms",
+        "status",
+        "prediction",
+        "model_info",
+        "processing_time_ms",
+        "preprocessing_time_ms",
+        "inference_time_ms",
     ]
     for field in required_top_level:
         assert field in serialized, f"Missing top-level field: {field}"
 
     required_prediction_fields = [
-        "disease_class", "display_label_key", "confidence", "is_reliable", "scores",
+        "disease_class",
+        "display_label_key",
+        "confidence",
+        "is_reliable",
+        "scores",
     ]
     for field in required_prediction_fields:
         assert field in serialized["prediction"], f"Missing prediction field: {field}"
 
     assert "version" in serialized["model_info"], "Missing model_info.version field"
-
 
 
 # --- Property 3: Timing fields satisfy ordering invariant ---
@@ -182,7 +185,7 @@ def test_timing_ordering_invariant(
             display_label_key="disease.fmd",
             confidence=0.85,
             is_reliable=True,
-            scores={"FMD": 0.85, "LSD": 0.10, "healthy": 0.05},
+            scores={"FMD": 0.85, "healthy": 0.15},
         ),
         model_info=ModelInfo(version="1.0.0"),
         processing_time_ms=total_ms,
@@ -207,41 +210,44 @@ def test_timing_ordering_invariant(
 
 
 @given(
-    s1=st.floats(min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False),
-    s2=st.floats(min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False),
-    s3=st.floats(min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False),
+    s1=st.floats(
+        min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False
+    ),
+    s2=st.floats(
+        min_value=0.01, max_value=100.0, allow_nan=False, allow_infinity=False
+    ),
 )
 @hypothesis_settings(max_examples=100)
-def test_prediction_structural_invariants(s1: float, s2: float, s3: float):
+def test_prediction_structural_invariants(s1: float, s2: float):
     """Property 2: Prediction object satisfies structural invariants.
 
-    For any probability distribution across the three disease classes
-    (three non-negative floats summing to approximately 1.0), the constructed
+    For any probability distribution across the two accepted classes, the constructed
     prediction object SHALL have:
     - disease_class equal to the class with the maximum score
     - confidence equal to that maximum score (in range 0.0-1.0)
     - is_reliable equal to confidence >= 0.60
-    - scores containing exactly three entries (one per disease class)
+    - scores containing exactly two entries (one per active class)
       that sum to approximately 1.0
 
     **Validates: Requirements 1.2, 1.5**
     """
-    labels = app_settings.labels  # ["FMD", "LSD", "healthy"]
+    labels = ["FMD", "healthy"]
     confidence_threshold = app_settings.confidence_threshold  # 0.60
 
     # Normalize to create a valid probability distribution
-    total = s1 + s2 + s3
-    probs = [s1 / total, s2 / total, s3 / total]
+    probs = [s1 / (s1 + s2), s2 / (s1 + s2)]
 
     # Simulate what InferenceService.predict() does:
     # Pick argmax as disease_class, confidence = max score, is_reliable = confidence >= threshold
     pred_idx = probs.index(max(probs))
-    pred_label = labels[pred_idx]
     pred_confidence = round(probs[pred_idx], 4)
-    is_reliable = pred_confidence >= confidence_threshold
 
-    # Build scores dict (same rounding as inference_server.py)
-    scores = {labels[i]: round(probs[i], 4) for i in range(3)}
+    # Build scores dict (same rounding as inference_server.py). Rounding can
+    # create a tie, so derive the accepted label from the serialized scores.
+    scores = {labels[i]: round(probs[i], 4) for i in range(2)}
+    pred_label = max(scores, key=lambda label: scores[label])
+    pred_confidence = scores[pred_label]
+    is_reliable = pred_confidence >= confidence_threshold
 
     # Build prediction object (same as inference_server.py)
     prediction = PredictionResult(
@@ -253,7 +259,7 @@ def test_prediction_structural_invariants(s1: float, s2: float, s3: float):
     )
 
     # Assert: disease_class matches the class with highest score
-    max_score_class = max(scores, key=scores.get)
+    max_score_class = max(scores, key=lambda key: scores[key])
     assert prediction.disease_class.value == max_score_class, (
         f"disease_class '{prediction.disease_class.value}' does not match "
         f"class with max score '{max_score_class}' (scores: {scores})"
@@ -278,18 +284,16 @@ def test_prediction_structural_invariants(s1: float, s2: float, s3: float):
         f"should give {expected_reliable}"
     )
 
-    # Assert: scores has exactly 3 entries (one per disease class)
-    assert len(prediction.scores) == 3, (
-        f"scores has {len(prediction.scores)} entries, expected 3"
+    # Assert: accepted scores have exactly two entries (one per active class)
+    assert len(prediction.scores) == 2, (
+        f"scores has {len(prediction.scores)} entries, expected 2"
     )
 
-    # Assert: scores contains one entry per disease class
+    # Assert: scores contains one entry per active class
     for label in labels:
-        assert label in prediction.scores, (
-            f"scores missing entry for '{label}'"
-        )
+        assert label in prediction.scores, f"scores missing entry for '{label}'"
 
-    # Assert: scores sum to approximately 1.0 (allowing for rounding)
+    # Assert: accepted scores sum to approximately 1.0 (allowing for rounding)
     score_sum = sum(prediction.scores.values())
     assert abs(score_sum - 1.0) < 0.01, (
         f"scores sum to {score_sum}, expected approximately 1.0"
@@ -369,7 +373,6 @@ def test_no_localized_text_and_correct_display_label_key(disease_class: str):
     contain a 'display_label' field, and SHALL contain a 'display_label_key'
     field whose value matches the defined mapping:
     - FMD → disease.fmd
-    - LSD → disease.lsd
     - healthy → disease.healthy
 
     **Validates: Requirements 2.1, 2.2**
@@ -382,7 +385,7 @@ def test_no_localized_text_and_correct_display_label_key(disease_class: str):
         display_label_key=display_label_key,
         confidence=0.85,
         is_reliable=True,
-        scores={"FMD": 0.10, "LSD": 0.05, "healthy": 0.85},
+        scores={"FMD": 0.10, "healthy": 0.90},
     )
 
     # Serialize to dict (simulates JSON serialization)
@@ -426,7 +429,7 @@ def test_full_response_no_display_label(disease_class: str):
         display_label_key=display_label_key,
         confidence=0.9,
         is_reliable=True,
-        scores={"FMD": 0.05, "LSD": 0.05, "healthy": 0.9},
+        scores={"FMD": 0.05, "healthy": 0.95},
     )
 
     response = PredictResponse(
@@ -451,7 +454,10 @@ def test_full_response_no_display_label(disease_class: str):
     )
 
     # Verify display_label_key is present and correct in prediction
-    assert response_dict["prediction"]["display_label_key"] == DISPLAY_LABEL_KEY_MAP[disease_class], (
+    assert (
+        response_dict["prediction"]["display_label_key"]
+        == DISPLAY_LABEL_KEY_MAP[disease_class]
+    ), (
         f"Expected display_label_key '{DISPLAY_LABEL_KEY_MAP[disease_class]}' "
         f"for disease_class '{disease_class}', "
         f"got '{response_dict['prediction']['display_label_key']}'"
@@ -461,9 +467,10 @@ def test_full_response_no_display_label(disease_class: str):
 # --- Property 6: Rate limiter enforces per-IP request ceiling ---
 # **Validates: Requirements 4.1, 4.3**
 
-import httpx
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+import httpx  # type: ignore[import-not-found]
+from fastapi import FastAPI, Request  # type: ignore[import-not-found]
+from fastapi.responses import JSONResponse  # type: ignore[import-not-found]
+
 from api.rate_limiter import RateLimiterMiddleware
 
 

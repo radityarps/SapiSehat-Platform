@@ -99,35 +99,38 @@ class _HistoryScreenState extends State<HistoryScreen> {
             final localById = {
               for (final item in widget.localHistory) item.localId: item,
             };
-            final localItems = snapshot.hasError
-                ? widget.localHistory
-                : widget.localHistory.where(
-                    (item) => item.syncStatus != 'synced',
-                  );
+            final remoteIds = {for (final item in data.remote) item.id};
+            final localItems = widget.localHistory.where(
+              (item) =>
+                  (snapshot.hasError || !remoteIds.contains(item.localId)) &&
+                  activeHistoryClasses.contains(item.label),
+            );
             final cards = <Widget>[
-              ...data.remote.map((item) {
-                final effectiveCattleId =
-                    _remoteCattleOverrides.containsKey(item.id)
-                    ? _remoteCattleOverrides[item.id]
-                    : item.cattleId;
-                return _RemoteHistoryCard(
-                  item: item,
-                  effectiveCattleId: effectiveCattleId,
-                  cattle: data.cattle,
-                  cow: effectiveCattleId == null
-                      ? null
-                      : cattleById[effectiveCattleId],
-                  apiClient: widget.apiClient,
-                  session: widget.session,
-                  imagePath: localById[item.id]?.imagePath,
-                  onLinkedCowChanged: (cattleId) {
-                    setState(() {
-                      _remoteCattleOverrides[item.id] = cattleId;
-                    });
-                  },
-                  onChanged: refresh,
-                );
-              }),
+              ...data.remote
+                  .where((item) => activeHistoryClasses.contains(item.label))
+                  .map((item) {
+                    final effectiveCattleId =
+                        _remoteCattleOverrides.containsKey(item.id)
+                        ? _remoteCattleOverrides[item.id]
+                        : item.cattleId;
+                    return _RemoteHistoryCard(
+                      item: item,
+                      effectiveCattleId: effectiveCattleId,
+                      cattle: data.cattle,
+                      cow: effectiveCattleId == null
+                          ? null
+                          : cattleById[effectiveCattleId],
+                      apiClient: widget.apiClient,
+                      session: widget.session,
+                      imagePath: localById[item.id]?.imagePath,
+                      onLinkedCowChanged: (cattleId) {
+                        setState(() {
+                          _remoteCattleOverrides[item.id] = cattleId;
+                        });
+                      },
+                      onChanged: refresh,
+                    );
+                  }),
               ...localItems.map(
                 (item) => _LocalResultCard(
                   result: item,
@@ -271,14 +274,13 @@ class _RemoteHistoryCard extends StatelessWidget {
         builder: (_) => ScanResultDetailPage(
           apiClient: apiClient,
           session: session,
-          result: ScanResult(
+          result: HistoricalScanResult(
             localId: item.id,
             cattleId: effectiveCattleId,
             label: item.label,
             confidence: item.confidence,
             capturedAt: item.createdAt ?? DateTime.now(),
             inferenceMode: item.inferenceMode,
-            syncStatus: 'synced',
             imagePath: imagePath,
           ),
           image: imagePath == null ? null : XFile(imagePath!),

@@ -1,12 +1,32 @@
 import 'dart:convert';
+import 'dart:io' show IOException;
 
 import '../features/auth/auth.dart';
 import '../features/cattle/cattle.dart';
 import '../features/history/history.dart';
 import '../features/scan/offline_inference.dart';
 import '../features/scan/scan.dart';
-import '../features/settings/settings.dart';
 import 'api.dart';
+
+class ApiRequestException implements Exception {
+  const ApiRequestException(this.statusCode, this.message, {this.errorCode});
+  final int statusCode;
+  final String message;
+  final String? errorCode;
+
+  bool get isAvailabilityFailure => statusCode >= 500 || statusCode == 408;
+
+  @override
+  String toString() => message;
+}
+
+class InvalidPredictionException implements Exception {
+  const InvalidPredictionException(this.message);
+  final String message;
+
+  @override
+  String toString() => message;
+}
 
 class FarmerAreaAdvisory {
   const FarmerAreaAdvisory({
@@ -157,36 +177,6 @@ class SapiSehatApiClient {
     }
   }
 
-  Future<FarmerPreferences> getPreferences(AccountSession session) async {
-    final response = await transport.send(
-      ApiRequest(
-        'GET',
-        '/api/farmers/${session.farmerId}/preferences',
-        headers: _auth(session),
-      ),
-    );
-    if (response.statusCode != 200) throw Exception('Preferences failed');
-    return FarmerPreferences.fromJson(response.json);
-  }
-
-  Future<FarmerPreferences> updatePreferences(
-    AccountSession session,
-    FarmerPreferences preferences,
-  ) async {
-    final response = await transport.send(
-      ApiRequest(
-        'PUT',
-        '/api/farmers/${session.farmerId}/preferences',
-        body: jsonEncode(preferences.toJson()),
-        headers: _auth(session),
-      ),
-    );
-    if (response.statusCode != 200) {
-      throw Exception('Preferences update failed');
-    }
-    return FarmerPreferences.fromJson(response.json);
-  }
-
   Future<FarmerAreaAdvisory> getAreaAdvisory(AccountSession session) async {
     final response = await transport.send(
       ApiRequest(
@@ -285,6 +275,7 @@ class SapiSehatApiClient {
   }
 
   Future<ScanResult> predictScan({required List<int> bytes}) async {
+    ApiRequestException? availabilityError;
     try {
       final prediction = await transport.send(
         ApiRequest(
@@ -297,30 +288,29 @@ class SapiSehatApiClient {
         ),
       );
       if (prediction.statusCode >= 200 && prediction.statusCode < 300) {
-        final diseaseClass =
-            ((prediction.json['prediction'] as Map?)?['disease_class'] ??
-                    'needs_review')
-                as String;
-        final confidence =
-            (((prediction.json['prediction'] as Map?)?['confidence'] ?? 0.0)
-                    as num)
-                .toDouble();
-        return ScanResult(
-          localId: 'online-${DateTime.now().microsecondsSinceEpoch}',
-          label: diseaseClass,
-          confidence: confidence,
-          capturedAt: DateTime.now(),
-          inferenceMode: 'online',
-          syncStatus: 'unsaved',
-          modelVersion:
-              (prediction.json['model_info'] as Map?)?['version'] as String?,
-        );
+        return _onlineScanResult(prediction.json);
       }
-    } catch (_) {
-      // Network/server failures fall through to the on-device image model.
+      final error = _apiError(prediction);
+      if (!error.isAvailabilityFailure) throw error;
+      availabilityError = error;
+    } on ApiRequestException catch (error) {
+      if (!error.isAvailabilityFailure) rethrow;
+      availabilityError = error;
+    } on IOException {
+      // Transport availability failures use the offline model.
+    } on NonCattleImageException {
+      rethrow;
     }
 
-    final offline = await offlineInferenceService.infer(bytes);
+    OfflineInferenceResult offline;
+    try {
+      offline = await offlineInferenceService.infer(bytes);
+    } on FormatException catch (_) {
+      final message = availabilityError?.errorCode == 'MODEL_NOT_READY'
+          ? 'Model deteksi belum siap digunakan. Coba lagi setelah model diverifikasi.'
+          : 'Layanan online tidak tersedia dan model offline belum siap digunakan.';
+      throw DetectionUnavailableException(message);
+    }
     return ScanResult(
       localId: 'offline-${DateTime.now().microsecondsSinceEpoch}',
       label: offline.label,
@@ -330,6 +320,76 @@ class SapiSehatApiClient {
       syncStatus: 'unsaved',
       modelVersion: offline.modelVersion,
       scores: offline.scores,
+    );
+  }
+
+  ScanResult _onlineScanResult(Map<String, dynamic> body) {
+    final prediction = body['prediction'];
+    final modelInfo = body['model_info'];
+    if (prediction is! Map || modelInfo is! Map) {
+      throw const InvalidPredictionException('Invalid prediction response');
+    }
+    final label = prediction['disease_class'];
+    final confidence = prediction['confidence'];
+    final rawScores = prediction['scores'];
+    final version = modelInfo['version'];
+    if (label is! String ||
+        !activeDetectionClasses.contains(label) ||
+        confidence is! num ||
+        version is! String ||
+        version.isEmpty ||
+        rawScores is! Map ||
+        rawScores.length != activeDetectionClasses.length ||
+        rawScores.keys.toSet().containsAll(activeDetectionClasses) == false) {
+      throw const InvalidPredictionException(
+        'Invalid active prediction response',
+      );
+    }
+    final scores = <String, double>{};
+    for (final key in activeDetectionClasses) {
+      final value = rawScores[key];
+      if (value is! num || !value.isFinite || value < 0 || value > 1) {
+        throw const InvalidPredictionException(
+          'Invalid active prediction scores',
+        );
+      }
+      scores[key] = value.toDouble();
+    }
+    if (!confidence.isFinite ||
+        confidence < 0 ||
+        confidence > 1 ||
+        (scores[label]! - confidence.toDouble()).abs() >= 0.001) {
+      throw const InvalidPredictionException('Invalid prediction confidence');
+    }
+    return ScanResult(
+      localId: 'online-${DateTime.now().microsecondsSinceEpoch}',
+      label: label,
+      confidence: confidence.toDouble(),
+      capturedAt: DateTime.now(),
+      inferenceMode: 'offline',
+      syncStatus: 'unsaved',
+      modelVersion: version,
+      scores: scores,
+    );
+  }
+
+  ApiRequestException _apiError(ApiResponse response) {
+    String? errorCode;
+    String message = 'Request failed (${response.statusCode})';
+    try {
+      final body = response.json;
+      errorCode = body['error_code'] as String?;
+      message = (body['message'] ?? body['detail'] ?? message).toString();
+    } catch (_) {
+      // Keep the status-derived message when the server did not return JSON.
+    }
+    if (errorCode == 'NON_CATTLE_IMAGE') {
+      throw NonCattleImageException(message);
+    }
+    return ApiRequestException(
+      response.statusCode,
+      message,
+      errorCode: errorCode,
     );
   }
 
@@ -347,21 +407,9 @@ class SapiSehatApiClient {
           'cattle_id': cattleId,
           'image_evidence': {
             'source': 'image',
-            'model_version':
-                result.modelVersion ??
-                (result.inferenceMode == 'offline'
-                    ? 'image-offline-1.0.0'
-                    : 'mobile-online'),
+            'model_version': result.modelVersion,
             'inference_mode': result.inferenceMode,
-            'disease_scores':
-                result.scores ??
-                {
-                  'healthy': result.label == 'healthy'
-                      ? result.confidence
-                      : 0.0,
-                  'FMD': result.label == 'FMD' ? result.confidence : 0.0,
-                  'LSD': result.label == 'LSD' ? result.confidence : 0.0,
-                },
+            'disease_scores': result.scores,
             'top_class': result.label,
             'confidence': result.confidence,
             'quality_status': 'accepted',
@@ -373,9 +421,12 @@ class SapiSehatApiClient {
       ),
     );
     if (fusion.statusCode < 200 || fusion.statusCode >= 300) {
-      throw Exception('Fusion result failed');
+      throw _apiError(fusion);
     }
     final fusedClass = (fusion.json['disease_class'] ?? result.label) as String;
+    if (!activeDetectionClasses.contains(fusedClass)) {
+      throw const InvalidPredictionException('Invalid fused active class');
+    }
     final fusedConfidence =
         ((fusion.json['confidence'] ?? result.confidence) as num).toDouble();
     return ScanResult(
@@ -412,10 +463,9 @@ class SapiSehatApiClient {
     if (response.statusCode != 200) throw Exception('Detection history failed');
     final results = response.json['results'] as List<dynamic>;
     return results
-        .map(
-          (item) => DetectionHistoryItem.fromJson(item as Map<String, dynamic>),
-        )
-        .where((item) => item.farmerId == farmerId)
+        .cast<Map<String, dynamic>>()
+        .where((item) => item['farmer_id'] == farmerId)
+        .map(DetectionHistoryItem.fromJson)
         .toList();
   }
 

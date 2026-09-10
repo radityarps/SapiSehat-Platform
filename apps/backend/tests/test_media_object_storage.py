@@ -8,6 +8,7 @@ from fastapi.testclient import TestClient
 from main import app
 from api.farmer_accounts import farmer_account_store
 from api.media_governance import media_store
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 import api.routes as routes
 
 client = TestClient(app)
@@ -87,7 +88,7 @@ def test_media_presigned_url_requires_agency_scope(monkeypatch):
 
     response = client.get(
         f"/api/agency/media/{upload.json()['id']}/download-url",
-        headers={"X-Agency-User-Id": "semarang-officer"},
+        headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID},
     )
 
     assert response.status_code == 200, response.text

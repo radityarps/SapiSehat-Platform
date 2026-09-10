@@ -70,13 +70,21 @@ _Avoid_: Precise GPS-only scope, national-global access, arbitrary unsourced are
 Rule where farmer names, cattle identities, and exact records are visible only to authorized agency users inside assigned jurisdiction.
 _Avoid_: All-agencies-see-all, global farmer visibility, mask-everything-by-default
 
-**Disease Class**:
-Canonical disease category stored independently of display text. First active set is `healthy`, `FMD`, and `LSD`.
-_Avoid_: Indonesian-only labels, numeric-only labels, unlimited first-release disease scope
+**Active Detection Class**:
+Canonical outcome that a currently deployed model may produce as an accepted cattle result. The active set is `healthy` and `FMD`; `LSD` is historical-only and `non_cattle` is an input rejection, not a disease result.
+_Avoid_: Disease Class, model output class, Indonesian-only label, treating `non_cattle` as disease
+
+**Historical Detection Class**:
+Canonical outcome retained only to preserve records produced by retired model versions. `LSD` records remain auditable through admin/export surfaces but cannot be created by active inference or shown in farmer-facing product flows.
+_Avoid_: Active LSD support, relabeling historical records, deleting retired-model evidence
+
+**Non-Cattle Rejection**:
+Outcome indicating that the submitted image is outside the cattle-image domain. It stops before image evidence fusion and is never stored or counted as a disease result.
+_Avoid_: Disease class, healthy result, low-confidence diagnosis
 
 **Extensible Disease Catalog**:
-Disease taxonomy that starts with FMD and LSD risk monitoring and can add other cattle diseases later without changing core platform concepts.
-_Avoid_: Fixed forever three-class taxonomy, unbounded initial scope
+Disease taxonomy that actively monitors FMD while preserving retired classes such as LSD for auditability and allowing validated disease classes to be added later.
+_Avoid_: Fixed forever classifier taxonomy, deleting historical classes, unbounded initial scope
 
 **Image Evidence**:
 Team 1 model output from cattle scan image, including disease class scores, confidence, model version, and evidence state.
@@ -210,6 +218,9 @@ _Avoid_: Backend-only test, manual demo only, release without real NLP
 - **Weighted Evidence Fusion** is owned by **FastAPI Platform Backend**.
 - **Equal-Weight Fusion** is initial setting when real image and NLP evidence are both available.
 - Healthy results do not create **Agency Review Item**; they may appear in aggregate statistics.
+- **Non-Cattle Rejection** stops before image/NLP fusion, persistence as disease evidence, review-item creation, and cluster-risk calculation.
+- New image and NLP evidence use only `FMD` and `healthy` scores; `LSD` evidence is accepted only from explicitly retired model versions during historical offline synchronization.
+- Historical `LSD` records remain unchanged and are accessible only through admin/export paths, not active farmer or agency product views.
 - Low-confidence or conflicting fusion lowers reliability and may mark result needs review.
 - One risky **Early Detection Result** creates **Agency Review Item**.
 - Multiple related review items matching **Cluster Trigger Rule** create **Cluster Risk Signal**.
@@ -296,3 +307,23 @@ _Avoid_: Missing-model assumption, hardcoded fake offline scores
 **Complete Livestock Profile Fields**:
 Cattle profiles now store optional physical, reproductive, health, economic, and notes data: `name`, `color`, `weight_kg`, `reproductive_status`, `is_pregnant`, `last_calving_date`, `last_vaccination_date`, `last_deworming_date`, `health_notes`, `purchase_date`, `purchase_price_idr`, and `notes`. Timeline events remain separate for dated operational history, while profile fields store latest-known summary values. Development seeding includes realistic Indonesian cattle data for these fields.
 _Avoid_: diagnosis claims, required completion before scanning, replacing timeline events with summary-only data
+
+**Guide Article**:
+Admin-curated, multilingual educational content shown in the Flutter Farmer App, such as cattle-profile guidance, app usage, biosecurity, and FMD information. Bahasa Indonesia is required for publication; other translations are optional.
+_Avoid_: Blog Post, news feed, Farmer-Owned Cattle Record, user-generated content
+
+**Guide Category**:
+Admin-managed grouping for Guide Articles. The system-owned `Umum` category is the permanent fallback when another category is archived.
+_Avoid_: hard-coded mobile filter, disease taxonomy, article tag
+
+**Published Guide Snapshot**:
+One integrity-checked version of every published Guide Article, Guide Category, translation, and required media file that the mobile app can activate atomically for offline reading.
+_Avoid_: partially downloaded catalog, per-screen live content, mixed content versions
+
+**Bundled Guide Catalog**:
+The install-time Published Guide Snapshot packaged with the Flutter Farmer App so guidance exists before the first successful online synchronization. Its stable article and category IDs match the seeded CMS catalog.
+_Avoid_: permanent parallel content source, demo-only fixture, empty first-install cache
+
+**Guide Editorial Audit Event**:
+An immutable record of an admin creating, editing, publishing, unpublishing, archiving, or moving Guide content. It records action metadata but does not preserve a restorable copy of every article revision.
+_Avoid_: full revision history, reader analytics, mutable activity note

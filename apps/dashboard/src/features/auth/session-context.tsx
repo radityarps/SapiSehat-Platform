@@ -8,6 +8,7 @@ import {
 	setAgencyToken,
 } from "@/src/shared/auth/session";
 import type { AgencyMe } from "@/src/shared/types/api";
+import { isAgencyRole } from "@/src/shared/auth/route-permissions";
 import {
 	createContext,
 	useCallback,
@@ -24,7 +25,7 @@ type AgencySession = {
 	token: string;
 	agency: AgencyMe | null;
 	agencyUserId: string;
-	signIn: (token: string, agency?: AgencyMe | null) => Promise<void>;
+	signIn: (token: string) => Promise<AgencyMe>;
 	signOut: () => void;
 	refresh: () => Promise<void>;
 };
@@ -33,6 +34,10 @@ const AgencySessionContext = createContext<AgencySession | null>(null);
 
 function agencyUserIdFrom(me: AgencyMe | null) {
 	return me?.id ?? "";
+}
+
+function hasDashboardPermission(me: AgencyMe | null) {
+	return me?.account_type === "agency" && isAgencyRole(me.role);
 }
 
 export function AgencySessionProvider({
@@ -55,10 +60,16 @@ export function AgencySessionProvider({
 		setStatus("checking");
 		try {
 			const me = await getMe(storedToken);
+			if (!hasDashboardPermission(me)) {
+				clearAgencyToken();
+				setToken("");
+				setAgency(null);
+				setStatus("invalid");
+				return;
+			}
 			setToken(storedToken);
 			setAgency(me);
-			setStatus(me.account_type === "agency" ? "authenticated" : "invalid");
-			if (me.account_type !== "agency") clearAgencyToken();
+			setStatus("authenticated");
 		} catch {
 			clearAgencyToken();
 			setToken("");
@@ -67,21 +78,24 @@ export function AgencySessionProvider({
 		}
 	}, []);
 
-	const signIn = useCallback(
-		async (nextToken: string, nextAgency?: AgencyMe | null) => {
+	const signIn = useCallback(async (nextToken: string) => {
+		try {
+			const me = await getMe(nextToken);
+			if (!hasDashboardPermission(me))
+				throw new Error("Account has no dashboard permission");
 			setAgencyToken(nextToken);
 			setToken(nextToken);
-			if (nextAgency) {
-				setAgency(nextAgency);
-				setStatus("authenticated");
-				return;
-			}
-			const me = await getMe(nextToken);
 			setAgency(me);
 			setStatus("authenticated");
-		},
-		[],
-	);
+			return me;
+		} catch (error) {
+			clearAgencyToken();
+			setToken("");
+			setAgency(null);
+			setStatus("invalid");
+			throw error;
+		}
+	}, []);
 
 	const signOut = useCallback(() => {
 		clearAgencyToken();
@@ -119,8 +133,6 @@ export function AgencySessionProvider({
 export function useAgencySession() {
 	const session = useContext(AgencySessionContext);
 	if (!session)
-		throw new Error(
-			"useAgencySession must be used inside AgencySessionProvider",
-		);
+		throw new Error("useAgencySession must be used inside AgencySessionProvider");
 	return session;
 }

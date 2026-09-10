@@ -139,17 +139,11 @@ class _CattleFormPageState extends State<CattleFormPage> {
         child: ListView(
           padding: const EdgeInsets.all(24),
           children: [
-            const SizedBox(height: 12),
-            Text(
-              'SapiSehat',
-              style: Theme.of(
-                context,
-              ).textTheme.headlineLarge?.copyWith(fontWeight: FontWeight.w900),
-            ),
-            const SizedBox(height: 8),
             Text(
               editing ? 'Edit data sapi' : 'Tambah data sapi',
-              style: const TextStyle(fontSize: 16),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -215,22 +209,19 @@ class _CattleFormPageState extends State<CattleFormPage> {
               ),
             ),
             _gap(),
-            _text(
+            _dateField(
               lastCalvingDate,
-              'Tanggal melahirkan terakhir (YYYY-MM-DD)',
-              hint: '2026-02-01',
+              'Tanggal melahirkan terakhir',
             ),
             _gap(),
-            _text(
+            _dateField(
               vaccinationDate,
-              'Tanggal vaksin terakhir (YYYY-MM-DD)',
-              hint: '2026-01-20',
+              'Tanggal vaksin terakhir',
             ),
             _gap(),
-            _text(
+            _dateField(
               dewormingDate,
-              'Tanggal obat cacing terakhir (YYYY-MM-DD)',
-              hint: '2026-01-20',
+              'Tanggal obat cacing terakhir',
             ),
             _gap(),
             _text(
@@ -240,10 +231,9 @@ class _CattleFormPageState extends State<CattleFormPage> {
               hint: 'Catatan aman, bukan diagnosis',
             ),
             _gap(),
-            _text(
+            _dateField(
               purchaseDate,
-              'Tanggal pembelian (YYYY-MM-DD)',
-              hint: '2024-09-15',
+              'Tanggal pembelian',
             ),
             _gap(),
             _text(
@@ -301,6 +291,55 @@ class _CattleFormPageState extends State<CattleFormPage> {
       }
       return null;
     },
+  );
+
+  Widget _dateField(
+    TextEditingController controller,
+    String label, {
+    String? hint = 'Pilih tanggal',
+  }) => TextFormField(
+    controller: controller,
+    readOnly: true,
+    onTap: () async {
+      DateTime initial = DateTime.now();
+      if (controller.text.trim().isNotEmpty) {
+        final parsed = DateTime.tryParse(controller.text.trim());
+        if (parsed != null) {
+          if (parsed.isAfter(DateTime(2000)) &&
+              parsed.isBefore(DateTime(2100))) {
+            initial = parsed;
+          }
+        }
+      }
+      final picked = await showDatePicker(
+        context: context,
+        initialDate: initial,
+        firstDate: DateTime(2000),
+        lastDate: DateTime(2100),
+      );
+      if (picked != null) {
+        final formatted =
+            '${picked.year.toString().padLeft(4, '0')}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}';
+        controller.text = formatted;
+        setState(() {});
+      }
+    },
+    decoration: InputDecoration(
+      labelText: label,
+      hintText: hint,
+      border: const OutlineInputBorder(),
+      prefixIcon: const Icon(Icons.calendar_today_outlined),
+      suffixIcon: controller.text.isNotEmpty
+          ? IconButton(
+              icon: const Icon(Icons.clear),
+              tooltip: 'Hapus tanggal',
+              onPressed: () {
+                controller.clear();
+                setState(() {});
+              },
+            )
+          : null,
+    ),
   );
 }
 

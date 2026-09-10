@@ -1,18 +1,24 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicPaths = ["/login"];
-
 export function proxy(request: NextRequest) {
-	const isPublic = publicPaths.some((path) =>
-		request.nextUrl.pathname.startsWith(path),
-	);
+	const pathname = request.nextUrl.pathname;
+	const isLogin = pathname === "/login";
+	const isDashboard = pathname === "/agency" || pathname.startsWith("/agency/");
 	const token = request.cookies.get("sapisehat_agency_token")?.value;
 
-	if (!isPublic && !token && request.nextUrl.pathname.startsWith("/agency")) {
+	if (isLogin && token) {
+		const url = request.nextUrl.clone();
+		url.pathname = "/agency/overview";
+		url.search = "";
+		return NextResponse.redirect(url);
+	}
+
+	if (isDashboard && !token) {
 		const url = request.nextUrl.clone();
 		url.pathname = "/login";
-		url.searchParams.set("next", request.nextUrl.pathname);
+		url.search = "";
+		url.searchParams.set("next", pathname);
 		return NextResponse.redirect(url);
 	}
 
@@ -20,5 +26,5 @@ export function proxy(request: NextRequest) {
 }
 
 export const config = {
-	matcher: ["/agency/:path*"],
+	matcher: ["/login", "/agency", "/agency/:path*"],
 };

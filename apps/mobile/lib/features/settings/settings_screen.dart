@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../core/api_client.dart';
 import '../auth/auth.dart';
 import '../profile/profile_screen.dart';
-import 'settings.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -28,18 +27,11 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late AccountSession session;
-  late Future<FarmerPreferences> future;
 
   @override
   void initState() {
     super.initState();
     session = widget.session;
-    future = widget.apiClient.getPreferences(session);
-  }
-
-  Future<void> save(FarmerPreferences prefs) async {
-    final next = await widget.apiClient.updatePreferences(session, prefs);
-    setState(() => future = Future.value(next));
   }
 
   Future<void> openDeleteAccount() async {
@@ -76,14 +68,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
       ),
     );
     if (confirmed != true) return;
-    final messenger = ScaffoldMessenger.of(context);
     try {
       await widget.onLogout();
-      messenger.showSnackBar(const SnackBar(content: Text('Berhasil keluar.')));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Berhasil keluar.')));
     } catch (_) {
-      messenger.showSnackBar(
-        const SnackBar(content: Text('Gagal keluar. Coba lagi.')),
-      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Gagal keluar. Coba lagi.')));
     }
   }
 
@@ -216,45 +211,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
         ),
       ),
       const SizedBox(height: 16),
-
-      // Preferences card
-      FutureBuilder<FarmerPreferences>(
-        future: future,
-        builder: (context, snapshot) {
-          final prefs =
-              snapshot.data ?? FarmerPreferences(farmerId: session.farmerId);
-          return Card(
-            child: Column(
-              children: [
-                SwitchListTile(
-                  value: prefs.scanResultNotifications,
-                  onChanged: (v) =>
-                      save(prefs.copyWith(scanResultNotifications: v)),
-                  title: const Text('Notifikasi hasil scan'),
-                ),
-                SwitchListTile(
-                  value: prefs.syncNotifications,
-                  onChanged: (v) => save(prefs.copyWith(syncNotifications: v)),
-                  title: const Text('Notifikasi sinkronisasi'),
-                ),
-                SwitchListTile(
-                  value: prefs.areaRiskAdvisoryNotifications,
-                  onChanged: (v) =>
-                      save(prefs.copyWith(areaRiskAdvisoryNotifications: v)),
-                  title: const Text('Notifikasi sinyal risiko wilayah'),
-                ),
-                SwitchListTile(
-                  value: prefs.followUpStatusNotifications,
-                  onChanged: (v) =>
-                      save(prefs.copyWith(followUpStatusNotifications: v)),
-                  title: const Text('Notifikasi status tindak lanjut'),
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-      const SizedBox(height: 12),
       const _InfoCard(
         icon: Icons.camera_alt,
         title: 'Izin kamera',
@@ -546,7 +502,7 @@ class TermsPrivacyPage extends StatelessWidget {
         _LegalSection(
           title: 'Data yang Dikumpulkan',
           body:
-              'Kami dapat memproses profil peternak, data sapi, foto scan, hasil prediksi, lokasi umum, preferensi notifikasi, serta riwayat aktivitas aplikasi untuk menyediakan layanan.',
+              'Kami dapat memproses profil peternak, data sapi, foto scan, hasil prediksi, lokasi umum, serta riwayat aktivitas aplikasi untuk menyediakan layanan.',
         ),
         _LegalSection(
           title: 'Penggunaan Data',
@@ -566,7 +522,7 @@ class TermsPrivacyPage extends StatelessWidget {
         _LegalSection(
           title: 'Hak Pengguna',
           body:
-              'Pengguna dapat memperbarui profil, meminta penghapusan akun, mengelola preferensi notifikasi, dan menghubungi pengelola layanan terkait akses atau koreksi data.',
+              'Pengguna dapat memperbarui profil, meminta penghapusan akun, dan menghubungi pengelola layanan terkait akses atau koreksi data.',
         ),
         _LegalSection(
           title: 'Batasan Tanggung Jawab',

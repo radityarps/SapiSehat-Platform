@@ -12,6 +12,7 @@ from api.fusion_results import FusionResult
 HYBRID_ALERT_THRESHOLD = 3
 CLUSTER_WINDOW_DAYS = 7
 RISK_SIGNAL_RELIABILITY = {"reliable", "needs_review"}
+ACTIVE_RISK_CLASS = "FMD"
 
 
 @dataclass(frozen=True)
@@ -60,7 +61,7 @@ def summarize_risk_signals(
         created_at = _parse_created_at(result.created_at)
         if created_at is None or created_at < window_start or created_at > window_end:
             continue
-        if result.disease_class == "healthy":
+        if result.disease_class != ACTIVE_RISK_CLASS:
             continue
         if result.reliability not in RISK_SIGNAL_RELIABILITY:
             continue

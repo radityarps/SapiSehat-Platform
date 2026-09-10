@@ -66,7 +66,6 @@ Calm field operations: deep leaf green, warm ivory surfaces, soil neutrals, clea
 ### Settings
 - Profile card at top: avatar initial, name, email, address, jurisdiction.
 - "Edit profil" button → navigates to `ProfileScreen`.
-- Notification preference switches (scan, sync, area risk, follow-up, quiet hours).
 - Device permission info cards (camera, gallery, location).
 - Logout button.
 - Account archive with password confirmation.

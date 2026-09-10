@@ -5,6 +5,7 @@ from fastapi.testclient import TestClient
 from main import app
 from api.cattle_profiles import cattle_profile_store
 from api.farmer_accounts import FarmerConsentState, farmer_account_store
+from api.surface_auth import DEFAULT_AGENCY_OFFICER_ID
 
 
 def setup_function():
@@ -127,7 +128,7 @@ def test_agency_can_see_cattle_when_role_jurisdiction_and_consent_allow():
     )
     create_cattle(client, account.id, jurisdiction="tembalang")
 
-    response = client.get("/api/agency/cattle", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/cattle", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200
     assert [item["id"] for item in response.json()["cattle"]] == ["cattle-1"]
@@ -149,7 +150,7 @@ def test_agency_cannot_see_cattle_without_consent_or_jurisdiction():
     create_cattle(client, private_farmer.id, tag="PRIVATE", jurisdiction="tembalang")
     create_cattle(client, outside_farmer.id, tag="OUTSIDE", jurisdiction="west-java")
 
-    response = client.get("/api/agency/cattle", headers={"X-Agency-User-Id": "semarang-officer"})
+    response = client.get("/api/agency/cattle", headers={"X-Agency-User-Id": DEFAULT_AGENCY_OFFICER_ID})
 
     assert response.status_code == 200
     assert response.json()["cattle"] == []

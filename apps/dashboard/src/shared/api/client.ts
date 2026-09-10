@@ -10,6 +10,11 @@ import type {
 	NotificationItem,
 	RiskSignalItem,
 	SafeLanguage,
+	GuideArticle,
+	GuideAuditEvent,
+	GuideCategory,
+	GuideMedia,
+	GuideTranslation,
 } from "@/src/shared/types/api";
 
 const envBase = process.env.NEXT_PUBLIC_API_BASE_URL;
@@ -24,6 +29,8 @@ const agencyMeSchema = z.object({
 	jurisdiction_id: z.string().optional(),
 });
 
+const activeDetectionClassSchema = z.enum(["FMD", "healthy"]);
+
 const safeLanguageSchema = z.object({
 	title: z.string().optional(),
 	description: z.string().optional(),
@@ -34,7 +41,7 @@ const detectionSchema = z.object({
 	id: z.string(),
 	cattle_id: z.string().optional(),
 	farmer_id: z.string(),
-	disease_class: z.string(),
+	disease_class: activeDetectionClassSchema,
 	confidence: z.number(),
 	confidence_level: z.string().optional(),
 	reliability: z.string().optional(),
@@ -48,7 +55,7 @@ const detectionSchema = z.object({
 const riskSignalSchema = z.object({
 	id: z.string(),
 	jurisdiction_id: z.string(),
-	disease_class: z.string(),
+	disease_class: activeDetectionClassSchema,
 	signal_count: z.number(),
 	risk_level: z.string(),
 	priority: z.string(),
@@ -86,6 +93,52 @@ const notificationSchema = z.object({
 	created_at: z.string(),
 });
 
+function formatApiErrorDetail(detail: unknown): string {
+	if (!detail) return "";
+	if (typeof detail === "string") {
+		return detail;
+	}
+	if (Array.isArray(detail)) {
+		const messages = detail
+			.map((item) => {
+				if (typeof item === "string") return item;
+				if (item && typeof item === "object") {
+					const rec = item as Record<string, unknown>;
+					if (rec.msg && typeof rec.msg === "string") {
+						const cleanedMsg = rec.msg.replace(/^Value error, /i, "");
+						if (Array.isArray(rec.loc) && rec.loc.length > 0) {
+							const fieldPath = rec.loc
+								.filter((part) => part !== "body")
+								.map((part) => {
+									if (part === "translations") return "translation";
+									if (part === "blocks") return "block";
+									return String(part);
+								})
+								.join(" > ");
+							return fieldPath ? `${fieldPath}: ${cleanedMsg}` : cleanedMsg;
+						}
+						return cleanedMsg;
+					}
+					return JSON.stringify(item);
+				}
+				return String(item);
+			})
+			.filter(Boolean);
+
+		if (messages.length > 0) {
+			return messages.join("; ");
+		}
+	}
+	if (typeof detail === "object") {
+		try {
+			return JSON.stringify(detail);
+		} catch {
+			return "Validation error";
+		}
+	}
+	return String(detail);
+}
+
 async function request<T>(
 	path: string,
 	init: RequestInit = {},
@@ -110,7 +163,11 @@ async function request<T>(
 		let detail = `Request failed (${response.status})`;
 		try {
 			const parsed = (await response.json()) as ApiError;
-			detail = parsed.detail ?? parsed.message ?? detail;
+			if (parsed.detail !== undefined && parsed.detail !== null) {
+				detail = formatApiErrorDetail(parsed.detail) || detail;
+			} else if (parsed.message) {
+				detail = parsed.message;
+			}
 		} catch {
 			// noop
 		}
@@ -488,6 +545,182 @@ export async function updateProfile(token: string, input: UpdateProfileInput) {
 		token,
 	);
 	return agencyMeSchema.parse(data) as AgencyMe;
+}
+
+function guideHeaders(token: string, agencyUserId: string) {
+	return {
+		Authorization: `Bearer ${token}`,
+		"X-Agency-User-Id": agencyUserId,
+	};
+}
+
+export async function getGuideArticles(token: string, agencyUserId: string) {
+	return request<{ items: GuideArticle[] }>(
+		"/api/agency/guide/articles",
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function getGuideArticle(
+	token: string,
+	agencyUserId: string,
+	articleId: string,
+) {
+	return request<GuideArticle>(
+		`/api/agency/guide/articles/${encodeURIComponent(articleId)}`,
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function getGuideCategories(token: string, agencyUserId: string) {
+	return request<{ items: GuideCategory[] }>(
+		"/api/agency/guide/categories",
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function getGuideMedia(token: string, agencyUserId: string) {
+	return request<{ items: GuideMedia[] }>(
+		"/api/agency/guide/media",
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function getGuideMediaPreview(
+	token: string,
+	agencyUserId: string,
+	mediaId: string,
+): Promise<Blob> {
+	const url = baseUrl
+		? `${baseUrl}/api/agency/guide/media/${mediaId}/preview`
+		: `/api/agency/guide/media/${mediaId}/preview`;
+	const response = await fetch(url, {
+		headers: guideHeaders(token, agencyUserId),
+		cache: "no-store",
+	});
+	if (!response.ok) throw new Error(`Image preview failed (${response.status})`);
+	return response.blob();
+}
+
+export async function getGuideAuditEvents(token: string, agencyUserId: string) {
+	return request<{ items: GuideAuditEvent[] }>(
+		"/api/agency/guide/audit-events",
+		{ headers: guideHeaders(token, agencyUserId) },
+		token,
+	);
+}
+
+export async function saveGuideArticle(
+	token: string,
+	agencyUserId: string,
+	input: { id?: string; category_id: string; translations: GuideTranslation[] },
+) {
+	const path = input.id
+		? `/api/agency/guide/articles/${input.id}`
+		: "/api/agency/guide/articles";
+	return request<GuideArticle>(
+		path,
+		{
+			method: input.id ? "PUT" : "POST",
+			headers: guideHeaders(token, agencyUserId),
+			body: JSON.stringify({
+				category_id: input.category_id,
+				translations: input.translations,
+			}),
+		},
+		token,
+	);
+}
+
+export async function transitionGuideArticle(
+	token: string,
+	agencyUserId: string,
+	articleId: string,
+	action: "publish" | "unpublish" | "archive",
+) {
+	return request<GuideArticle>(
+		`/api/agency/guide/articles/${articleId}/${action}`,
+		{
+			method: "POST",
+			headers: guideHeaders(token, agencyUserId),
+		},
+		token,
+	);
+}
+
+export async function uploadGuideMedia(
+	token: string,
+	agencyUserId: string,
+	file: File,
+) {
+	const form = new FormData();
+	form.append("file", file);
+	const url = baseUrl
+		? `${baseUrl}/api/agency/guide/media`
+		: "/api/agency/guide/media";
+	const response = await fetch(url, {
+		method: "POST",
+		headers: guideHeaders(token, agencyUserId),
+		body: form,
+	});
+	if (!response.ok) throw new Error(`Upload failed (${response.status})`);
+	return response.json() as Promise<{ id: string; sha256: string }>;
+}
+
+export async function saveGuideCategory(
+	token: string,
+	agencyUserId: string,
+	input: {
+		id?: string;
+		display_order: number;
+		translations: { locale: string; label: string }[];
+	},
+) {
+	return request<GuideCategory>(
+		input.id
+			? `/api/agency/guide/categories/${input.id}`
+			: "/api/agency/guide/categories",
+		{
+			method: input.id ? "PUT" : "POST",
+			headers: guideHeaders(token, agencyUserId),
+			body: JSON.stringify(input),
+		},
+		token,
+	);
+}
+
+export async function archiveGuideCategory(
+	token: string,
+	agencyUserId: string,
+	categoryId: string,
+) {
+	return request(
+		`/api/agency/guide/categories/${categoryId}/archive`,
+		{
+			method: "POST",
+			headers: guideHeaders(token, agencyUserId),
+		},
+		token,
+	);
+}
+
+export async function activateGuideCategory(
+	token: string,
+	agencyUserId: string,
+	categoryId: string,
+) {
+	return request(
+		`/api/agency/guide/categories/${categoryId}/activate`,
+		{
+			method: "POST",
+			headers: guideHeaders(token, agencyUserId),
+		},
+		token,
+	);
 }
 
 export async function changePassword(

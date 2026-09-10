@@ -16,6 +16,7 @@ from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 from PIL import Image
+
 from utils.logger import JSONFormatter
 
 
@@ -44,7 +45,7 @@ class TestNoRetentionPolicy:
                 "display_label_key": "disease.healthy",
                 "confidence": 0.95,
                 "is_reliable": True,
-                "scores": {"FMD": 0.02, "LSD": 0.03, "healthy": 0.95},
+                "scores": {"FMD": 0.05, "healthy": 0.95},
             },
             "model_info": {"version": "1.0.0"},
             "processing_time_ms": 150,

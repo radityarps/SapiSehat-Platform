@@ -1,0 +1,113 @@
+{
+  "model_version": "cattle-disease-mobilenetv3large-v20260902-pmk-fp32",
+  "base_model_version": "cattle-disease-mobilenetv3large-v20260902-pmk",
+  "architecture": "MobileNetV3Large",
+  "keras_artifact": "pmkbest.keras",
+  "tflite_artifact": "pmk_fp32.tflite",
+  "keras_sha256": "2de81ed02da7e95e8cc8ff1a3abf2d18140d5ae99660ed40a3f1cba238d9ceae",
+  "tflite_sha256": "2ba19d218abf71a0d6328cf8d6b4c0a74ca57711e1f86c8eedd72b6f660f9833",
+  "artifact_status": "verified",
+  "source_training_run": {
+    "artifact_origin": "apps/backend/model/TA_training_model (1).ipynb",
+    "notebook_sha256": "f37a03f2d00f8d1c037faa85ef6306eeabc764f7323539393352bbeb6800ff95",
+    "training_framework": "TensorFlow/Keras",
+    "training_backbone": "MobileNetV2",
+    "recorded_dataset": "Roboflow folder-classification export configured as PMK-dan-Penyakit-Lato-Lato-1",
+    "recorded_training_labels": [
+      "FMD",
+      "Healthy",
+      "LSD"
+    ],
+    "provenance_status": "partial",
+    "limitation": "The supplied notebook records a three-class MobileNetV2 FMD/Healthy/LSD run, not this MobileNetV3Large non_sapi/pmk/sehat export. Owner-approved class_names.json from the same training/export is authoritative class-order evidence; no cryptographic signature, external URL, license, or veterinary review is asserted."
+  },
+  "class_order": [
+    "non_sapi",
+    "pmk",
+    "sehat"
+  ],
+  "class_indices": {
+    "0": "non_sapi",
+    "1": "pmk",
+    "2": "sehat"
+  },
+  "class_identity_evidence": {
+    "source": "apps/backend/model/class_names.json",
+    "status": "authoritative",
+    "basis": "Owner-approved class_names.json is authoritative class-order evidence from the same training/export as this artifact pair; the canonical mapping is explicit and is not inferred from predictions.",
+    "not_asserted": [
+      "cryptographic signature",
+      "external URL",
+      "license",
+      "veterinary review"
+    ]
+  },
+  "tensor_contract": {
+    "keras_input_tensor_count": 1,
+    "keras_output_tensor_count": 1,
+    "keras_input_shape": [
+      null,
+      224,
+      224,
+      3
+    ],
+    "keras_output_shape": [
+      null,
+      3
+    ],
+    "keras_input_dtype": "float32",
+    "keras_output_dtype": "float32",
+    "tflite_input_tensor_count": 1,
+    "tflite_output_tensor_count": 1,
+    "tflite_input_shape": [
+      1,
+      224,
+      224,
+      3
+    ],
+    "tflite_output_shape": [
+      1,
+      3
+    ],
+    "tflite_input_dtype": "float32",
+    "tflite_output_dtype": "float32",
+    "output_values": "finite probabilities in [0, 1] with sum approximately 1"
+  },
+  "preprocessing": {
+    "exif_orientation_correction": "before resize where available",
+    "channels": 3,
+    "color_mode": "RGB",
+    "resize_method": "bilinear",
+    "input_size": [
+      224,
+      224
+    ],
+    "input_dtype": "float32",
+    "input_range": [
+      0,
+      255
+    ],
+    "internal_rescaling": true,
+    "internal_rescaling_scale": 0.00784313725490196,
+    "internal_rescaling_offset": -1.0
+  },
+  "verification": {
+    "report": "apps/backend/model/verification/verification_report.json",
+    "corpus_manifest": "apps/backend/model/verification/golden_corpus_manifest.json",
+    "runtime": "TensorFlow 2.21.0",
+    "score_tolerance_max_abs": 2e-06,
+    "valid_case_count": 21,
+    "top_class_mismatches": 0,
+    "max_observed_score_delta": 8.940696716308594e-07,
+    "corrupt_input_rejected_before_inference": true,
+    "former_lsd_non_cattle_misclassification_count": 0,
+    "overall_pass": true,
+    "activation_note": "Runtime contract and Keras/TFLite parity use raw order non_sapi/pmk/sehat with canonical mapping. Existing team-owned corpus images and project labels are owner-approved for this personal repository. Option C visibly accepts the non-cattle-human-02 (mulut manusia.png) FMD mismatch. The repository owner attests that the required physical Android offline smoke test passed."
+  },
+  "warning": "Early detection / image classification model only; not a final clinical diagnosis or veterinarian replacement.",
+  "label_mapping": {
+    "non_sapi": "non_cattle",
+    "pmk": "FMD",
+    "sehat": "healthy"
+  }
+}

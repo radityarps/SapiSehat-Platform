@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from enum import Enum
-import re
 
 from api.database import SessionLocal, create_all_tables
 from api.db_models import FarmerAccountModel
@@ -21,7 +21,7 @@ class FarmerAccount:
     """Farmer identity used by downstream cattle and detection APIs."""
 
     id: str
-    phone_number: str
+    phone_number: str | None
     name: str
     jurisdiction_id: str
     consent_state: FarmerConsentState
@@ -43,7 +43,10 @@ class FarmerAccountStore:
         jurisdiction_id: str,
         consent_state: FarmerConsentState = FarmerConsentState.PRIVATE,
         address: str | None = None,
+        account_id: str | None = None,
     ) -> tuple[FarmerAccount, bool]:
+        from api.db_models import AccountModel
+
         normalized_phone = normalize_phone_number(phone_number)
         with SessionLocal() as session:
             row = (
@@ -53,9 +56,27 @@ class FarmerAccountStore:
             )
             if row is not None:
                 return _farmer_from_row(row), False
-            next_id = session.query(FarmerAccountModel).count() + 1
+
+            target_id = account_id
+            if target_id is None:
+                next_id = session.query(FarmerAccountModel).count() + 1
+                target_id = f"farmer-{next_id}"
+
+            if session.get(AccountModel, target_id) is None:
+                session.add(
+                    AccountModel(
+                        id=target_id,
+                        account_type="farmer",
+                        email=f"{target_id}@farmer.sapisehat.id",
+                        name=name,
+                        jurisdiction_id=jurisdiction_id,
+                        address=address,
+                        password_hash="",
+                    )
+                )
+
             account = FarmerAccount(
-                id=f"farmer-{next_id}",
+                id=target_id,
                 phone_number=normalized_phone,
                 name=name,
                 address=address,
