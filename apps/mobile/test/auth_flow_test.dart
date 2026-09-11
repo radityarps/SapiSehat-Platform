@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:sapisehat_mobile/main.dart';
@@ -103,5 +104,61 @@ void main() {
       1,
     );
     expect(jsonDecode(loginRequest.body!)['email'], 'farmer@example.com');
+  });
+
+  test('FileSessionStore persists session and expires after 7 days', () async {
+    final tempDir = await Directory.systemTemp.createTemp('sapisehat_auth_test_');
+    try {
+      final store = FileSessionStore(directoryProvider: () async => tempDir);
+      final session = AccountSession(
+        token: 'test-token',
+        farmerId: 'farmer-test',
+        email: 'test@example.com',
+        name: 'Test Farmer',
+      );
+
+      expect(await store.load(), isNull);
+      await store.save(session);
+
+      final loaded = await store.load();
+      expect(loaded, isNotNull);
+      expect(loaded!.token, 'test-token');
+      expect(loaded.farmerId, 'farmer-test');
+      expect(loaded.email, 'test@example.com');
+
+      // Test expiration with negative TTL
+      final expiredStore = FileSessionStore(
+        directoryProvider: () async => tempDir,
+        ttl: const Duration(milliseconds: -1),
+      );
+      expect(await expiredStore.load(), isNull);
+    } finally {
+      await tempDir.delete(recursive: true);
+    }
+  });
+
+  testWidgets('already authenticated user automatically redirects to home screen', (
+    tester,
+  ) async {
+    final session = AccountSession(
+      token: 'persisted-token',
+      farmerId: 'farmer-1',
+      email: 'farmer@example.com',
+      name: 'Peternak Setia',
+    );
+    final sessionStore = MemorySessionStore(initialSession: session);
+
+    await tester.pumpWidget(
+      SapiSehatApp(
+        apiClient: SapiSehatApiClient(transport: StubTransport()),
+        sessionStore: sessionStore,
+        initialSession: session,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Kandang Sapi'), findsOneWidget);
+    expect(find.text('Sinyal risiko, bukan diagnosis'), findsNothing);
+    expect(find.text('Lewati'), findsNothing);
   });
 }

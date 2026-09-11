@@ -366,7 +366,7 @@ class SapiSehatApiClient {
       label: label,
       confidence: confidence.toDouble(),
       capturedAt: DateTime.now(),
-      inferenceMode: 'offline',
+      inferenceMode: 'online',
       syncStatus: 'unsaved',
       modelVersion: version,
       scores: scores,

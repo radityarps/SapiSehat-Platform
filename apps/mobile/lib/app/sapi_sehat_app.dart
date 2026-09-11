@@ -14,15 +14,26 @@ import 'providers.dart';
 import 'theme.dart';
 
 class SapiSehatApp extends StatelessWidget {
-  const SapiSehatApp({super.key, this.apiClient, this.sessionStore});
+  const SapiSehatApp({
+    super.key,
+    this.apiClient,
+    this.sessionStore,
+    this.initialSession,
+  });
   final SapiSehatApiClient? apiClient;
   final SessionStore? sessionStore;
+  final AccountSession? initialSession;
+
   @override
   Widget build(BuildContext context) {
+    final store = sessionStore ?? FileSessionStore();
     final overrides = <Override>[
       if (apiClient != null) apiClientProvider.overrideWithValue(apiClient!),
-      if (sessionStore != null)
-        sessionStoreProvider.overrideWithValue(sessionStore!),
+      sessionStoreProvider.overrideWithValue(store),
+      if (initialSession != null)
+        sessionControllerProvider.overrideWith(
+          (ref) => SessionController(store, initialSession),
+        ),
     ];
     return ProviderScope(
       overrides: overrides,
@@ -39,27 +50,47 @@ class _SapiSehatAppView extends ConsumerStatefulWidget {
 
 class _SapiSehatAppViewState extends ConsumerState<_SapiSehatAppView> {
   bool onboarded = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkStoredSession();
+  }
+
+  Future<void> _checkStoredSession() async {
+    final current = ref.read(sessionControllerProvider);
+    if (current != null) return;
+    final store = ref.read(sessionStoreProvider);
+    final saved = await store.load();
+    if (saved != null && mounted) {
+      ref.read(sessionControllerProvider.notifier).restore(saved);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = ref.watch(sessionControllerProvider);
     final apiClient = ref.watch(apiClientProvider);
     final sessionStore = ref.watch(sessionStoreProvider);
+
+    final isAuthed = session != null;
+
     return MaterialApp(
       title: 'SapiSehat',
       theme: sapiSehatTheme(),
-      home: !onboarded
+      home: isAuthed
+          ? HomeScreen(
+              apiClient: apiClient,
+              session: session,
+              sessionStore: sessionStore,
+            )
+          : !onboarded
           ? OnboardingScreen(onFinished: () => setState(() => onboarded = true))
-          : session == null
-          ? LoginScreen(
+          : LoginScreen(
               apiClient: apiClient,
               sessionStore: sessionStore,
               onLoggedIn: (value) =>
                   ref.read(sessionControllerProvider.notifier).save(value),
-            )
-          : HomeScreen(
-              apiClient: apiClient,
-              session: session,
-              sessionStore: sessionStore,
             ),
     );
   }

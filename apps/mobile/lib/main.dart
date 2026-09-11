@@ -3,6 +3,7 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 import 'app/sapi_sehat_app.dart';
 import 'core/api.dart';
+import 'features/auth/auth.dart';
 
 export 'app/sapi_sehat_app.dart';
 export 'core/api.dart';
@@ -20,5 +21,10 @@ Future<void> main() async {
   await dotenv.load(fileName: '.env', isOptional: true);
   ApiConfig.baseUrl =
       dotenv.env['SAPISEHAT_API_BASE_URL'] ?? ApiConfig.defaultBaseUrl;
-  runApp(const SapiSehatApp());
+  final sessionStore = FileSessionStore();
+  final initialSession = await sessionStore.load();
+  runApp(SapiSehatApp(
+    sessionStore: sessionStore,
+    initialSession: initialSession,
+  ));
 }

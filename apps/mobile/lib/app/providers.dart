@@ -8,7 +8,7 @@ final apiClientProvider = Provider<SapiSehatApiClient>(
   (ref) => SapiSehatApiClient(),
 );
 final sessionStoreProvider = Provider<SessionStore>(
-  (ref) => MemorySessionStore(),
+  (ref) => FileSessionStore(),
 );
 
 final sessionControllerProvider =
@@ -17,8 +17,13 @@ final sessionControllerProvider =
     });
 
 class SessionController extends StateNotifier<AccountSession?> {
-  SessionController(this.store) : super(null);
+  SessionController(this.store, [AccountSession? initialSession])
+      : super(initialSession);
   final SessionStore store;
+
+  void restore(AccountSession session) {
+    state = session;
+  }
 
   Future<void> save(AccountSession session) async {
     await store.save(session);
